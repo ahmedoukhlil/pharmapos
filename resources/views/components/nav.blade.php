@@ -1,41 +1,73 @@
 @props(['register' => null])
 
-<header class="flex items-center gap-4 bg-emerald-800 px-4 py-2 text-white print:hidden">
-    <span class="font-semibold">PharmaPOS</span>
-    <nav class="flex gap-1 text-sm">
-        @php $q = $register ? ['caisse' => $register] : []; @endphp
+@php
+    $user = auth()->user();
+    $q = $register ? ['caisse' => $register] : [];
+    // Menus regroupés : [libellé => [[route, paramètres, libellé, motif actif, visible]]]
+    $groups = [
+        'Ventes' => [
+            ['pos', $q, 'Caisse', 'pos', true],
+            ['returns', $q, 'Retours', 'returns', true],
+            ['pos.close', $q, 'Clôture', 'pos.close', true],
+            ['sessions.index', [], 'Sessions', 'sessions.*', true],
+        ],
+        'Achats' => [
+            ['orders.index', [], 'Commandes', 'orders.*', true],
+            ['receipts.index', [], 'Réceptions', 'receipts.*', true],
+            ['invoices.index', [], 'Factures', 'invoices.*', $user->hasPermission('purchase.invoice')],
+            ['suppliers.index', [], 'Fournisseurs', 'suppliers.*', true],
+        ],
+        'Stock' => [
+            ['catalogue.index', [], 'Catalogue', 'catalogue.*', true],
+            ['inventories.index', [], 'Inventaires', 'inventories.*', true],
+        ],
+        'Gestion' => [
+            ['reports.index', [], 'Rapports', 'reports.*', $user->hasPermission('report.view')],
+            ['backups.index', [], 'Sauvegardes', 'backups.*', \App\Livewire\System\BackupIndex::allowed()],
+        ],
+    ];
+@endphp
+
+<header class="flex items-center gap-3 whitespace-nowrap bg-emerald-800 px-4 py-2 text-white print:hidden">
+    <a href="{{ route('pos', $q) }}" class="font-semibold">PharmaPOS</a>
+    <nav x-data="{ open: null }" @click.outside="open = null" @keydown.escape.window="open = null" class="flex gap-1 text-sm">
         <a href="{{ route('pos', $q) }}" @class(['rounded px-2 py-1 hover:bg-emerald-700', 'bg-emerald-900' => request()->routeIs('pos')])>Caisse</a>
-        <a href="{{ route('returns', $q) }}" @class(['rounded px-2 py-1 hover:bg-emerald-700', 'bg-emerald-900' => request()->routeIs('returns')])>Retours</a>
-        <a href="{{ route('pos.close', $q) }}" @class(['rounded px-2 py-1 hover:bg-emerald-700', 'bg-emerald-900' => request()->routeIs('pos.close')])>Clôture</a>
-        <a href="{{ route('catalogue.index') }}" @class(['rounded px-2 py-1 hover:bg-emerald-700', 'bg-emerald-900' => request()->routeIs('catalogue.*')])>Catalogue</a>
-        <a href="{{ route('orders.index') }}" @class(['rounded px-2 py-1 hover:bg-emerald-700', 'bg-emerald-900' => request()->routeIs('orders.*')])>Commandes</a>
-        <a href="{{ route('receipts.index') }}" @class(['rounded px-2 py-1 hover:bg-emerald-700', 'bg-emerald-900' => request()->routeIs('receipts.*')])>Réceptions</a>
-        @if (auth()->user()->hasPermission('purchase.invoice'))
-            <a href="{{ route('invoices.index') }}" @class(['rounded px-2 py-1 hover:bg-emerald-700', 'bg-emerald-900' => request()->routeIs('invoices.*')])>Factures</a>
-        @endif
-        <a href="{{ route('suppliers.index') }}" @class(['rounded px-2 py-1 hover:bg-emerald-700', 'bg-emerald-900' => request()->routeIs('suppliers.*')])>Fournisseurs</a>
-        <a href="{{ route('inventories.index') }}" @class(['rounded px-2 py-1 hover:bg-emerald-700', 'bg-emerald-900' => request()->routeIs('inventories.*')])>Inventaires</a>
-        <a href="{{ route('sessions.index') }}" @class(['rounded px-2 py-1 hover:bg-emerald-700', 'bg-emerald-900' => request()->routeIs('sessions.*')])>Sessions</a>
-        @if (auth()->user()->hasPermission('report.view'))
-            <a href="{{ route('reports.index') }}" @class(['rounded px-2 py-1 hover:bg-emerald-700', 'bg-emerald-900' => request()->routeIs('reports.*')])>Rapports</a>
-        @endif
-        @if (\App\Livewire\System\BackupIndex::allowed())
-            <a href="{{ route('backups.index') }}" @class(['rounded px-2 py-1 hover:bg-emerald-700', 'bg-emerald-900' => request()->routeIs('backups.*')])>Sauvegardes</a>
-        @endif
+        @foreach ($groups as $label => $items)
+            @php
+                $items = array_filter($items, fn ($i) => $i[4]);
+                $active = collect($items)->contains(fn ($i) => request()->routeIs($i[3]));
+            @endphp
+            @continue(! $items)
+            <div class="relative">
+                <button type="button" @click="open = open === '{{ $label }}' ? null : '{{ $label }}'" :aria-expanded="open === '{{ $label }}'"
+                        @class(['flex items-center gap-1 rounded px-2 py-1 hover:bg-emerald-700', 'bg-emerald-900' => $active])>
+                    {{ $label }}
+                    <svg class="size-3 opacity-70" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M5.2 7.2a.75.75 0 0 1 1.06 0L10 10.94l3.74-3.74a.75.75 0 1 1 1.06 1.06l-4.27 4.27a.75.75 0 0 1-1.06 0L5.2 8.26a.75.75 0 0 1 0-1.06Z"/></svg>
+                </button>
+                <div x-show="open === '{{ $label }}'" x-transition.opacity.duration.100ms x-cloak
+                     class="absolute start-0 z-50 mt-1 min-w-44 rounded-lg bg-white py-1 text-slate-800 shadow-lg ring-1 ring-black/5">
+                    @foreach ($items as [$route, $params, $text, $pattern])
+                        <a href="{{ route($route, $params) }}" @class(['block px-3 py-2 hover:bg-emerald-50', 'font-semibold text-emerald-800' => request()->routeIs($pattern)])>{{ $text }}</a>
+                    @endforeach
+                </div>
+            </div>
+        @endforeach
     </nav>
-    @if (auth()->user()->hasPermission('stock.view'))
+    @if ($user->hasPermission('stock.view'))
         @php
-            $pharmacyId = auth()->user()->pharmacy_id;
+            $pharmacyId = $user->pharmacy_id;
             $alertCount = cache()->remember("alerts.count.$pharmacyId", 60, fn () => app(\App\Services\Alerts\AlertService::class)->count($pharmacyId));
         @endphp
         <a href="{{ route('alerts.index') }}" @class(['rounded px-2 py-1 text-sm hover:bg-emerald-700', 'bg-emerald-900' => request()->routeIs('alerts.*')])>
             Alertes @if ($alertCount) <span class="ms-1 rounded-full bg-red-600 px-2 text-xs font-semibold">{{ $alertCount }}</span> @endif
         </a>
     @endif
-    {{ $slot }}
-    <span class="ms-auto text-sm">{{ auth()->user()->name }}</span>
-    <form method="POST" action="{{ route('logout') }}">
-        @csrf
-        <button class="rounded px-2 py-1 text-sm hover:bg-emerald-700">Déconnexion</button>
-    </form>
+    <div class="ms-auto flex items-center gap-3">
+        {{ $slot }}
+        <span class="text-sm">{{ $user->name }}</span>
+        <form method="POST" action="{{ route('logout') }}">
+            @csrf
+            <button class="rounded px-2 py-1 text-sm hover:bg-emerald-700">Déconnexion</button>
+        </form>
+    </div>
 </header>
