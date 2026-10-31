@@ -41,6 +41,7 @@ php artisan test
 - [x] Inventaires par lot (comptage à l'aveugle, recomptage, approbation)
 - [x] Catalogue : produits, présentations, codes-barres, statuts, historique des prix, fournisseurs
 - [x] Import catalogue Excel/CSV avec aperçu (MED-05)
+- [x] Alertes : péremption par paliers, stock bas, écarts de caisse
 - [ ] Commandes, factures et règlements fournisseurs (P0-Bis)
 - [ ] Scanner smartphone (PWA)
 - [ ] Synchronisation cloud

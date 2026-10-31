@@ -13,6 +13,15 @@
         <a href="{{ route('inventories.index') }}" @class(['rounded px-2 py-1 hover:bg-emerald-700', 'bg-emerald-900' => request()->routeIs('inventories.*')])>Inventaires</a>
         <a href="{{ route('sessions.index') }}" @class(['rounded px-2 py-1 hover:bg-emerald-700', 'bg-emerald-900' => request()->routeIs('sessions.*')])>Sessions</a>
     </nav>
+    @if (auth()->user()->hasPermission('stock.view'))
+        @php
+            $pharmacyId = auth()->user()->pharmacy_id;
+            $alertCount = cache()->remember("alerts.count.$pharmacyId", 60, fn () => app(\App\Services\Alerts\AlertService::class)->count($pharmacyId));
+        @endphp
+        <a href="{{ route('alerts.index') }}" @class(['rounded px-2 py-1 text-sm hover:bg-emerald-700', 'bg-emerald-900' => request()->routeIs('alerts.*')])>
+            Alertes @if ($alertCount) <span class="ms-1 rounded-full bg-red-600 px-2 text-xs font-semibold">{{ $alertCount }}</span> @endif
+        </a>
+    @endif
     {{ $slot }}
     <span class="ms-auto text-sm">{{ auth()->user()->name }}</span>
     <form method="POST" action="{{ route('logout') }}">

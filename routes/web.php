@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\TicketController;
+use App\Livewire\Alerts\AlertIndex;
 use App\Livewire\Cash\SessionIndex;
 use App\Livewire\Cash\SessionShow;
 use App\Livewire\Catalogue\CatalogueImport;
@@ -44,7 +45,8 @@ Route::middleware('auth')->group(function () {
     })->name('catalogue.template');
     Route::get('/catalogue/nouveau', ProductEditor::class)->name('catalogue.create');
     Route::get('/catalogue/{medicine}', ProductEditor::class)->name('catalogue.edit');
-    Route::get('/fournisseurs', SupplierIndex::class)->name('suppliers.index');
+    Route::get('/alertes', AlertIndex::class)->name('alerts.index');
+    Route::get('/fournisseurs',SupplierIndex::class)->name('suppliers.index');
     Route::get('/inventaires', InventoryIndex::class)->name('inventories.index');
     Route::get('/inventaires/{session}', InventorySheet::class)->name('inventories.show');
     Route::get('/sessions', SessionIndex::class)->name('sessions.index');
