@@ -6,6 +6,7 @@ use App\Models\AlertRule;
 use App\Models\CashSession;
 use App\Models\Presentation;
 use App\Models\StockBalance;
+use App\Services\Backup\BackupService;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -107,7 +108,14 @@ class AlertService
 
         return $expiring->filter(fn ($e) => $e->bucket === 0 || $e->bucket === $firstTier)->count()
             + $this->lowStock($pharmacyId)->count()
-            + $this->cashVariances($pharmacyId)->count();
+            + $this->cashVariances($pharmacyId)->count()
+            + ($this->backupIssue($pharmacyId) ? 1 : 0);
+    }
+
+    /** Échec ou retard de sauvegarde (PRD §13.4), si la règle est active. */
+    public function backupIssue(string $pharmacyId): ?string
+    {
+        return $this->rule($pharmacyId, 'backup_failure') ? app(BackupService::class)->issue() : null;
     }
 
     private function rule(string $pharmacyId, string $type): ?AlertRule

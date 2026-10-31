@@ -74,6 +74,7 @@ class PharmacySeeder extends Seeder
         AlertRule::create(['pharmacy_id' => $pharmacy->id, 'type' => 'expiry', 'parameters' => ['days' => [30, 60, 90, 180]]]);
         AlertRule::create(['pharmacy_id' => $pharmacy->id, 'type' => 'low_stock', 'parameters' => ['use_reorder_threshold' => true]]);
         AlertRule::create(['pharmacy_id' => $pharmacy->id, 'type' => 'cash_variance', 'parameters' => ['tolerance' => 0]]);
+        AlertRule::create(['pharmacy_id' => $pharmacy->id, 'type' => 'backup_failure', 'parameters' => []]);
 
         foreach (RolePermissionSeeder::ROLES as $slug => [$label]) {
             $user = User::create([

@@ -19,6 +19,9 @@
         @if (auth()->user()->hasPermission('report.view'))
             <a href="{{ route('reports.index') }}" @class(['rounded px-2 py-1 hover:bg-emerald-700', 'bg-emerald-900' => request()->routeIs('reports.*')])>Rapports</a>
         @endif
+        @if (\App\Livewire\System\BackupIndex::allowed())
+            <a href="{{ route('backups.index') }}" @class(['rounded px-2 py-1 hover:bg-emerald-700', 'bg-emerald-900' => request()->routeIs('backups.*')])>Sauvegardes</a>
+        @endif
     </nav>
     @if (auth()->user()->hasPermission('stock.view'))
         @php

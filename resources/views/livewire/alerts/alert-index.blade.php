@@ -12,6 +12,13 @@
     <main class="mx-auto max-w-6xl space-y-4 p-4">
         <h1 class="text-xl font-semibold">Alertes</h1>
 
+        @if ($backupIssue)
+            <p class="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800">
+                Sauvegarde : {{ $backupIssue }}
+                @if (\App\Livewire\System\BackupIndex::allowed()) <a href="{{ route('backups.index') }}" class="ms-1 font-semibold underline">Voir les sauvegardes</a> @endif
+            </p>
+        @endif
+
         <nav class="flex gap-2 border-b border-slate-200 text-sm">
             @foreach ($tabs as $key => [$label, $n])
                 <button wire:click="$set('tab', '{{ $key }}')" @class(['-mb-px border-b-2 px-3 py-2', 'border-emerald-700 font-semibold text-emerald-800' => $tab === $key, 'border-transparent text-slate-600' => $tab !== $key])>

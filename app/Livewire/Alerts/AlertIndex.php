@@ -27,6 +27,7 @@ class AlertIndex extends Component
             'lowStock' => $alerts->lowStock($pharmacyId),
             'variances' => $canCash ? $alerts->cashVariances($pharmacyId) : collect(),
             'canCash' => $canCash,
+            'backupIssue' => $alerts->backupIssue($pharmacyId),
         ]);
     }
 }
