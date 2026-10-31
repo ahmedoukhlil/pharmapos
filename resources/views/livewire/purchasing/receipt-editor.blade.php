@@ -19,6 +19,9 @@
                     'bg-emerald-100 text-emerald-800' => $this->receipt->status === 'validated',
                     'bg-red-100 text-red-800' => $this->receipt->status === 'cancelled',
                 ])>{{ $labels[$this->receipt->status] }}</span>
+                @if ($this->receipt->purchaseOrder)
+                    <a href="{{ route('orders.edit', $this->receipt->purchaseOrder) }}" class="text-sm text-emerald-800 hover:underline">Commande {{ $this->receipt->purchaseOrder->number }}</a>
+                @endif
             @endif
             <a href="{{ route('receipts.index') }}" class="ms-auto text-sm text-slate-600 hover:underline">← Toutes les réceptions</a>
         </div>

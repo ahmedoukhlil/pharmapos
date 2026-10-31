@@ -10,6 +10,8 @@ use App\Models\Location;
 use App\Models\OutboxEvent;
 use App\Models\PriceHistory;
 use App\Models\Presentation;
+use App\Models\PurchaseOrder;
+use App\Models\PurchaseOrderLine;
 use App\Models\StockBalance;
 use App\Models\StockMovement;
 use App\Models\Supplier;
@@ -57,7 +59,14 @@ class GoodsReceiptService
                 $receipt->update($attributes);
                 $receipt->lines()->delete();
             } else {
+                $order = null;
+                if (! empty($data['purchase_order_id'])) {
+                    $order = PurchaseOrder::where('pharmacy_id', $pharmacyId)->where('supplier_id', $supplier->id)
+                        ->whereIn('status', ['sent', 'partially_received'])->find($data['purchase_order_id'])
+                        ?? throw new ReceiptException('invalid_order', 'Commande introuvable ou non réceptionnable pour ce fournisseur.');
+                }
                 $receipt = GoodsReceipt::create($attributes + [
+                    'purchase_order_id' => $order?->id,
                     'pharmacy_id' => $pharmacyId,
                     'number' => $this->numberer->nextForPharmacy($pharmacyId, 'goods_receipt', 'RC'),
                     'status' => 'draft',
@@ -91,8 +100,15 @@ class GoodsReceiptService
                     throw new ReceiptException('invalid_expiry', "Date de péremption illisible « $expiryRaw » (format MM/AAAA).", $i + 1);
                 }
 
+                $poLineId = $line['purchase_order_line_id'] ?? null;
+                if ($poLineId && ! ($receipt->purchase_order_id
+                    && PurchaseOrderLine::whereKey($poLineId)->where('purchase_order_id', $receipt->purchase_order_id)->where('presentation_id', $presentation->id)->exists())) {
+                    $poLineId = null;   // ligne hors commande : simple ligne libre
+                }
+
                 $receipt->lines()->create([
                     'line_no' => $i + 1,
+                    'purchase_order_line_id' => $poLineId,
                     'presentation_id' => $presentation->id,
                     'quantity_packs' => $packs,
                     'quantity_units' => $packs * $presentation->units_per_pack,
@@ -154,6 +170,14 @@ class GoodsReceiptService
             }
 
             $receipt->update(['status' => 'validated', 'validated_by' => $user->id, 'validated_at' => now()]);
+
+            // ACH-06 : quantités reçues reportées sur la commande (les refus ne comptent pas)
+            if ($receipt->purchase_order_id) {
+                foreach ($lines->where('decision', '!=', 'refused')->whereNotNull('purchase_order_line_id')->groupBy('purchase_order_line_id') as $poLineId => $group) {
+                    PurchaseOrderLine::whereKey($poLineId)->increment('received_packs', $group->sum('quantity_packs'));
+                }
+                app(PurchaseOrderService::class)->refreshStatus($receipt->purchase_order_id);
+            }
 
             AuditLog::create([
                 'pharmacy_id' => $receipt->pharmacy_id,

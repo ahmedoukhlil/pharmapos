@@ -54,6 +54,7 @@ class ReceiptEditor extends Component
             $this->notes = (string) $receipt->notes;
             $this->lines = $receipt->lines()->orderBy('line_no')->get()->map(fn ($l) => [
                 'presentation_id' => $l->presentation_id,
+                'purchase_order_line_id' => $l->purchase_order_line_id,
                 'quantity_packs' => (string) $l->quantity_packs,
                 'unit_price' => (string) $l->unit_price,
                 'lot_number' => (string) $l->lot_number,
@@ -142,6 +143,7 @@ class ReceiptEditor extends Component
         $presentation = Presentation::where('pharmacy_id', auth()->user()->pharmacy_id)->findOrFail($presentationId);
         $this->lines[] = [
             'presentation_id' => $presentation->id,
+            'purchase_order_line_id' => null,
             'quantity_packs' => '1',
             'unit_price' => (string) $presentation->purchase_price,
             'lot_number' => '',

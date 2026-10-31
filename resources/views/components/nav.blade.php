@@ -8,6 +8,7 @@
         <a href="{{ route('returns', $q) }}" @class(['rounded px-2 py-1 hover:bg-emerald-700', 'bg-emerald-900' => request()->routeIs('returns')])>Retours</a>
         <a href="{{ route('pos.close', $q) }}" @class(['rounded px-2 py-1 hover:bg-emerald-700', 'bg-emerald-900' => request()->routeIs('pos.close')])>Clôture</a>
         <a href="{{ route('catalogue.index') }}" @class(['rounded px-2 py-1 hover:bg-emerald-700', 'bg-emerald-900' => request()->routeIs('catalogue.*')])>Catalogue</a>
+        <a href="{{ route('orders.index') }}" @class(['rounded px-2 py-1 hover:bg-emerald-700', 'bg-emerald-900' => request()->routeIs('orders.*')])>Commandes</a>
         <a href="{{ route('receipts.index') }}" @class(['rounded px-2 py-1 hover:bg-emerald-700', 'bg-emerald-900' => request()->routeIs('receipts.*')])>Réceptions</a>
         <a href="{{ route('suppliers.index') }}" @class(['rounded px-2 py-1 hover:bg-emerald-700', 'bg-emerald-900' => request()->routeIs('suppliers.*')])>Fournisseurs</a>
         <a href="{{ route('inventories.index') }}" @class(['rounded px-2 py-1 hover:bg-emerald-700', 'bg-emerald-900' => request()->routeIs('inventories.*')])>Inventaires</a>
