@@ -1,0 +1,197 @@
+<?php
+
+namespace App\Livewire\Pos;
+
+use App\Models\CashSession;
+use App\Models\PaymentMethod;
+use App\Models\Register;
+use App\Models\Sale;
+use App\Models\SaleReturn;
+use App\Services\Sales\SaleException;
+use App\Services\Sales\SaleReturnService;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
+use Livewire\Attributes\Computed;
+use Livewire\Attributes\Layout;
+use Livewire\Attributes\Title;
+use Livewire\Attributes\Url;
+use Livewire\Component;
+
+/**
+ * Retour client sur ticket (POS-09) : quantités par lot, destination du produit, remboursement, avoir.
+ * Les quantités sont saisies dans l'unité de vente du ticket (boîte ou unité).
+ */
+#[Layout('components.layouts.app')]
+#[Title('Retours — PharmaPOS')]
+class Returns extends Component
+{
+    #[Url(as: 'caisse')]
+    public string $registerCode = '';
+
+    public string $ticket = '';
+
+    public ?string $saleId = null;
+
+    /** @var array<string, string> sale_item_batch_id => quantité en unité de vente */
+    public array $quantities = [];
+
+    /** @var array<string, string> sale_item_batch_id => quarantine|restock_approved|destroy */
+    public array $dispositions = [];
+
+    public string $paymentMethodId = '';
+
+    public string $reason = '';
+
+    public string $reference = '';
+
+    public string $idempotencyKey = '';
+
+    public ?string $lastReturnId = null;
+
+    public ?string $error = null;
+
+    public function mount(): void
+    {
+        if (! $this->register) {
+            $this->registerCode = Register::where('pharmacy_id', auth()->user()->pharmacy_id)->orderBy('code')->value('code') ?? '';
+            unset($this->register);
+        }
+        $this->paymentMethodId = (string) $this->paymentMethods->firstWhere('is_cash', true)?->id;
+        $this->idempotencyKey = (string) Str::uuid();
+    }
+
+    #[Computed]
+    public function register(): ?Register
+    {
+        return Register::where('pharmacy_id', auth()->user()->pharmacy_id)->where('code', $this->registerCode)->first();
+    }
+
+    #[Computed]
+    public function session(): ?CashSession
+    {
+        return $this->register
+            ? CashSession::where('register_id', $this->register->id)->where('status', 'open')->latest('opened_at')->first()
+            : null;
+    }
+
+    #[Computed]
+    public function paymentMethods(): Collection
+    {
+        return PaymentMethod::where('pharmacy_id', auth()->user()->pharmacy_id)->where('is_active', true)->orderBy('sort_order')->get();
+    }
+
+    #[Computed]
+    public function sale(): ?Sale
+    {
+        return $this->saleId
+            ? Sale::with(['items.presentation.medicine', 'items.batches.batch', 'returns'])->find($this->saleId)
+            : null;
+    }
+
+    public function findSale(): void
+    {
+        $this->reset('error', 'saleId', 'quantities', 'dispositions', 'lastReturnId');
+        $sale = Sale::where('pharmacy_id', auth()->user()->pharmacy_id)
+            ->where('ticket_number', trim($this->ticket))
+            ->where('status', 'finalized')
+            ->first();
+
+        if (! $sale) {
+            $this->error = "Aucun ticket encaissé « {$this->ticket} ».";
+
+            return;
+        }
+
+        $this->saleId = $sale->id;
+        foreach ($sale->items as $item) {
+            foreach ($item->batches as $allocation) {
+                $this->quantities[$allocation->id] = '0';
+                $this->dispositions[$allocation->id] = 'quarantine';
+            }
+        }
+        unset($this->sale);
+    }
+
+    /**
+     * Lignes retournables : une par lot vendu, avec quantité restante et montant prévisionnel.
+     */
+    #[Computed]
+    public function lines(): array
+    {
+        if (! $this->sale) {
+            return [];
+        }
+        $returned = app(SaleReturnService::class)->returnedQuantities($this->sale);
+        $lines = [];
+
+        foreach ($this->sale->items as $item) {
+            $factor = $item->sale_unit === 'pack' ? $item->presentation->units_per_pack : 1;
+            foreach ($item->batches as $allocation) {
+                $remainingUnits = $allocation->quantity_base_units - ($returned[$allocation->id] ?? 0);
+                $qty = max(0, (int) ($this->quantities[$allocation->id] ?? 0));
+                $lines[] = [
+                    'id' => $allocation->id,
+                    'label' => trim($item->presentation->medicine->brand_name.' '.$item->presentation->medicine->strength),
+                    'unit' => $item->sale_unit === 'pack' ? 'boîte(s)' : $item->presentation->base_unit,
+                    'lot' => $allocation->batch->lot_number,
+                    'expiry' => $allocation->batch->expiry_date->format('m/Y'),
+                    'factor' => $factor,
+                    'sold' => intdiv($allocation->quantity_base_units, $factor),
+                    'remaining' => intdiv($remainingUnits, $factor),
+                    'amount' => (int) round((float) $item->line_total * 100 * $qty * $factor / $item->quantity_base_units),
+                ];
+            }
+        }
+
+        return $lines;
+    }
+
+    public function submit(SaleReturnService $service): void
+    {
+        $this->error = null;
+        if (! $this->session) {
+            $this->error = 'Ouvrez une session de caisse pour rembourser.';
+
+            return;
+        }
+
+        $factors = array_column($this->lines, 'factor', 'id');
+        try {
+            $return = $service->process(auth()->user(), $this->session, $this->sale, [
+                'idempotency_key' => $this->idempotencyKey,
+                'payment_method_id' => $this->paymentMethodId,
+                'reason' => $this->reason,
+                'reference' => $this->reference !== '' ? $this->reference : null,
+                'items' => collect($this->quantities)->map(fn ($qty, $id) => [
+                    'sale_item_batch_id' => $id,
+                    'quantity' => max(0, (int) $qty) * ($factors[$id] ?? 1),
+                    'disposition' => $this->dispositions[$id] ?? 'quarantine',
+                ])->values()->all(),
+            ]);
+        } catch (SaleException $e) {
+            $this->error = $e->getMessage();
+
+            return;
+        }
+
+        $this->lastReturnId = $return->id;
+        $this->reset('ticket', 'saleId', 'quantities', 'dispositions', 'reason', 'reference');
+        $this->idempotencyKey = (string) Str::uuid();
+        unset($this->sale, $this->lines);
+        $this->dispatch('return-processed', url: route('returns.show', ['saleReturn' => $return->id, 'print' => 1]));
+    }
+
+    #[Computed]
+    public function lastReturn(): ?SaleReturn
+    {
+        return $this->lastReturnId ? SaleReturn::find($this->lastReturnId) : null;
+    }
+
+    public function render()
+    {
+        return view('livewire.pos.returns', [
+            'canDispose' => auth()->user()->hasPermission('batch.quarantine'),
+            'canRefund' => auth()->user()->hasPermission('sale.refund'),
+        ]);
+    }
+}

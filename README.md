@@ -36,7 +36,7 @@ php artisan test
 - [x] Écran de caisse et ticket 58/80 mm
 - [x] Clôture de caisse, écarts, validation
 - [x] Ventes en attente (réservation de stock, reprise, expiration)
-- [ ] Retours et avoirs
+- [x] Retours, avoirs et remboursements (quarantaine par défaut)
 - [ ] Réceptions fournisseurs, inventaires
 - [ ] Scanner smartphone (PWA)
 - [ ] Synchronisation cloud

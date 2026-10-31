@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Payment;
 use App\Models\Sale;
+use App\Models\SaleReturn;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -20,6 +22,21 @@ class TicketController extends Controller
         return view('tickets.show', [
             'sale' => $sale,
             'width' => $sale->register->printer_width,
+            'autoPrint' => $request->boolean('print'),
+        ]);
+    }
+
+    /** Avoir imprimable remis au client lors d'un retour. */
+    public function showReturn(Request $request, SaleReturn $saleReturn): View
+    {
+        abort_unless($saleReturn->pharmacy_id === $request->user()->pharmacy_id, 404);
+
+        $saleReturn->load(['pharmacy', 'sale', 'user', 'cashSession.register', 'items.saleItemBatch.batch', 'items.saleItemBatch.saleItem.presentation.medicine']);
+
+        return view('returns.show', [
+            'return' => $saleReturn,
+            'refunds' => Payment::with('method')->where('idempotency_key', $saleReturn->idempotency_key.':refund')->get(),
+            'width' => $saleReturn->cashSession->register->printer_width,
             'autoPrint' => $request->boolean('print'),
         ]);
     }
