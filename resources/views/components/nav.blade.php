@@ -16,6 +16,9 @@
         <a href="{{ route('suppliers.index') }}" @class(['rounded px-2 py-1 hover:bg-emerald-700', 'bg-emerald-900' => request()->routeIs('suppliers.*')])>Fournisseurs</a>
         <a href="{{ route('inventories.index') }}" @class(['rounded px-2 py-1 hover:bg-emerald-700', 'bg-emerald-900' => request()->routeIs('inventories.*')])>Inventaires</a>
         <a href="{{ route('sessions.index') }}" @class(['rounded px-2 py-1 hover:bg-emerald-700', 'bg-emerald-900' => request()->routeIs('sessions.*')])>Sessions</a>
+        @if (auth()->user()->hasPermission('report.view'))
+            <a href="{{ route('reports.index') }}" @class(['rounded px-2 py-1 hover:bg-emerald-700', 'bg-emerald-900' => request()->routeIs('reports.*')])>Rapports</a>
+        @endif
     </nav>
     @if (auth()->user()->hasPermission('stock.view'))
         @php

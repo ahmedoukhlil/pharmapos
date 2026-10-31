@@ -48,4 +48,5 @@ php artisan test
 - [x] Scanner smartphone de caisse (appairage QR, accusés, déduplication)
 - [x] Scanner smartphone : modes inventaire et réception
 - [ ] Scanner smartphone : mode consultation (prix, stock)
+- [x] Rapports essentiels : ventes, stock, péremptions et pertes, caisse ; export CSV
 - [ ] Synchronisation cloud

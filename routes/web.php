@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\ReportExportController;
 use App\Http\Controllers\ScannerController;
 use App\Http\Controllers\TicketController;
 use App\Livewire\Alerts\AlertIndex;
@@ -21,6 +22,7 @@ use App\Livewire\Purchasing\OrderEditor;
 use App\Livewire\Purchasing\OrderIndex;
 use App\Livewire\Purchasing\ReceiptEditor;
 use App\Livewire\Purchasing\ReceiptIndex;
+use App\Livewire\Reports\ReportIndex;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('guest')->group(function () {
@@ -50,6 +52,8 @@ Route::middleware('auth')->group(function () {
     })->name('catalogue.template');
     Route::get('/catalogue/nouveau', ProductEditor::class)->name('catalogue.create');
     Route::get('/catalogue/{medicine}', ProductEditor::class)->name('catalogue.edit');
+    Route::get('/rapports', ReportIndex::class)->name('reports.index');
+    Route::get('/rapports/export', ReportExportController::class)->name('reports.export');
     Route::get('/alertes', AlertIndex::class)->name('alerts.index');
     Route::get('/commandes', OrderIndex::class)->name('orders.index');
     Route::get('/commandes/nouvelle', OrderEditor::class)->name('orders.create');
