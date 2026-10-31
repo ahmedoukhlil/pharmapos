@@ -6,6 +6,8 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="theme-color" content="#065f46">
     <link rel="manifest" href="/manifest.webmanifest">
+    <link rel="icon" type="image/png" href="/images/icon-64.png">
+    <link rel="apple-touch-icon" href="/images/icon-192.png">
     <title>Scanner — PharmaPOS</title>
     @vite(['resources/css/app.css'])
 </head>

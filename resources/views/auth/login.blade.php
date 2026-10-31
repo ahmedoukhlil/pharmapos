@@ -3,8 +3,8 @@
         <form method="POST" action="{{ route('login') }}" class="w-full max-w-sm space-y-4 rounded-xl bg-white p-6 shadow">
             @csrf
             <div>
-                <h1 class="text-xl font-semibold text-emerald-700">PharmaPOS</h1>
-                <p class="text-sm text-slate-500">Connectez-vous pour ouvrir la caisse.</p>
+                <h1><img src="/images/logo.png" alt="PharmaPOS — Gestion de Pharmacie" class="mx-auto h-40 w-40"></h1>
+                <p class="text-center text-sm text-slate-500">Connectez-vous pour ouvrir la caisse.</p>
             </div>
 
             <label class="block">

@@ -29,7 +29,10 @@
 @endphp
 
 <header class="flex items-center gap-3 whitespace-nowrap bg-emerald-800 px-4 py-2 text-white print:hidden">
-    <a href="{{ route('pos', $q) }}" class="font-semibold">PharmaPOS</a>
+    <a href="{{ route('pos', $q) }}" class="flex items-center gap-2 font-semibold">
+        <img src="/images/icon-64.png" alt="" class="size-8 rounded-md bg-white p-0.5">
+        PharmaPOS
+    </a>
     <nav x-data="{ open: null }" @click.outside="open = null" @keydown.escape.window="open = null" class="flex gap-1 text-sm">
         <a href="{{ route('pos', $q) }}" @class(['rounded px-2 py-1 hover:bg-emerald-700', 'bg-emerald-900' => request()->routeIs('pos')])>Caisse</a>
         @foreach ($groups as $label => $items)
