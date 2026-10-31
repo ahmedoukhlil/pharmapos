@@ -9,7 +9,8 @@
         <div class="flex items-center gap-3">
             <h1 class="text-xl font-semibold">Catalogue</h1>
             @if ($canManage)
-                <a href="{{ route('catalogue.create') }}" class="ms-auto rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-800">Nouveau produit</a>
+                <a href="{{ route('catalogue.import') }}" class="ms-auto rounded-lg border border-emerald-700 px-4 py-2 text-sm text-emerald-800">Importer</a>
+                <a href="{{ route('catalogue.create') }}" class=" rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-800">Nouveau produit</a>
             @endif
         </div>
 

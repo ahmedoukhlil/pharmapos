@@ -4,6 +4,7 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\TicketController;
 use App\Livewire\Cash\SessionIndex;
 use App\Livewire\Cash\SessionShow;
+use App\Livewire\Catalogue\CatalogueImport;
 use App\Livewire\Catalogue\CatalogueIndex;
 use App\Livewire\Catalogue\ProductEditor;
 use App\Livewire\Purchasing\SupplierIndex;
@@ -31,6 +32,16 @@ Route::middleware('auth')->group(function () {
     Route::get('/receptions/nouvelle', ReceiptEditor::class)->name('receipts.create');
     Route::get('/receptions/{receipt}', ReceiptEditor::class)->name('receipts.edit');
     Route::get('/catalogue', CatalogueIndex::class)->name('catalogue.index');
+    Route::get('/catalogue/import', CatalogueImport::class)->name('catalogue.import');
+    Route::get('/catalogue/modele.csv', function () {
+        $header = implode(';', array_keys(\App\Services\Catalogue\CatalogueImportService::COLUMNS));
+        $example = 'medicament;Doliprane;Paracétamol;1000 mg;comprimé;orale;Sanofi;Antalgiques;non;DOLI1000-8;Boîte de 8;comprimé;8;oui;20;120;160;5;3400936000001';
+
+        return response("\u{FEFF}$header\n$example\n", 200, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="modele-catalogue.csv"',
+        ]);
+    })->name('catalogue.template');
     Route::get('/catalogue/nouveau', ProductEditor::class)->name('catalogue.create');
     Route::get('/catalogue/{medicine}', ProductEditor::class)->name('catalogue.edit');
     Route::get('/fournisseurs', SupplierIndex::class)->name('suppliers.index');
