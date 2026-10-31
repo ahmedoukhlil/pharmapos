@@ -5,7 +5,6 @@ namespace App\Livewire\Pos;
 use App\Models\CashSession;
 use App\Models\PaymentMethod;
 use App\Models\Presentation;
-use App\Models\ProductBarcode;
 use App\Models\Register;
 use App\Models\Sale;
 use App\Models\StockReservation;
@@ -13,6 +12,7 @@ use App\Services\Sales\FefoAllocator;
 use App\Services\Sales\SaleException;
 use App\Services\Sales\SaleService;
 use App\Support\PharmacySettings;
+use App\Support\ProductLookup;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Livewire\Attributes\Computed;
@@ -132,23 +132,7 @@ class Checkout extends Component
 
     private function lookup(string $term): Collection
     {
-        $pharmacyId = auth()->user()->pharmacy_id;
-        $base = fn () => Presentation::with('medicine')->where('pharmacy_id', $pharmacyId)->where('status', 'active');
-
-        $exactIds = ProductBarcode::where('pharmacy_id', $pharmacyId)->where('is_active', true)
-            ->where('barcode', $term)->pluck('presentation_id');
-        $exact = $base()->where(fn ($q) => $q->whereIn('id', $exactIds)->orWhere('sku', $term))->get();
-        if ($exact->isNotEmpty()) {
-            return $exact;
-        }
-
-        $like = '%'.str_replace(['%', '_'], ['\%', '\_'], $term).'%';
-
-        return $base()
-            ->where(fn ($q) => $q->where('sku', 'like', $like)
-                ->orWhereHas('medicine', fn ($m) => $m->where('brand_name', 'like', $like)->orWhere('inn', 'like', $like)))
-            ->limit(8)
-            ->get();
+        return ProductLookup::find(auth()->user()->pharmacy_id, $term);
     }
 
     /**

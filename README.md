@@ -37,6 +37,8 @@ php artisan test
 - [x] Clôture de caisse, écarts, validation
 - [x] Ventes en attente (réservation de stock, reprise, expiration)
 - [x] Retours, avoirs et remboursements (quarantaine par défaut)
-- [ ] Réceptions fournisseurs, inventaires
+- [x] Réceptions fournisseurs (lots, péremptions, quarantaine, CMUP)
+- [ ] Inventaires
+- [ ] Commandes, factures et règlements fournisseurs (P0-Bis)
 - [ ] Scanner smartphone (PWA)
 - [ ] Synchronisation cloud

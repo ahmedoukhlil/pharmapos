@@ -18,6 +18,7 @@ class GoodsReceiptLine extends Model
     {
         return [
             'unit_price' => 'decimal:2',
+            'expiry_date' => 'date',
         ];
     }
 

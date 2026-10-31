@@ -7,6 +7,8 @@ use App\Livewire\Cash\SessionShow;
 use App\Livewire\Pos\Checkout;
 use App\Livewire\Pos\CloseSession;
 use App\Livewire\Pos\Returns;
+use App\Livewire\Purchasing\ReceiptEditor;
+use App\Livewire\Purchasing\ReceiptIndex;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('guest')->group(function () {
@@ -20,6 +22,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/caisse/cloture', CloseSession::class)->name('pos.close');
     Route::get('/retours', Returns::class)->name('returns');
     Route::get('/avoirs/{saleReturn}', [TicketController::class, 'showReturn'])->name('returns.show');
+    Route::get('/receptions', ReceiptIndex::class)->name('receipts.index');
+    Route::get('/receptions/nouvelle', ReceiptEditor::class)->name('receipts.create');
+    Route::get('/receptions/{receipt}', ReceiptEditor::class)->name('receipts.edit');
     Route::get('/sessions', SessionIndex::class)->name('sessions.index');
     Route::get('/sessions/{session}', SessionShow::class)->name('sessions.show');
     Route::get('/tickets/{sale}', [TicketController::class, 'show'])->name('tickets.show');
