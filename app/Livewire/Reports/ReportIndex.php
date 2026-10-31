@@ -5,6 +5,7 @@ namespace App\Livewire\Reports;
 use App\Models\Location;
 use App\Models\Register;
 use App\Models\User;
+use App\Services\Reports\DashboardService;
 use App\Services\Reports\ReportService;
 use Illuminate\Support\Carbon;
 use Livewire\Attributes\Layout;
@@ -17,7 +18,7 @@ use Livewire\Component;
 class ReportIndex extends Component
 {
     #[Url]
-    public string $report = 'sales';
+    public string $report = 'dashboard';
 
     #[Url]
     public string $from = '';
@@ -44,8 +45,8 @@ class ReportIndex extends Component
     public function mount(): void
     {
         abort_unless(auth()->user()->hasPermission('report.view'), 403);
-        if (! isset(ReportService::REPORTS[$this->report])) {
-            $this->report = 'sales';
+        if ($this->report !== 'dashboard' && ! isset(ReportService::REPORTS[$this->report])) {
+            $this->report = 'dashboard';
         }
         $this->from = $this->from ?: now()->startOfMonth()->toDateString();
         $this->to = $this->to ?: now()->toDateString();
@@ -89,14 +90,15 @@ class ReportIndex extends Component
         ];
     }
 
-    public function render(ReportService $reports)
+    public function render(ReportService $reports, DashboardService $dashboard)
     {
         $pharmacyId = auth()->user()->pharmacy_id;
         $query = ['report' => $this->report, 'from' => $this->from, 'to' => $this->to, 'group' => $this->group,
             'register' => $this->register, 'user' => $this->user, 'location' => $this->location, 'type' => $this->type];
 
         return view('livewire.reports.report-index', [
-            'tables' => $reports->build($this->report, $pharmacyId, self::filters($query)),
+            'tables' => $this->report === 'dashboard' ? [] : $reports->build($this->report, $pharmacyId, self::filters($query)),
+            'dashboard' => $this->report === 'dashboard' ? $dashboard->build($pharmacyId, self::filters($query)) : null,
             'query' => $query,
             'registers' => Register::where('pharmacy_id', $pharmacyId)->orderBy('code')->get(),
             'users' => User::where('pharmacy_id', $pharmacyId)->orderBy('name')->get(),

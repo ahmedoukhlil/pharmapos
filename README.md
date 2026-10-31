@@ -48,7 +48,7 @@ php artisan test
 - [x] Scanner smartphone de caisse (appairage QR, accusés, déduplication)
 - [x] Scanner smartphone : modes inventaire et réception
 - [ ] Scanner smartphone : mode consultation (prix, stock)
-- [x] Rapports essentiels : ventes, stock, péremptions et pertes, caisse ; export CSV
+- [x] Rapports essentiels : ventes, stock, péremptions et pertes, caisse ; export CSV ; tableau de bord (indicateurs comparés, graphiques)
 - [x] Sauvegardes locales chiffrées (AES-256-GCM) toutes les 15 min, copie sur support distinct, rétention, test de restauration quotidien, alerte d'échec — configurer `BACKUP_KEY` (`php artisan pharmapos:backup --generate-key`), `BACKUP_SECONDARY_PATH` et lancer `php artisan schedule:work`
 - [x] Paramétrage des modes de paiement (ajout, ordre, activation, suppression si jamais utilisé)
 - [ ] Synchronisation cloud

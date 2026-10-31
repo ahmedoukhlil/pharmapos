@@ -101,12 +101,32 @@ class ReportTest extends TestCase
         $this->assertSame('Périmé', collect($expiring['rows'])->firstWhere('lot', 'PA2312')['bucket']);
     }
 
+    public function test_dashboard_kpis_series_and_comparison(): void
+    {
+        $this->sell();
+        $ibuPrice = (float) Presentation::where('sku', 'IBU400-20')->value('sale_price');
+        $d = app(\App\Services\Reports\DashboardService::class)->build(Pharmacy::first()->id, $this->filters());
+
+        $this->assertEquals(360 + $ibuPrice, $d['kpis']['revenue']['value']);
+        $this->assertSame(2, $d['kpis']['tickets']['value']);
+        $this->assertNull($d['kpis']['revenue']['change']);   // aucune vente la veille
+        $this->assertCount(1, $d['trend']);
+        $this->assertSame(2, collect($d['hours'])->sum('tickets'));
+        $this->assertSame('Paracétamol Démo 500 mg', collect($d['topProducts'])->sortByDesc('value')->first()['label']);
+        $this->assertCount(2, $d['methods']);
+        $this->assertGreaterThan(0, $d['stock']['value']);
+
+        $this->actingAs($this->user('owner'));
+        Livewire::test(ReportIndex::class)->assertSet('report', 'dashboard')
+            ->assertSee("Chiffre d'affaires")->assertSee('Affluence par heure')->assertSee('Stock aujourd');
+    }
+
     public function test_screen_export_and_permissions(): void
     {
         $this->sell();
         $this->actingAs($this->user('owner'));
 
-        Livewire::test(ReportIndex::class)->assertSee('Ventes par période')->assertSee('Panier moyen')
+        Livewire::test(ReportIndex::class)->set('report', 'sales')->assertSee('Ventes par période')->assertSee('Panier moyen')
             ->set('report', 'stock')->assertSee('Stock et valorisation')
             ->set('report', 'cash')->assertSee('Encaissements par mode');
 

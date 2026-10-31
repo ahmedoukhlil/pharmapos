@@ -1,6 +1,6 @@
 @php
-    $reports = \App\Services\Reports\ReportService::REPORTS;
-    $periodic = in_array($report, ['sales', 'expiry', 'cash'], true);
+    $reports = ['dashboard' => 'Tableau de bord'] + \App\Services\Reports\ReportService::REPORTS;
+    $periodic = in_array($report, ['dashboard', 'sales', 'expiry', 'cash'], true);
     $fmt = fn ($v) => match (true) {
         is_int($v) => number_format($v, 0, ',', ' '),
         is_float($v) => number_format($v, 2, ',', ' '),
@@ -44,7 +44,7 @@
                     @foreach ($users as $u) <option value="{{ $u->id }}">{{ $u->name }}</option> @endforeach
                 </select>
             @endif
-            @if (in_array($report, ['sales', 'cash'], true))
+            @if (in_array($report, ['dashboard', 'sales', 'cash'], true))
                 <select wire:model.live="register" class="{{ $select }}">
                     <option value="">Toutes les caisses</option>
                     @foreach ($registers as $r) <option value="{{ $r->id }}">{{ $r->name }}</option> @endforeach
@@ -64,6 +64,10 @@
         </div>
 
         <p class="hidden text-sm print:block">{{ $reports[$report] }} — {{ $periodic ? \Illuminate\Support\Carbon::parse($from)->format('d/m/Y').' au '.\Illuminate\Support\Carbon::parse($to)->format('d/m/Y') : 'au '.now()->format('d/m/Y H:i') }}</p>
+
+        @if ($dashboard)
+            @include('livewire.reports.dashboard', ['d' => $dashboard])
+        @endif
 
         @foreach ($tables as $i => $t)
             <section wire:key="t-{{ $report }}-{{ $i }}" class="overflow-x-auto rounded-lg bg-white shadow-sm print:break-inside-avoid print:shadow-none">
