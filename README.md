@@ -43,6 +43,6 @@ php artisan test
 - [x] Import catalogue Excel/CSV avec aperçu (MED-05)
 - [x] Alertes : péremption par paliers, stock bas, écarts de caisse
 - [x] Commandes fournisseurs, réceptions partielles et reliquats (ACH-02)
-- [ ] Factures et règlements fournisseurs, rapprochement (ACH-05, ACH-06)
+- [x] Factures et règlements fournisseurs, rapprochement (ACH-05, ACH-06)
 - [ ] Scanner smartphone (PWA)
 - [ ] Synchronisation cloud

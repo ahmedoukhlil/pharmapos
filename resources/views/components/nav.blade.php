@@ -10,6 +10,9 @@
         <a href="{{ route('catalogue.index') }}" @class(['rounded px-2 py-1 hover:bg-emerald-700', 'bg-emerald-900' => request()->routeIs('catalogue.*')])>Catalogue</a>
         <a href="{{ route('orders.index') }}" @class(['rounded px-2 py-1 hover:bg-emerald-700', 'bg-emerald-900' => request()->routeIs('orders.*')])>Commandes</a>
         <a href="{{ route('receipts.index') }}" @class(['rounded px-2 py-1 hover:bg-emerald-700', 'bg-emerald-900' => request()->routeIs('receipts.*')])>Réceptions</a>
+        @if (auth()->user()->hasPermission('purchase.invoice'))
+            <a href="{{ route('invoices.index') }}" @class(['rounded px-2 py-1 hover:bg-emerald-700', 'bg-emerald-900' => request()->routeIs('invoices.*')])>Factures</a>
+        @endif
         <a href="{{ route('suppliers.index') }}" @class(['rounded px-2 py-1 hover:bg-emerald-700', 'bg-emerald-900' => request()->routeIs('suppliers.*')])>Fournisseurs</a>
         <a href="{{ route('inventories.index') }}" @class(['rounded px-2 py-1 hover:bg-emerald-700', 'bg-emerald-900' => request()->routeIs('inventories.*')])>Inventaires</a>
         <a href="{{ route('sessions.index') }}" @class(['rounded px-2 py-1 hover:bg-emerald-700', 'bg-emerald-900' => request()->routeIs('sessions.*')])>Sessions</a>

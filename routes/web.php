@@ -14,6 +14,8 @@ use App\Livewire\Inventory\InventorySheet;
 use App\Livewire\Pos\Checkout;
 use App\Livewire\Pos\CloseSession;
 use App\Livewire\Pos\Returns;
+use App\Livewire\Purchasing\InvoiceEditor;
+use App\Livewire\Purchasing\InvoiceIndex;
 use App\Livewire\Purchasing\OrderEditor;
 use App\Livewire\Purchasing\OrderIndex;
 use App\Livewire\Purchasing\ReceiptEditor;
@@ -51,6 +53,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/commandes', OrderIndex::class)->name('orders.index');
     Route::get('/commandes/nouvelle', OrderEditor::class)->name('orders.create');
     Route::get('/commandes/{order}', OrderEditor::class)->name('orders.edit');
+    Route::get('/factures', InvoiceIndex::class)->name('invoices.index');
+    Route::get('/factures/nouvelle', InvoiceEditor::class)->name('invoices.create');
+    Route::get('/factures/{invoice}', InvoiceEditor::class)->name('invoices.show');
     Route::get('/fournisseurs', SupplierIndex::class)->name('suppliers.index');
     Route::get('/inventaires', InventoryIndex::class)->name('inventories.index');
     Route::get('/inventaires/{session}', InventorySheet::class)->name('inventories.show');
