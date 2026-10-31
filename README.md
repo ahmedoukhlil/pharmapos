@@ -39,6 +39,8 @@ php artisan test
 - [x] Retours, avoirs et remboursements (quarantaine par défaut)
 - [x] Réceptions fournisseurs (lots, péremptions, quarantaine, CMUP)
 - [x] Inventaires par lot (comptage à l'aveugle, recomptage, approbation)
+- [x] Catalogue : produits, présentations, codes-barres, statuts, historique des prix, fournisseurs
+- [ ] Import catalogue Excel/CSV (MED-05)
 - [ ] Commandes, factures et règlements fournisseurs (P0-Bis)
 - [ ] Scanner smartphone (PWA)
 - [ ] Synchronisation cloud
