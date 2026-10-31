@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Pos;
 
+use App\Livewire\Concerns\RequiresReauth;
 use App\Models\CashSession;
 use App\Models\Register;
 use App\Services\Cash\CashSessionException;
@@ -19,6 +20,8 @@ use Livewire\Component;
 #[Title('Clôture de caisse — PharmaPOS')]
 class CloseSession extends Component
 {
+    use RequiresReauth;
+
     #[Url(as: 'caisse')]
     public string $registerCode = '';
 
@@ -76,6 +79,9 @@ class CloseSession extends Component
 
     public function recordMovement(CashSessionService $service): void
     {
+        if (! $this->reauthenticated('cash.movement', 'recordMovement')) {
+            return;
+        }
         $this->reset('error', 'message');
         try {
             $service->recordMovement($this->session, auth()->user(), $this->movementType, $this->movementAmount ?: '0', $this->movementReason);

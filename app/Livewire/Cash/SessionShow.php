@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Cash;
 
+use App\Livewire\Concerns\RequiresReauth;
 use App\Models\CashSession;
 use App\Services\Cash\CashSessionException;
 use App\Services\Cash\CashSessionService;
@@ -16,6 +17,8 @@ use Livewire\Component;
 #[Title('Rapport de session — PharmaPOS')]
 class SessionShow extends Component
 {
+    use RequiresReauth;
+
     public CashSession $session;
 
     public string $comment = '';
@@ -30,6 +33,9 @@ class SessionShow extends Component
 
     public function validateSession(CashSessionService $service): void
     {
+        if (! $this->reauthenticated('cash.validate', 'validateSession')) {
+            return;
+        }
         $this->error = null;
         try {
             $this->session = $service->validate($this->session, auth()->user(), $this->comment ?: null);

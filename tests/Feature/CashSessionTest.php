@@ -143,6 +143,7 @@ class CashSessionTest extends TestCase
 
     public function test_close_and_validate_screens(): void
     {
+        $this->withFreshReauth();
         $cashier = $this->user('cashier');
         $session = $this->openSession($cashier);
         $this->sell($cashier, $session, [['CASH', 650]]);

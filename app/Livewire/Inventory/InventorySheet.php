@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Inventory;
 
+use App\Livewire\Concerns\RequiresReauth;
 use App\Models\Batch;
 use App\Models\InventorySession;
 use App\Services\Inventory\InventoryException;
@@ -21,6 +22,8 @@ use Livewire\Component;
 #[Title('Inventaire — PharmaPOS')]
 class InventorySheet extends Component
 {
+    use RequiresReauth;
+
     public InventorySession $session;
 
     /** Produit scanné : la feuille n'affiche que ses lignes */
@@ -155,6 +158,9 @@ class InventorySheet extends Component
 
     public function approve(InventoryService $service): void
     {
+        if (! $this->reauthenticated('inventory.approve', 'approve')) {
+            return;
+        }
         $this->run(fn () => $service->approve(auth()->user(), $this->session, $this->comment ?: null), 'Inventaire approuvé : stock ajusté.');
     }
 

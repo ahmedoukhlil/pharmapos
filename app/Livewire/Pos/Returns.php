@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Pos;
 
+use App\Livewire\Concerns\RequiresReauth;
 use App\Models\CashSession;
 use App\Models\PaymentMethod;
 use App\Models\Register;
@@ -25,6 +26,8 @@ use Livewire\Component;
 #[Title('Retours — PharmaPOS')]
 class Returns extends Component
 {
+    use RequiresReauth;
+
     #[Url(as: 'caisse')]
     public string $registerCode = '';
 
@@ -148,6 +151,9 @@ class Returns extends Component
 
     public function submit(SaleReturnService $service): void
     {
+        if (! $this->reauthenticated('sale.refund', 'submit')) {
+            return;
+        }
         $this->error = null;
         if (! $this->session) {
             $this->error = 'Ouvrez une session de caisse pour rembourser.';

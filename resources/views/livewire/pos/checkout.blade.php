@@ -237,4 +237,6 @@
             </aside>
         </main>
     @endif
+
+    <x-reauth-modal :pending="$reauth" />
 </div>

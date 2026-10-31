@@ -86,4 +86,6 @@
             </form>
         @endif
     </main>
+
+    <x-reauth-modal :pending="$reauth" />
 </div>

@@ -184,6 +184,7 @@ class InventoryTest extends TestCase
 
     public function test_sheet_is_blind_for_counters_and_shows_variances_to_approvers(): void
     {
+        $this->withFreshReauth();
         $session = $this->openParacetamol();
 
         $this->actingAs($this->user('storekeeper'));

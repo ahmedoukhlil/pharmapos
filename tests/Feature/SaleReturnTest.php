@@ -176,6 +176,7 @@ class SaleReturnTest extends TestCase
 
     public function test_returns_screen_and_credit_note(): void
     {
+        $this->withFreshReauth();
         $this->actingAs($this->user('assistant_pharmacist'));
 
         Livewire::test(Returns::class, ['registerCode' => 'C01'])

@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Pos;
 
+use App\Livewire\Concerns\RequiresReauth;
 use App\Models\CashSession;
 use App\Models\PaymentMethod;
 use App\Models\Presentation;
@@ -29,6 +30,8 @@ use Livewire\Component;
 #[Title('Caisse — PharmaPOS')]
 class Checkout extends Component
 {
+    use RequiresReauth;
+
     #[Url(as: 'caisse')]
     public string $registerCode = '';
 
@@ -283,6 +286,14 @@ class Checkout extends Component
         if (! $this->session) {
             $this->error = "Aucune session de caisse ouverte.";
 
+            return;
+        }
+
+        // Remise ou lot choisi hors FEFO : réauthentification avant l'encaissement
+        $discounted = $this->can['discount'] && collect($this->cart)->contains(fn ($l) => (float) $l['discount_amount'] > 0);
+        $override = collect($this->cart)->contains(fn ($l) => ! empty($l['batch_id']));
+        if (($discounted && ! $this->reauthenticated('sale.discount', 'checkout'))
+            || ($override && ! $this->reauthenticated('sale.fefo_override', 'checkout'))) {
             return;
         }
 

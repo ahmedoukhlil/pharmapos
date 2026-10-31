@@ -44,5 +44,6 @@ php artisan test
 - [x] Alertes : péremption par paliers, stock bas, écarts de caisse
 - [x] Commandes fournisseurs, réceptions partielles et reliquats (ACH-02)
 - [x] Factures et règlements fournisseurs, rapprochement (ACH-05, ACH-06)
+- [x] Réauthentification des opérations sensibles (remise, hors FEFO, remboursement, prix, mouvements et validation de caisse, approbation d'inventaire)
 - [ ] Scanner smartphone (PWA)
 - [ ] Synchronisation cloud

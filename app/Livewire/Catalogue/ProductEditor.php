@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Catalogue;
 
+use App\Livewire\Concerns\RequiresReauth;
 use App\Models\Category;
 use App\Models\Medicine;
 use App\Models\Presentation;
@@ -15,6 +16,8 @@ use Livewire\Component;
 #[Title('Fiche produit — PharmaPOS')]
 class ProductEditor extends Component
 {
+    use RequiresReauth;
+
     public ?Medicine $medicine = null;
 
     public array $form = [];
@@ -100,6 +103,17 @@ class ProductEditor extends Component
         $data['allow_split_sale'] = (bool) $data['allow_split_sale'];
         if ($data['unit_sale_price'] === '') {
             $data['unit_sale_price'] = null;
+        }
+
+        // Changement de prix sur une présentation existante : réauthentification
+        if ($this->editing) {
+            $current = $this->presentation($this->editing);
+            $cents = fn ($v) => $v === null || $v === '' ? null : (int) round((float) $v * 100);
+            $changed = collect(['purchase_price', 'sale_price', 'unit_sale_price'])
+                ->contains(fn ($f) => $cents($current->$f) !== $cents($data[$f] ?? null));
+            if ($changed && ! $this->reauthenticated('price.update', 'savePresentation')) {
+                return;
+            }
         }
 
         try {
