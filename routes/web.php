@@ -23,6 +23,7 @@ use App\Livewire\Purchasing\OrderIndex;
 use App\Livewire\Purchasing\ReceiptEditor;
 use App\Livewire\Purchasing\ReceiptIndex;
 use App\Livewire\Reports\ReportIndex;
+use App\Livewire\Settings\PaymentMethodIndex;
 use App\Livewire\System\BackupIndex;
 use Illuminate\Support\Facades\Route;
 
@@ -57,6 +58,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/rapports/export', ReportExportController::class)->name('reports.export');
     Route::get('/alertes', AlertIndex::class)->name('alerts.index');
     Route::get('/sauvegardes', BackupIndex::class)->name('backups.index');
+    Route::get('/modes-paiement', PaymentMethodIndex::class)->name('payment-methods.index');
     Route::get('/commandes', OrderIndex::class)->name('orders.index');
     Route::get('/commandes/nouvelle', OrderEditor::class)->name('orders.create');
     Route::get('/commandes/{order}', OrderEditor::class)->name('orders.edit');

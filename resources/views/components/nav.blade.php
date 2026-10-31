@@ -23,6 +23,7 @@
         ],
         'Gestion' => [
             ['reports.index', [], 'Rapports', 'reports.*', $user->hasPermission('report.view')],
+            ['payment-methods.index', [], 'Modes de paiement', 'payment-methods.*', $user->hasPermission('settings.manage')],
             ['backups.index', [], 'Sauvegardes', 'backups.*', \App\Livewire\System\BackupIndex::allowed()],
         ],
     ];
