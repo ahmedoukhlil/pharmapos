@@ -19,6 +19,9 @@
                     'bg-emerald-100 text-emerald-800' => $this->receipt->status === 'validated',
                     'bg-red-100 text-red-800' => $this->receipt->status === 'cancelled',
                 ])>{{ $labels[$this->receipt->status] }}</span>
+                @if ($this->receipt->status === 'draft')
+                    <livewire:scanner.scanner-panel mode="receipt" :context-id="$this->receipt->id" :key="'scanner-'.$this->receipt->id" />
+                @endif
                 @if ($this->receipt->purchaseOrder)
                     <a href="{{ route('orders.edit', $this->receipt->purchaseOrder) }}" class="text-sm text-emerald-800 hover:underline">Commande {{ $this->receipt->purchaseOrder->number }}</a>
                 @endif

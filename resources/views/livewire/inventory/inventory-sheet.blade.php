@@ -15,6 +15,9 @@
             <h1 class="text-xl font-semibold">Inventaire {{ $s->number }}</h1>
             <span class="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium">{{ $statuses[$s->status] }}</span>
             <span class="text-sm text-slate-500">Stock figé le {{ $s->snapshot_at->format('d/m/Y H:i') }} · {{ $s->location?->name ?? 'tous emplacements' }}</span>
+            @if ($counting)
+                <livewire:scanner.scanner-panel mode="inventory" :context-id="$s->id" :key="'scanner-'.$s->id" />
+            @endif
             <a href="{{ route('inventories.index') }}" class="ms-auto text-sm text-slate-600 hover:underline">← Inventaires</a>
         </div>
 

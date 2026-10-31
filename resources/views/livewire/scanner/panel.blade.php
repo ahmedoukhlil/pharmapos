@@ -5,13 +5,13 @@
 
 <div class="relative" @if ($polling) wire:poll.1s="poll" @endif>
     @if ($state === 'active')
-        <button wire:click="$toggle('open')" class="flex items-center gap-1 rounded bg-emerald-900 px-2 py-1 text-xs">
+        <button wire:click="$toggle('open')" class="flex items-center gap-1 rounded bg-emerald-900 px-2 py-1 text-xs text-white">
             <span class="h-2 w-2 rounded-full bg-lime-400"></span> Scanner : {{ $this->scanner->user?->name }}
         </button>
     @elseif ($state === 'awaiting_confirmation')
         <button wire:click="$set('open', true)" class="animate-pulse rounded bg-amber-500 px-2 py-1 text-xs font-semibold text-slate-900">Téléphone à confirmer</button>
     @else
-        <button wire:click="start" class="rounded px-2 py-1 text-xs hover:bg-emerald-700">Scanner smartphone</button>
+        <button wire:click="start" @class(["rounded px-2 py-1 text-xs", "hover:bg-emerald-700" => $mode === "pos", "border border-emerald-700 text-emerald-800 hover:bg-emerald-50" => $mode !== "pos"])>Scanner smartphone</button>
     @endif
 
     @if ($open && $state)

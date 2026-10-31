@@ -3,7 +3,13 @@
 namespace App\Services\Scanner;
 
 use App\Models\AuditLog;
+use App\Models\Batch;
 use App\Models\Device;
+use App\Models\GoodsReceipt;
+use App\Models\InventorySession;
+use App\Services\Inventory\InventoryException;
+use App\Services\Inventory\InventoryService;
+use App\Support\ExpiryDate;
 use App\Models\Register;
 use App\Models\ScanEvent;
 use App\Models\ScannerSession;
@@ -27,25 +33,46 @@ class ScannerService
 
     public const SESSION_TTL_HOURS = 12;
 
-    /** @return array{0: ScannerSession, 1: string} session et jeton en clair (affiché une seule fois dans le QR) */
-    public function createPairing(User $user, Register $register): array
-    {
-        $this->authorize($user, 'sale.create');
-        abort_unless($register->pharmacy_id === $user->pharmacy_id, 404);
+    /** Permission requise, sur le PC comme sur le téléphone, selon le mode. */
+    public const MODE_PERMISSIONS = ['pos' => 'sale.create', 'inventory' => 'inventory.count', 'receipt' => 'purchase.manage'];
 
-        // Un seul scanner actif ou en attente par caisse
-        ScannerSession::where('register_id', $register->id)->whereNull('revoked_at')->update(['revoked_at' => now()]);
+    /**
+     * QR d'appairage pour une caisse (pos), un inventaire en comptage (inventory) ou une réception en brouillon (receipt).
+     *
+     * @return array{0: ScannerSession, 1: string} session et jeton en clair (affiché une seule fois dans le QR)
+     */
+    public function createPairing(User $user, string $mode, string $contextId): array
+    {
+        $this->authorize($user, self::MODE_PERMISSIONS[$mode] ?? abort(404));
+        $this->assertContext($user->pharmacy_id, $mode, $contextId);
+
+        // Un seul scanner actif ou en attente par caisse / document
+        $column = $mode === 'pos' ? 'register_id' : 'context_id';
+        ScannerSession::where('mode', $mode)->where($column, $contextId)->whereNull('revoked_at')->update(['revoked_at' => now()]);
 
         $token = Str::random(48);
         $session = ScannerSession::create([
             'pharmacy_id' => $user->pharmacy_id,
-            'register_id' => $register->id,
-            'mode' => 'pos',
+            'register_id' => $mode === 'pos' ? $contextId : null,
+            'context_id' => $mode === 'pos' ? null : $contextId,
+            'mode' => $mode,
             'pairing_token_hash' => hash('sha256', $token),
             'pairing_expires_at' => now()->addSeconds(self::PAIRING_TTL_SECONDS),
         ]);
 
         return [$session, $token];
+    }
+
+    private function assertContext(string $pharmacyId, string $mode, string $contextId): void
+    {
+        $ok = match ($mode) {
+            'pos' => Register::where('pharmacy_id', $pharmacyId)->whereKey($contextId)->exists(),
+            'inventory' => InventorySession::where('pharmacy_id', $pharmacyId)->whereKey($contextId)->where('status', 'counting')->exists(),
+            'receipt' => GoodsReceipt::where('pharmacy_id', $pharmacyId)->whereKey($contextId)->where('status', 'draft')->exists(),
+        };
+        if (! $ok) {
+            throw new ScannerException('invalid_context', $mode === 'pos' ? 'Caisse invalide.' : 'Document clos : le scanner ne peut plus y être associé.');
+        }
     }
 
     /** Le téléphone présente le jeton du QR : la session attend la confirmation du caissier. */
@@ -62,6 +89,7 @@ class ScannerService
             if ($session->revoked_at || $session->paired_at || $session->pairing_expires_at->isPast()) {
                 throw new ScannerException('token_used', "QR expiré ou déjà utilisé : générez-en un nouveau sur le PC.");
             }
+            $this->authorize($user, self::MODE_PERMISSIONS[$session->mode]);
 
             $device = Device::create([
                 'pharmacy_id' => $user->pharmacy_id,
@@ -81,7 +109,7 @@ class ScannerService
     /** Étape 4 de l'appairage : le caissier valide le téléphone affiché sur son écran. */
     public function confirm(User $cashier, ScannerSession $session): ScannerSession
     {
-        $this->authorize($cashier, 'sale.create');
+        $this->authorize($cashier, self::MODE_PERMISSIONS[$session->mode]);
 
         return DB::transaction(function () use ($cashier, $session) {
             $session = ScannerSession::whereKey($session->id)->lockForUpdate()->firstOrFail();
@@ -97,7 +125,7 @@ class ScannerService
                 'action' => 'scanner.paired',
                 'auditable_type' => 'scanner_session',
                 'auditable_id' => $session->id,
-                'new_values' => ['register_id' => $session->register_id, 'phone_user_id' => $session->user_id, 'device_id' => $session->device_id],
+                'new_values' => ['mode' => $session->mode, 'register_id' => $session->register_id, 'context_id' => $session->context_id, 'phone_user_id' => $session->user_id, 'device_id' => $session->device_id],
             ]);
 
             return $session;
@@ -164,16 +192,34 @@ class ScannerService
                 ->orWhereHas('barcodes', fn ($b) => $b->where('barcode', $barcode)->where('is_active', true)))
             ->first();
 
+        if ($session->mode !== 'pos' && ! $presentation) {
+            throw new ScannerException('unknown_product', "Produit inconnu « $barcode ».");
+        }
+
         try {
-            $event = ScanEvent::create([
-                'id' => $id,
-                'scanner_session_id' => $session->id,
-                'sequence' => $sequence,
-                'barcode' => $barcode,
-                'presentation_id' => $presentation?->id,
-                'status' => $presentation ? 'received' : 'unknown_product',
-                'scanned_at' => $this->scannedAt($scan['scanned_at'] ?? null),
-            ]);
+            // Le comptage d'inventaire et l'enregistrement du scan sont validés ensemble
+            $event = DB::transaction(function () use ($user, $session, $scan, $id, $sequence, $barcode, $presentation) {
+                $payload = match ($session->mode) {
+                    'receipt' => $this->receiptPayload($session, $scan['payload'] ?? []),
+                    'inventory' => $this->applyCount($user, $session, $presentation, $scan['payload'] ?? []),
+                    default => null,
+                };
+
+                return ScanEvent::create([
+                    'id' => $id,
+                    'scanner_session_id' => $session->id,
+                    'sequence' => $sequence,
+                    'barcode' => $barcode,
+                    'presentation_id' => $presentation?->id,
+                    'payload' => $payload,
+                    'status' => match (true) {
+                        ! $presentation => 'unknown_product',
+                        $session->mode === 'inventory' => 'applied',
+                        default => 'received',
+                    },
+                    'scanned_at' => $this->scannedAt($scan['scanned_at'] ?? null),
+                ]);
+            });
         } catch (UniqueConstraintViolationException) {
             // Même séquence déjà reçue sous un autre identifiant (téléphone réinitialisé) : on la rejette
             $event = ScanEvent::find($id) ?? throw new ScannerException('sequence_conflict', 'Numéro de séquence déjà utilisé.');
@@ -209,6 +255,104 @@ class ScannerService
         });
     }
 
+    /**
+     * Ce que le téléphone doit savoir après un scan en mode inventaire ou réception.
+     * Inventaire à l'aveugle : jamais la quantité théorique (STK-04).
+     */
+    public function lookup(User $user, ScannerSession $session, string $barcode): array
+    {
+        if ($session->user_id !== $user->id || self::state($session) !== 'active' || $session->mode === 'pos') {
+            throw new ScannerException('session_inactive', 'Scanner déconnecté : réappairez le téléphone.');
+        }
+
+        $barcode = trim($barcode);
+        $p = Presentation::with('medicine')->where('pharmacy_id', $session->pharmacy_id)->where('status', 'active')
+            ->where(fn ($q) => $q->where('sku', strtoupper($barcode))
+                ->orWhereHas('barcodes', fn ($b) => $b->where('barcode', $barcode)->where('is_active', true)))
+            ->first() ?? throw new ScannerException('unknown_product', "Produit inconnu « $barcode ».");
+
+        $product = [
+            'presentation_id' => $p->id,
+            'name' => trim($p->medicine->brand_name.' '.$p->medicine->strength),
+            'sku' => $p->sku,
+            'base_unit' => $p->base_unit,
+            'units_per_pack' => $p->units_per_pack,
+        ];
+
+        if ($session->mode === 'inventory') {
+            $inventory = InventorySession::findOrFail($session->context_id);
+            $lines = $inventory->lines()->with(['batch', 'location'])->where('presentation_id', $p->id)->get();
+            $other = $inventory->location_id
+                ? Batch::where('presentation_id', $p->id)->whereNotIn('id', $lines->pluck('batch_id'))
+                    ->whereNotIn('status', ['destroyed', 'returned'])->orderBy('expiry_date')->get()
+                : collect();
+
+            return $product + [
+                'lines' => $lines->sortBy(fn ($l) => $l->batch->expiry_date)->values()->map(fn ($l) => [
+                    'line_id' => $l->id,
+                    'lot' => $l->batch->lot_number,
+                    'expiry' => $l->batch->expiry_date->format('m/Y'),
+                    'location' => $l->location->name,
+                    'counted' => $l->recount_quantity ?? $l->counted_quantity,
+                ])->all(),
+                'other_batches' => $other->map(fn ($b) => ['batch_id' => $b->id, 'lot' => $b->lot_number, 'expiry' => $b->expiry_date->format('m/Y')])->all(),
+            ];
+        }
+
+        $receipt = GoodsReceipt::findOrFail($session->context_id);
+
+        return $product + [
+            'expected' => $receipt->lines()->where('presentation_id', $p->id)->orderBy('line_no')->get()
+                ->map(fn ($l) => ['packs' => $l->quantity_packs, 'lot' => $l->lot_number, 'expiry' => $l->expiry_raw])->all(),
+        ];
+    }
+
+    /** Comptage d'un lot en unités de base : ligne existante ou lot trouvé hors théorique. */
+    private function applyCount(User $user, ScannerSession $session, Presentation $presentation, array $payload): array
+    {
+        $inventory = InventorySession::findOrFail($session->context_id);
+        $data = ['quantity' => $payload['quantity'] ?? null, 'device_id' => $session->device_id];
+        if (! empty($payload['line_id'])) {
+            $data['line_id'] = $payload['line_id'];
+        } else {
+            $data['batch_id'] = $payload['batch_id'] ?? null;
+        }
+
+        try {
+            $line = app(InventoryService::class)->count($user, $inventory, $data);
+        } catch (InventoryException $e) {
+            throw new ScannerException($e->reason, $e->getMessage());
+        }
+        if ($line->presentation_id !== $presentation->id) {
+            throw new ScannerException('wrong_product', 'Ce lot ne correspond pas au produit scanné.');
+        }
+
+        return ['line_id' => $line->id, 'quantity' => (int) $data['quantity']];
+    }
+
+    /** Lot, péremption et quantité reçue (SCN-08) : contrôlés ici, ajoutés au brouillon par le PC. */
+    private function receiptPayload(ScannerSession $session, array $payload): array
+    {
+        if (! GoodsReceipt::whereKey($session->context_id)->where('status', 'draft')->exists()) {
+            throw new ScannerException('session_inactive', 'La réception a été validée ou annulée.');
+        }
+
+        $lot = Str::upper(trim((string) ($payload['lot_number'] ?? '')));
+        $expiryRaw = trim((string) ($payload['expiry'] ?? ''));
+        $packs = $payload['quantity_packs'] ?? null;
+
+        if ($lot === '' || strlen($lot) > 50) {
+            throw new ScannerException('lot_required', 'Numéro de lot obligatoire.');
+        }
+        $expiry = ExpiryDate::parse($expiryRaw, $session->pharmacy_id)
+            ?? throw new ScannerException('invalid_expiry', "Péremption illisible « $expiryRaw » (format MM/AAAA).");
+        if (! is_numeric($packs) || (int) $packs < 1 || (int) $packs != $packs) {
+            throw new ScannerException('invalid_quantity', 'Nombre de boîtes invalide.');
+        }
+
+        return ['lot_number' => $lot, 'expiry' => $expiryRaw, 'expiry_date' => $expiry->toDateString(), 'quantity_packs' => (int) $packs];
+    }
+
     private function ack(ScanEvent $event, bool $duplicate): array
     {
         $p = $event->presentation;
@@ -218,6 +362,7 @@ class ScannerService
             'sequence' => $event->sequence,
             'status' => $event->status === 'rejected' ? 'unknown_product' : ($event->status === 'applied' ? 'received' : $event->status),
             'product' => $p ? trim($p->medicine->brand_name.' '.$p->medicine->strength) : null,
+            'payload' => $event->payload,
             'duplicate' => $duplicate,
         ];
     }

@@ -3,7 +3,7 @@
 namespace Tests\Feature;
 
 use App\Livewire\Pos\Checkout;
-use App\Livewire\Pos\ScannerPanel;
+use App\Livewire\Scanner\ScannerPanel;
 use App\Models\CashSession;
 use App\Models\Presentation;
 use App\Models\Register;
@@ -50,7 +50,7 @@ class ScannerTest extends TestCase
     /** Session de scanner active pour le téléphone du préparateur. */
     private function activeScanner(): ScannerSession
     {
-        [$session, $token] = $this->service->createPairing($this->user('cashier'), $this->register());
+        [$session, $token] = $this->service->createPairing($this->user('cashier'), 'pos', $this->register()->id);
         $this->service->claim($this->user('assistant_pharmacist'), $token, 'Android');
 
         return $this->service->confirm($this->user('cashier'), $session->fresh());
@@ -64,7 +64,7 @@ class ScannerTest extends TestCase
 
     public function test_pairing_requires_single_use_token_and_cashier_confirmation(): void
     {
-        [$session, $token] = $this->service->createPairing($this->user('cashier'), $this->register());
+        [$session, $token] = $this->service->createPairing($this->user('cashier'), 'pos', $this->register()->id);
         $this->assertSame('waiting_phone', ScannerService::state($session));
         $this->assertNotSame($token, $session->pairing_token_hash);   // seul le hash est stocké
 
@@ -93,7 +93,7 @@ class ScannerTest extends TestCase
 
     public function test_expired_qr_is_refused(): void
     {
-        [, $token] = $this->service->createPairing($this->user('cashier'), $this->register());
+        [, $token] = $this->service->createPairing($this->user('cashier'), 'pos', $this->register()->id);
         $this->travel(3)->minutes();
 
         $this->expectException(ScannerException::class);
@@ -141,7 +141,7 @@ class ScannerTest extends TestCase
 
         // PC : génère le QR
         $this->actingAs($this->user('cashier'));
-        $panel = Livewire::test(ScannerPanel::class, ['registerId' => $register->id])
+        $panel = Livewire::test(ScannerPanel::class, ['mode' => 'pos', 'contextId' => $register->id])
             ->call('start')->assertSee('Scannez ce QR')->assertSeeHtml('<svg');
         $pairingUrl = $panel->get('pairingUrl');
 

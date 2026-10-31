@@ -13,6 +13,7 @@ use App\Support\ProductLookup;
 use Illuminate\Support\Collection;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
+use Livewire\Attributes\On;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
@@ -152,6 +153,45 @@ class ReceiptEditor extends Component
             'anomaly' => '',
         ];
         unset($this->presentations);
+    }
+
+    /**
+     * Lot saisi sur le smartphone (SCN-08) : complète la première ligne du produit encore sans lot
+     * (lignes pré-remplies depuis la commande), sinon ajoute une ligne. Le brouillon est enregistré aussitôt.
+     */
+    #[On('remote-receipt-line')]
+    public function addRemoteLine(string $presentationId, array $line, GoodsReceiptService $service): void
+    {
+        if (! $this->editable) {
+            return;
+        }
+        $fields = ['lot_number' => $line['lot_number'] ?? '', 'expiry' => $line['expiry'] ?? '', 'quantity_packs' => (string) ($line['quantity_packs'] ?? 1)];
+
+        foreach ($this->lines as $i => $l) {
+            if ($l['presentation_id'] === $presentationId && $l['lot_number'] === '') {
+                $this->lines[$i] = [...$l, ...$fields];
+                $this->save($service);
+
+                return;
+            }
+        }
+
+        $this->add($presentationId);
+        $last = array_key_last($this->lines);
+        $this->lines[$last] = [...$this->lines[$last], ...$fields];
+        $this->save($service);
+    }
+
+    #[On('remote-scan-unknown')]
+    public function remoteUnknown(string $barcode): void
+    {
+        $this->error = "Code inconnu scanné par le téléphone : $barcode";
+    }
+
+    #[On('scanner-error')]
+    public function scannerError(string $message): void
+    {
+        $this->error = $message;
     }
 
     /** Duplique une ligne pour saisir un second lot du même produit. */

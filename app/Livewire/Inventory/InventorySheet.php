@@ -11,6 +11,7 @@ use App\Support\ProductLookup;
 use Illuminate\Support\Collection;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
+use Livewire\Attributes\On;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
@@ -108,6 +109,19 @@ class InventorySheet extends Component
         }
         $this->presentationFilter = $match->first()->id;
         unset($this->lines, $this->missingBatches);
+    }
+
+    /** Comptes saisis sur le smartphone : la feuille est relue. */
+    #[On('remote-inventory-count')]
+    public function refreshCounts(): void
+    {
+        unset($this->lines, $this->missingBatches, $this->progress);
+    }
+
+    #[On('scanner-error')]
+    public function scannerError(string $message): void
+    {
+        $this->error = $message;
     }
 
     public function clearFilter(): void

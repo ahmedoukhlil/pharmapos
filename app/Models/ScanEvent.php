@@ -21,6 +21,7 @@ class ScanEvent extends Model
     {
         return [
             'scanned_at' => 'datetime',
+            'payload' => 'array',
         ];
     }
 

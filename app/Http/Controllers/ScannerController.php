@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\GoodsReceipt;
+use App\Models\InventorySession;
 use App\Models\ScannerSession;
 use App\Services\Scanner\ScannerException;
 use App\Services\Scanner\ScannerService;
@@ -32,7 +34,13 @@ class ScannerController extends Controller
     {
         $this->assertPhoneOwner($request, $session);
 
-        return view('scanner.show', ['session' => $session->load('register'), 'state' => ScannerService::state($session)]);
+        $title = match ($session->mode) {
+            'inventory' => 'Inventaire '.InventorySession::find($session->context_id)?->number,
+            'receipt' => 'Réception '.GoodsReceipt::find($session->context_id)?->number,
+            default => 'Scanner · caisse '.$session->register?->code,
+        };
+
+        return view('scanner.show', ['session' => $session, 'state' => ScannerService::state($session), 'title' => $title]);
     }
 
     /** Interrogée par le téléphone en attendant la confirmation du caissier. */
@@ -48,10 +56,27 @@ class ScannerController extends Controller
         $this->assertPhoneOwner($request, $session);
 
         try {
-            return response()->json($this->scanner->ingest($request->user(), $session, $request->only('id', 'sequence', 'barcode', 'scanned_at')));
+            return response()->json($this->scanner->ingest($request->user(), $session, $request->only('id', 'sequence', 'barcode', 'scanned_at', 'payload')));
         } catch (ScannerException $e) {
-            return response()->json(['error' => $e->reason, 'message' => $e->getMessage()], $e->reason === 'session_inactive' ? 410 : 422);
+            return $this->error($e);
         }
+    }
+
+    /** Modes inventaire et réception : fiche du produit scanné avant la saisie du lot et de la quantité. */
+    public function lookup(Request $request, ScannerSession $session): JsonResponse
+    {
+        $this->assertPhoneOwner($request, $session);
+
+        try {
+            return response()->json($this->scanner->lookup($request->user(), $session, (string) $request->query('code')));
+        } catch (ScannerException $e) {
+            return $this->error($e);
+        }
+    }
+
+    private function error(ScannerException $e): JsonResponse
+    {
+        return response()->json(['error' => $e->reason, 'message' => $e->getMessage()], $e->reason === 'session_inactive' ? 410 : 422);
     }
 
     private function assertPhoneOwner(Request $request, ScannerSession $session): void

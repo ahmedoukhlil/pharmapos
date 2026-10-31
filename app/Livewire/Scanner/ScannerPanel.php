@@ -1,8 +1,7 @@
 <?php
 
-namespace App\Livewire\Pos;
+namespace App\Livewire\Scanner;
 
-use App\Models\Register;
 use App\Models\ScannerSession;
 use App\Services\Scanner\ScannerException;
 use App\Services\Scanner\ScannerService;
@@ -15,14 +14,22 @@ use Livewire\Attributes\Locked;
 use Livewire\Component;
 
 /**
- * Pastille « Scanner smartphone » de la caisse : QR d'appairage, confirmation du téléphone,
- * puis relève des scans (interrogation courte) transmis à l'écran de caisse par événement.
- * Composant séparé pour que l'interrogation ne redessine pas tout le panier.
+ * Pastille « Scanner smartphone » posée sur la caisse, une feuille d'inventaire ou une réception :
+ * QR d'appairage, confirmation du téléphone, puis relève (interrogation courte) relayée à l'écran
+ * parent par événement. Composant séparé pour que l'interrogation ne redessine pas tout l'écran.
+ *
+ * Événements émis : remote-scan (pos), remote-receipt-line (receipt), remote-inventory-count (inventory),
+ * remote-scan-unknown, scanner-error.
  */
 class ScannerPanel extends Component
 {
+    /** pos | inventory | receipt */
     #[Locked]
-    public string $registerId;
+    public string $mode;
+
+    /** Caisse (pos), inventaire ou réception. */
+    #[Locked]
+    public string $contextId;
 
     #[Locked]
     public ?string $sessionId = null;
@@ -33,15 +40,21 @@ class ScannerPanel extends Component
 
     public bool $open = false;
 
-    /** État affiché au dernier rendu : l'interrogation ne redessine que s'il change. */
+    /** État et dernière séquence affichés au dernier rendu : l'interrogation ne redessine que s'ils changent. */
     #[Locked]
     public ?string $renderedState = null;
 
-    public function mount(string $registerId): void
+    #[Locked]
+    public int $seenSequence = 0;
+
+    public function mount(string $mode, string $contextId): void
     {
-        $this->registerId = $registerId;
-        $this->sessionId = ScannerSession::where('register_id', $registerId)->whereNull('revoked_at')
-            ->whereNotNull('confirmed_by')->where('expires_at', '>', now())->latest()->value('id');
+        abort_unless(isset(ScannerService::MODE_PERMISSIONS[$mode]), 404);
+        $this->mode = $mode;
+        $this->contextId = $contextId;
+        $this->sessionId = ScannerSession::where('mode', $mode)->where($mode === 'pos' ? 'register_id' : 'context_id', $contextId)
+            ->whereNull('revoked_at')->whereNotNull('confirmed_by')->where('expires_at', '>', now())->latest()->value('id');
+        $this->seenSequence = (int) $this->scanner?->last_sequence;
     }
 
     #[Computed]
@@ -58,9 +71,8 @@ class ScannerPanel extends Component
 
     public function start(ScannerService $service): void
     {
-        $register = Register::findOrFail($this->registerId);
         try {
-            [$session, $token] = $service->createPairing(auth()->user(), $register);
+            [$session, $token] = $service->createPairing(auth()->user(), $this->mode, $this->contextId);
         } catch (ScannerException $e) {
             $this->dispatch('scanner-error', message: $e->getMessage());
 
@@ -68,6 +80,7 @@ class ScannerPanel extends Component
         }
         $this->sessionId = $session->id;
         $this->pairingUrl = route('scanner.pair', $token);
+        $this->seenSequence = 0;
         $this->open = true;
         unset($this->scanner, $this->state);
     }
@@ -93,10 +106,20 @@ class ScannerPanel extends Component
     public function poll(ScannerService $service): void
     {
         if ($this->state === 'active') {
-            foreach ($service->pull($this->scanner) as $event) {
-                $event->presentation_id
-                    ? $this->dispatch('remote-scan', presentationId: $event->presentation_id)
-                    : $this->dispatch('remote-scan-unknown', barcode: $event->barcode);
+            if ($this->mode === 'inventory') {
+                // Les comptes sont déjà enregistrés par le téléphone : il suffit de rafraîchir la feuille
+                if ($this->scanner->last_sequence > $this->seenSequence) {
+                    $this->seenSequence = $this->scanner->last_sequence;
+                    $this->dispatch('remote-inventory-count');
+                }
+            } else {
+                foreach ($service->pull($this->scanner) as $event) {
+                    match (true) {
+                        ! $event->presentation_id => $this->dispatch('remote-scan-unknown', barcode: $event->barcode),
+                        $this->mode === 'receipt' => $this->dispatch('remote-receipt-line', presentationId: $event->presentation_id, line: $event->payload),
+                        default => $this->dispatch('remote-scan', presentationId: $event->presentation_id),
+                    };
+                }
             }
         }
 
@@ -110,7 +133,7 @@ class ScannerPanel extends Component
         $this->renderedState = $this->state;
         $host = request()->getHost();
 
-        return view('livewire.pos.scanner-panel', [
+        return view('livewire.scanner.panel', [
             'qr' => $this->pairingUrl && $this->state === 'waiting_phone'
                 ? (new Writer(new ImageRenderer(new RendererStyle(220, 1), new SvgImageBackEnd)))->writeString($this->pairingUrl)
                 : null,

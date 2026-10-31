@@ -46,5 +46,6 @@ php artisan test
 - [x] Factures et règlements fournisseurs, rapprochement (ACH-05, ACH-06)
 - [x] Réauthentification des opérations sensibles (remise, hors FEFO, remboursement, prix, mouvements et validation de caisse, approbation d'inventaire)
 - [x] Scanner smartphone de caisse (appairage QR, accusés, déduplication)
-- [ ] Scanner smartphone : modes inventaire, réception et consultation
+- [x] Scanner smartphone : modes inventaire et réception
+- [ ] Scanner smartphone : mode consultation (prix, stock)
 - [ ] Synchronisation cloud

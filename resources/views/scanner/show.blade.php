@@ -15,21 +15,23 @@
       data-state="{{ $state }}"
       data-status-url="{{ route('scanner.status', $session) }}"
       data-scan-url="{{ route('scanner.scan', $session) }}"
+      data-lookup-url="{{ route('scanner.lookup', $session) }}"
+      data-mode="{{ $session->mode }}"
       data-last-sequence="{{ $session->last_sequence }}">
 
     <header class="flex items-center gap-2">
-        <span class="font-semibold">Scanner · caisse {{ $session->register?->code }}</span>
+        <span class="font-semibold">{{ $title }}</span>
         <span id="badge" class="ms-auto rounded-full bg-slate-700 px-2 py-0.5 text-xs">…</span>
     </header>
 
     <section id="waiting" class="hidden rounded-lg bg-slate-800 p-4 text-center">
-        <p class="text-lg">Confirmez l'association sur l'écran de la caisse.</p>
+        <p class="text-lg">Confirmez l'association sur l'écran du PC.</p>
         <p class="mt-2 text-sm text-slate-400">Cette page se mettra à jour automatiquement.</p>
     </section>
 
     <section id="closed" class="hidden rounded-lg bg-red-900/60 p-4 text-center">
         <p class="text-lg">Scanner déconnecté.</p>
-        <p class="mt-2 text-sm">Générez un nouveau QR sur la caisse pour réassocier ce téléphone.</p>
+        <p class="mt-2 text-sm">Générez un nouveau QR sur le PC pour réassocier ce téléphone.</p>
     </section>
 
     <section id="scanner" class="hidden flex-col gap-3">
@@ -41,8 +43,50 @@
 
         <div class="flex gap-2">
             <button id="torch" class="hidden rounded-lg bg-slate-700 px-3 py-3 text-sm">Flash</button>
-            <button id="again" class="flex-1 rounded-lg bg-emerald-700 px-3 py-3 font-semibold disabled:opacity-40" disabled>+1 même produit</button>
+            @if ($session->mode === 'pos')
+                <button id="again" class="flex-1 rounded-lg bg-emerald-700 px-3 py-3 font-semibold disabled:opacity-40" disabled>+1 même produit</button>
+            @endif
         </div>
+
+        {{-- Modes inventaire et réception : fiche du produit scanné --}}
+        <form id="entry" class="hidden flex-col gap-3 rounded-lg bg-slate-800 p-3">
+            <div>
+                <p id="entry-name" class="font-semibold"></p>
+                <p id="entry-sub" class="text-xs text-slate-400"></p>
+            </div>
+
+            @if ($session->mode === 'inventory')
+                <fieldset id="entry-lines" class="flex flex-col gap-2"></fieldset>
+                <div class="grid grid-cols-2 gap-2">
+                    <label class="text-sm">Boîtes pleines
+                        <input id="entry-packs" type="number" min="0" inputmode="numeric" class="mt-1 w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-3 text-lg">
+                    </label>
+                    <label class="text-sm"><span id="entry-unit-label">Unités en vrac</span>
+                        <input id="entry-units" type="number" min="0" inputmode="numeric" class="mt-1 w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-3 text-lg">
+                    </label>
+                </div>
+                <p id="entry-total" class="text-sm text-slate-300"></p>
+            @else
+                <p id="entry-expected" class="text-xs text-amber-300"></p>
+                <label class="text-sm">N° de lot
+                    <input id="entry-lot" autocomplete="off" autocapitalize="characters" class="mt-1 w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-3 font-mono text-lg uppercase">
+                </label>
+                <div class="grid grid-cols-2 gap-2">
+                    <label class="text-sm">Péremption (MM/AAAA)
+                        <input id="entry-expiry" inputmode="numeric" placeholder="06/2028" class="mt-1 w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-3 text-lg">
+                    </label>
+                    <label class="text-sm">Boîtes reçues
+                        <input id="entry-qty" type="number" min="1" inputmode="numeric" value="1" class="mt-1 w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-3 text-lg">
+                    </label>
+                </div>
+            @endif
+
+            <p id="entry-error" class="hidden text-sm text-red-300"></p>
+            <div class="flex gap-2">
+                <button type="button" id="entry-cancel" class="rounded-lg bg-slate-700 px-4 py-3">Annuler</button>
+                <button class="flex-1 rounded-lg bg-emerald-700 px-4 py-3 font-semibold">Enregistrer</button>
+            </div>
+        </form>
 
         <form id="manual" class="flex gap-2">
             <input id="manual-code" inputmode="numeric" autocomplete="off" placeholder="Saisie manuelle du code"
@@ -95,10 +139,10 @@
     let queue = store.get('queue', []);
     let sending = false;
 
-    function enqueue(barcode) {
+    function enqueue(barcode, payload = null) {
         const seq = store.get('seq', 0) + 1;
         store.set('seq', seq);
-        queue.push({ id: crypto.randomUUID(), sequence: seq, barcode, scanned_at: new Date().toISOString() });
+        queue.push({ id: crypto.randomUUID(), sequence: seq, barcode, payload, scanned_at: new Date().toISOString() });
         store.set('queue', queue);
         flush();
     }
@@ -139,7 +183,8 @@
         const ok = ack.status === 'received';
         const li = document.createElement('li');
         li.className = `rounded px-2 py-1 ${ok ? 'bg-emerald-900/60' : 'bg-red-900/60'}`;
-        li.textContent = ok ? `✓ ${ack.product ?? code}` : `✗ ${code} — ${ack.status === 'unknown_product' ? 'produit inconnu' : (ack.message ?? 'refusé')}`;
+        const detail = ack.payload ? ` — ${ack.payload.lot_number ? `lot ${ack.payload.lot_number}, ${ack.payload.quantity_packs} bte(s)` : `compté ${ack.payload.quantity}`}` : '';
+        li.textContent = ok ? `✓ ${ack.product ?? code}${detail}` :`✗ ${code} — ${ack.status === 'unknown_product' ? 'produit inconnu' : (ack.message ?? 'refusé')}`;
         $('log').prepend(li);
         while ($('log').children.length > 15) $('log').lastChild.remove();
         feedback(ok);
@@ -167,11 +212,111 @@
         const now = Date.now();
         if (!intentional && code === lastCode && now - lastAt < DEBOUNCE_MS) return;
         lastCode = code; lastAt = now;
-        $('again').disabled = false;
-        enqueue(code);
+        if (mode === 'pos') {
+            $('again').disabled = false;
+            return enqueue(code);
+        }
+        if (!entry) openEntry(code);   // lectures ignorées tant qu'une fiche est ouverte
     }
 
-    $('again').addEventListener('click', () => lastCode && detected(lastCode, true));   // SCN-04
+    $('again')?.addEventListener('click', () => lastCode && detected(lastCode, true));   // SCN-04
+
+    // --- Modes inventaire (B) et réception (C) : fiche, lot, quantité -----------
+    const mode = app.dataset.mode;
+    let entry = null;   // { code, product, line_id?, batch_id? }
+
+    async function openEntry(code) {
+        entry = { code, product: null };
+        try {
+            const r = await fetch(`${app.dataset.lookupUrl}?code=${encodeURIComponent(code)}`, { headers: { Accept: 'application/json' } });
+            const data = await r.json();
+            if (r.status === 410) { entry = null; state = 'revoked'; return render(); }
+            if (!r.ok) { entry = null; return log(code, { status: 'error', message: data.message }); }
+            entry.product = data;
+        } catch {
+            entry = null;
+            return log(code, { status: 'error', message: 'réseau indisponible' });
+        }
+
+        const p = entry.product;
+        $('entry-name').textContent = p.name;
+        $('entry-sub').textContent = `${p.sku} · ${p.units_per_pack} ${p.base_unit}(s) par boîte`;
+        $('entry-error').classList.add('hidden');
+
+        if (mode === 'inventory') {
+            const box = $('entry-lines');
+            box.replaceChildren();
+            const choices = [
+                ...p.lines.map((l) => ({ key: `line:${l.line_id}`, text: `Lot ${l.lot} · ${l.expiry} · ${l.location}${l.counted !== null ? ` — compté : ${l.counted}` : ''}` })),
+                ...p.other_batches.map((b) => ({ key: `batch:${b.batch_id}`, text: `Lot ${b.lot} · ${b.expiry} — trouvé hors liste` })),
+            ];
+            if (!choices.length) {
+                entry = null;
+                return log(code, { status: 'error', message: "aucun lot de ce produit dans cet inventaire : comptez-le sur le PC" });
+            }
+            choices.forEach((c, i) => {
+                const label = document.createElement('label');
+                label.className = 'flex items-center gap-2 rounded-lg bg-slate-900 px-3 py-3 text-sm';
+                const radio = Object.assign(document.createElement('input'), { type: 'radio', name: 'lot', value: c.key, checked: i === 0 });
+                label.append(radio, document.createTextNode(c.text));
+                box.append(label);
+            });
+            $('entry-unit-label').textContent = `${p.base_unit}s en vrac`;
+            $('entry-packs').value = ''; $('entry-units').value = '';
+            updateTotal();
+            setTimeout(() => $('entry-packs').focus(), 50);
+        } else {
+            const todo = p.expected.filter((l) => !l.lot);
+            $('entry-expected').textContent = p.expected.length
+                ? `Attendu : ${p.expected.map((l) => `${l.packs} boîte(s)${l.lot ? ` (lot ${l.lot} déjà saisi)` : ''}`).join(', ')}`
+                : 'Produit absent de cette réception : il sera ajouté.';
+            $('entry-lot').value = ''; $('entry-expiry').value = '';
+            $('entry-qty').value = todo[0]?.packs ?? 1;
+            setTimeout(() => $('entry-lot').focus(), 50);
+        }
+        $('entry').classList.replace('hidden', 'flex');
+        feedback(true);
+    }
+
+    function units() {
+        const per = entry?.product?.units_per_pack ?? 1;
+        return (Number($('entry-packs').value) || 0) * per + (Number($('entry-units').value) || 0);
+    }
+    function updateTotal() {
+        if ($('entry-total')) $('entry-total').textContent = `Total compté : ${units()} ${entry?.product?.base_unit ?? ''}(s)`;
+    }
+    $('entry-packs')?.addEventListener('input', updateTotal);
+    $('entry-units')?.addEventListener('input', updateTotal);
+
+    function closeEntry() {
+        entry = null;
+        $('entry').classList.replace('flex', 'hidden');
+    }
+    $('entry-cancel').addEventListener('click', closeEntry);
+
+    function entryError(text) {
+        $('entry-error').textContent = text;
+        $('entry-error').classList.remove('hidden');
+        feedback(false);
+    }
+
+    $('entry').addEventListener('submit', (e) => {
+        e.preventDefault();
+        let payload;
+        if (mode === 'inventory') {
+            const choice = document.querySelector('input[name=lot]:checked')?.value ?? '';
+            const [kind, id] = choice.split(':');
+            if ($('entry-packs').value === '' && $('entry-units').value === '') return entryError('Saisissez la quantité comptée (0 si aucune).');
+            payload = { [kind === 'line' ? 'line_id' : 'batch_id']: id, quantity: units() };
+        } else {
+            payload = { lot_number: $('entry-lot').value.trim(), expiry: $('entry-expiry').value.trim(), quantity_packs: Number($('entry-qty').value) };
+            if (!payload.lot_number) return entryError('Le numéro de lot est obligatoire.');
+            if (!/^\d{1,2}[\/.-]\d{2,4}$/.test(payload.expiry) && !/^\d{1,2}[\/.-]\d{1,2}[\/.-]\d{2,4}$/.test(payload.expiry)) return entryError('Péremption au format MM/AAAA.');
+            if (!(payload.quantity_packs >= 1)) return entryError('Nombre de boîtes invalide.');
+        }
+        enqueue(entry.code, payload);
+        closeEntry();
+    });
     $('manual').addEventListener('submit', (e) => {
         e.preventDefault();
         const code = $('manual-code').value.trim();
