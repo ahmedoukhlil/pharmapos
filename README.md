@@ -38,7 +38,7 @@ php artisan test
 - [x] Ventes en attente (réservation de stock, reprise, expiration)
 - [x] Retours, avoirs et remboursements (quarantaine par défaut)
 - [x] Réceptions fournisseurs (lots, péremptions, quarantaine, CMUP)
-- [ ] Inventaires
+- [x] Inventaires par lot (comptage à l'aveugle, recomptage, approbation)
 - [ ] Commandes, factures et règlements fournisseurs (P0-Bis)
 - [ ] Scanner smartphone (PWA)
 - [ ] Synchronisation cloud
