@@ -8,6 +8,7 @@ use App\Models\Presentation;
 use App\Models\ProductBarcode;
 use App\Models\Register;
 use App\Models\Sale;
+use App\Models\StockReservation;
 use App\Services\Sales\FefoAllocator;
 use App\Services\Sales\SaleException;
 use App\Services\Sales\SaleService;
@@ -44,6 +45,9 @@ class Checkout extends Component
     public string $idempotencyKey = '';
 
     public ?string $lastSaleId = null;
+
+    /** Vente en attente reprise dans le panier ; finalisée ou remise en attente sur le même enregistrement. */
+    public ?string $heldSaleId = null;
 
     public ?string $error = null;
 
@@ -240,13 +244,22 @@ class Checkout extends Component
             ->sellableBalances(auth()->user()->pharmacy_id, $presentations->keys()->all())
             ->groupBy('presentation_id');
 
-        return collect($this->cart)->map(function ($line, $i) use ($presentations, $balances) {
+        // Le stock réservé par la vente reprise lui reste disponible
+        $ownReserved = $this->heldSaleId
+            ? StockReservation::where('sale_id', $this->heldSaleId)->whereNull('released_at')
+                ->join('stock_balances', 'stock_balances.id', '=', 'stock_reservations.stock_balance_id')
+                ->groupBy('stock_balances.presentation_id')
+                ->selectRaw('stock_balances.presentation_id, SUM(stock_reservations.quantity) as qty')
+                ->pluck('qty', 'presentation_id')
+            : collect();
+
+        return collect($this->cart)->map(function ($line, $i) use ($presentations, $balances, $ownReserved) {
             $p = $presentations[$line['presentation_id']];
             $candidates = $balances->get($p->id, collect());
             $isUnit = $line['sale_unit'] === 'unit';
             $unitPrice = (float) ($isUnit ? $p->unit_sale_price : $p->sale_price);
             $gross = (int) round($line['quantity'] * $unitPrice * 100);
-            $available = $candidates->sum(fn ($b) => $b->quantity - $b->reserved_quantity);
+            $available = $candidates->sum(fn ($b) => $b->quantity - $b->reserved_quantity) + (int) ($ownReserved[$p->id] ?? 0);
             $needed = $line['quantity'] * ($isUnit ? 1 : $p->units_per_pack);
 
             return [
@@ -308,6 +321,7 @@ class Checkout extends Component
                     'amount' => $p['amount'],
                     'reference' => $p['reference'] !== '' ? $p['reference'] : null,
                 ], $this->payments),
+                'held_sale_id' => $this->heldSaleId,
             ]);
         } catch (SaleException $e) {
             $line = $e->context['line'] ?? null;
@@ -316,11 +330,89 @@ class Checkout extends Component
             return;
         }
 
+        $this->clear();
         $this->lastSaleId = $sale->id;
-        $this->cart = [];
-        $this->payments = [];
-        $this->idempotencyKey = (string) Str::uuid();
         $this->dispatch('sale-finalized', url: route('tickets.show', ['sale' => $sale->id, 'print' => 1]));
+    }
+
+    /** Met le panier en attente (stock réservé) pour servir un autre client. */
+    public function hold(SaleService $service): void
+    {
+        $this->error = null;
+        if (! $this->session || ! $this->cart) {
+            return;
+        }
+        try {
+            $service->hold(auth()->user(), $this->session, [
+                'items' => array_map(fn ($l) => [
+                    'presentation_id' => $l['presentation_id'],
+                    'quantity' => (int) $l['quantity'],
+                    'sale_unit' => $l['sale_unit'],
+                    'batch_id' => $l['batch_id'] ?: null,
+                    'discount_amount' => $this->can['discount'] ? $l['discount_amount'] : 0,
+                ], $this->cart),
+                'held_sale_id' => $this->heldSaleId,
+            ]);
+        } catch (SaleException $e) {
+            $line = $e->context['line'] ?? null;
+            $this->error = $e->getMessage().($line ? " (ligne $line)" : '');
+
+            return;
+        }
+        $this->clear();
+    }
+
+    public function resume(string $saleId, SaleService $service): void
+    {
+        $this->error = null;
+        if ($this->cart) {
+            $this->error = "Mettez d'abord le panier en cours en attente ou videz-le.";
+
+            return;
+        }
+        $sale = $this->heldSales->firstWhere('id', $saleId);
+        if (! $sale) {
+            $this->error = "Cette vente n'est plus en attente.";
+
+            return;
+        }
+        $this->cart = $service->heldItems($sale);
+        $this->heldSaleId = $sale->id;
+        $this->lastSaleId = null;
+    }
+
+    public function cancelHeld(string $saleId, SaleService $service): void
+    {
+        $this->error = null;
+        $sale = $this->heldSales->firstWhere('id', $saleId);
+        if (! $sale) {
+            return;
+        }
+        try {
+            $service->cancelHeld(auth()->user(), $sale, 'Annulée depuis la caisse');
+        } catch (SaleException $e) {
+            $this->error = $e->getMessage();
+
+            return;
+        }
+        if ($this->heldSaleId === $saleId) {
+            $this->clear();
+        }
+        unset($this->heldSales);
+    }
+
+    /** Ventes en attente sur la session ouverte de cette caisse, hors celle reprise dans le panier. */
+    #[Computed]
+    public function heldSales(): Collection
+    {
+        return $this->session
+            ? Sale::with('user')->withCount('items')
+                ->where('cash_session_id', $this->session->id)
+                ->where('status', 'on_hold')
+                ->when($this->heldSaleId, fn ($q) => $q->whereKeyNot($this->heldSaleId))
+                ->orderBy('held_at')
+                ->get()
+            : collect();
     }
 
     public function clear(): void
@@ -328,7 +420,10 @@ class Checkout extends Component
         $this->cart = [];
         $this->payments = [];
         $this->error = null;
+        $this->heldSaleId = null;
         $this->idempotencyKey = (string) Str::uuid();
+        // Les propriétés calculées sont mémorisées pour la requête : les invalider après avoir vidé le panier
+        unset($this->heldSales, $this->lines, $this->totals);
     }
 
     #[Computed]

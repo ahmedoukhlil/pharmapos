@@ -8,7 +8,9 @@ use App\Models\OutboxEvent;
 use App\Models\PaymentMethod;
 use App\Models\Presentation;
 use App\Models\Sale;
+use App\Models\StockBalance;
 use App\Models\StockMovement;
+use App\Models\StockReservation;
 use App\Models\User;
 use App\Services\DocumentNumberer;
 use App\Support\PharmacySettings;
@@ -67,43 +69,15 @@ class SaleService
 
     private function doFinalize(User $user, CashSession $session, array $data, string $key): Sale
     {
-        $session = CashSession::whereKey($session->id)->lockForUpdate()->firstOrFail();
-        if ($session->status !== 'open') {
-            throw new SaleException('cash_session_closed', 'La session de caisse est fermée.');
-        }
-        if ($user->pharmacy_id !== $session->pharmacy_id || ! $user->hasPermission('sale.create')) {
-            throw new SaleException('forbidden', "Vous n'êtes pas autorisé à encaisser sur cette caisse.");
-        }
+        $session = $this->lockOpenSession($session, $user, 'sale.create');
+        // Reprise d'une vente en attente : ses réservations sont rendues avant la réaffectation
+        $held = $this->takeOverHeld($data['held_sale_id'] ?? null, $session);
 
+        [$lines, $rawTotal, $total] = $this->prepareLines($user, $session, $data['items'] ?? []);
+        [$payments, $paid, $change] = $this->checkPayments($session->pharmacy_id, $data['payments'] ?? [], $total);
         $pharmacyId = $session->pharmacy_id;
-        $items = collect($data['items'] ?? []);
-        if ($items->isEmpty()) {
-            throw new SaleException('empty_sale', 'La vente ne contient aucune ligne.');
-        }
 
-        $presentations = Presentation::with('medicine.category')
-            ->where('pharmacy_id', $pharmacyId)
-            ->whereIn('id', $items->pluck('presentation_id')->unique())
-            ->get()
-            ->keyBy('id');
-
-        // Verrouille tous les soldes concernés en une fois, dans un ordre déterministe
-        $balances = $this->allocator
-            ->sellableBalances($pharmacyId, $presentations->keys()->all(), lock: true)
-            ->groupBy('presentation_id');
-
-        $maxDiscountPercent = $this->maxDiscountPercent($user, $pharmacyId);
-        $lines = [];
-
-        foreach ($items->values() as $i => $item) {
-            $lines[] = $this->buildLine($user, $i + 1, $item, $presentations, $balances, $maxDiscountPercent);
-        }
-
-        $rawTotal = array_sum(array_column($lines, 'line_total'));
-        $total = $this->roundTotal($rawTotal, $pharmacyId);
-        [$payments, $paid, $change] = $this->checkPayments($pharmacyId, $data['payments'] ?? [], $total);
-
-        $sale = Sale::create([
+        $attributes = [
             'pharmacy_id' => $pharmacyId,
             'register_id' => $session->register_id,
             'cash_session_id' => $session->id,
@@ -111,15 +85,12 @@ class SaleService
             'idempotency_key' => $key,
             'ticket_number' => $this->numberer->next($session->register, 'ticket'),
             'status' => 'finalized',
-            'subtotal' => $this->money(array_sum(array_column($lines, 'gross'))),
-            'discount_total' => $this->money(array_sum(array_column($lines, 'discount'))),
-            'tax_total' => $this->money(array_sum(array_column($lines, 'tax'))),
-            'rounding_adjustment' => $this->money($total - $rawTotal),
-            'total' => $this->money($total),
             'paid_total' => $this->money($paid),
             'change_given' => $this->money($change),
             'finalized_at' => now(),
-        ]);
+        ] + $this->totalsAttributes($lines, $rawTotal, $total);
+
+        $sale = $held ? tap($held)->update($attributes) : Sale::create($attributes);
 
         foreach ($lines as $line) {
             $this->persistLine($sale, $user, $line);
@@ -155,6 +126,218 @@ class SaleService
         ]);
 
         return $sale->load(['items.batches', 'payments']);
+    }
+
+    /**
+     * Met une vente en attente (POS-05, POS-15) : lignes enregistrées et stock FEFO réservé
+     * jusqu'à expiration ; aucune sortie de stock ni paiement. Une vente reprise puis remise
+     * en attente conserve le même enregistrement.
+     */
+    public function hold(User $user, CashSession $session, array $data): Sale
+    {
+        return DB::transaction(function () use ($user, $session, $data) {
+            $session = $this->lockOpenSession($session, $user, 'sale.hold');
+            $held = $this->takeOverHeld($data['held_sale_id'] ?? null, $session);
+
+            [$lines, $rawTotal, $total] = $this->prepareLines($user, $session, $data['items'] ?? []);
+
+            $attributes = [
+                'pharmacy_id' => $session->pharmacy_id,
+                'register_id' => $session->register_id,
+                'cash_session_id' => $session->id,
+                'user_id' => $user->id,
+                'idempotency_key' => $held?->idempotency_key ?? (string) Str::uuid(),
+                'status' => 'on_hold',
+                'held_at' => now(),
+            ] + $this->totalsAttributes($lines, $rawTotal, $total);
+
+            $sale = $held ? tap($held)->update($attributes) : Sale::create($attributes);
+            $minutes = (int) PharmacySettings::get($session->pharmacy_id, 'sale.hold_reservation_minutes', 30);
+
+            foreach ($lines as $line) {
+                $sale->items()->create($this->itemAttributes($line));
+
+                foreach ($line['allocations'] as ['balance' => $balance, 'quantity' => $quantity]) {
+                    $sale->reservations()->create([
+                        'stock_balance_id' => $balance->id,
+                        'quantity' => $quantity,
+                        'expires_at' => now()->addMinutes($minutes),
+                    ]);
+                    $balance->reserved_quantity += $quantity;
+                    $balance->version++;
+                    $balance->save();
+                }
+            }
+
+            return $sale->load('items');
+        });
+    }
+
+    /** Annule une vente en attente et libère son stock réservé. */
+    public function cancelHeld(User $user, Sale $sale, string $reason): Sale
+    {
+        return DB::transaction(function () use ($user, $sale, $reason) {
+            $sale = Sale::whereKey($sale->id)->lockForUpdate()->firstOrFail();
+            if ($sale->status !== 'on_hold') {
+                throw new SaleException('not_on_hold', "Cette vente n'est pas en attente.");
+            }
+            if ($user->pharmacy_id !== $sale->pharmacy_id || ! $user->hasPermission('sale.hold')) {
+                throw new SaleException('forbidden', "Vous n'êtes pas autorisé à annuler cette vente.");
+            }
+
+            $this->releaseReservations($sale);
+            $sale->update([
+                'status' => 'cancelled',
+                'cancelled_at' => now(),
+                'cancelled_by' => $user->id,
+                'cancel_reason' => $reason,
+            ]);
+
+            return $sale;
+        });
+    }
+
+    /**
+     * Libère les réservations expirées ; les ventes restent en attente et seront
+     * réaffectées au stock disponible lors de leur reprise. Retourne le nombre libéré.
+     */
+    public function releaseExpiredReservations(): int
+    {
+        $count = 0;
+        StockReservation::whereNull('released_at')->where('expires_at', '<', now())
+            ->orderBy('stock_balance_id')
+            ->each(function (StockReservation $reservation) use (&$count) {
+                DB::transaction(function () use ($reservation, &$count) {
+                    $fresh = StockReservation::whereKey($reservation->id)->whereNull('released_at')->lockForUpdate()->first();
+                    if ($fresh) {
+                        $this->release($fresh);
+                        $count++;
+                    }
+                });
+            });
+
+        return $count;
+    }
+
+    /** Lignes en attente sous la forme attendue par l'écran de caisse pour reprendre la vente. */
+    public function heldItems(Sale $sale): array
+    {
+        return $sale->items()->orderBy('line_no')->get()->map(fn ($item) => [
+            'presentation_id' => $item->presentation_id,
+            'quantity' => $item->quantity,
+            'sale_unit' => $item->sale_unit,
+            'batch_id' => null,
+            'discount_amount' => (string) $item->discount_amount,
+        ])->all();
+    }
+
+    private function lockOpenSession(CashSession $session, User $user, string $permission): CashSession
+    {
+        $session = CashSession::whereKey($session->id)->lockForUpdate()->firstOrFail();
+        if ($session->status !== 'open') {
+            throw new SaleException('cash_session_closed', 'La session de caisse est fermée.');
+        }
+        if ($user->pharmacy_id !== $session->pharmacy_id || ! $user->hasPermission($permission)) {
+            throw new SaleException('forbidden', "Vous n'êtes pas autorisé à encaisser sur cette caisse.");
+        }
+
+        return $session;
+    }
+
+    /**
+     * Verrouille une vente en attente de la même officine, libère ses réservations et
+     * supprime ses lignes provisoires (jamais finalisées) pour la reconstruire.
+     */
+    private function takeOverHeld(?string $saleId, CashSession $session): ?Sale
+    {
+        if (! $saleId) {
+            return null;
+        }
+        $sale = Sale::whereKey($saleId)->lockForUpdate()->first();
+        if (! $sale || $sale->pharmacy_id !== $session->pharmacy_id || $sale->status !== 'on_hold') {
+            throw new SaleException('held_sale_unavailable', "La vente en attente n'est plus disponible.");
+        }
+
+        $this->releaseReservations($sale);
+        $sale->items()->delete();
+
+        return $sale;
+    }
+
+    private function releaseReservations(Sale $sale): void
+    {
+        $sale->reservations()->whereNull('released_at')->orderBy('stock_balance_id')->lockForUpdate()->get()
+            ->each(fn (StockReservation $r) => $this->release($r));
+    }
+
+    private function release(StockReservation $reservation): void
+    {
+        StockBalance::whereKey($reservation->stock_balance_id)->update([
+            'reserved_quantity' => DB::raw('GREATEST(reserved_quantity - '.(int) $reservation->quantity.', 0)'),
+            'version' => DB::raw('version + 1'),
+        ]);
+        $reservation->update(['released_at' => now()]);
+    }
+
+    /**
+     * Construit les lignes (prix, remises, affectation FEFO) sous verrou des soldes.
+     *
+     * @return array{0: array, 1: int, 2: int} lignes, total brut, total arrondi (centimes)
+     */
+    private function prepareLines(User $user, CashSession $session, array $items): array
+    {
+        $pharmacyId = $session->pharmacy_id;
+        $items = collect($items);
+        if ($items->isEmpty()) {
+            throw new SaleException('empty_sale', 'La vente ne contient aucune ligne.');
+        }
+
+        $presentations = Presentation::with('medicine.category')
+            ->where('pharmacy_id', $pharmacyId)
+            ->whereIn('id', $items->pluck('presentation_id')->unique())
+            ->get()
+            ->keyBy('id');
+
+        // Verrouille tous les soldes concernés en une fois, dans un ordre déterministe
+        $balances = $this->allocator
+            ->sellableBalances($pharmacyId, $presentations->keys()->all(), lock: true)
+            ->groupBy('presentation_id');
+
+        $maxDiscountPercent = $this->maxDiscountPercent($user, $pharmacyId);
+        $lines = [];
+        foreach ($items->values() as $i => $item) {
+            $lines[] = $this->buildLine($user, $i + 1, $item, $presentations, $balances, $maxDiscountPercent);
+        }
+
+        $rawTotal = array_sum(array_column($lines, 'line_total'));
+
+        return [$lines, $rawTotal, $this->roundTotal($rawTotal, $pharmacyId)];
+    }
+
+    private function totalsAttributes(array $lines, int $rawTotal, int $total): array
+    {
+        return [
+            'subtotal' => $this->money(array_sum(array_column($lines, 'gross'))),
+            'discount_total' => $this->money(array_sum(array_column($lines, 'discount'))),
+            'tax_total' => $this->money(array_sum(array_column($lines, 'tax'))),
+            'rounding_adjustment' => $this->money($total - $rawTotal),
+            'total' => $this->money($total),
+        ];
+    }
+
+    private function itemAttributes(array $line): array
+    {
+        return [
+            'presentation_id' => $line['presentation']->id,
+            'line_no' => $line['line_no'],
+            'sale_unit' => $line['sale_unit'],
+            'quantity' => $line['quantity'],
+            'quantity_base_units' => $line['base_units'],
+            'unit_price' => $line['unit_price'],
+            'discount_amount' => $this->money($line['discount']),
+            'tax_rate' => $line['tax_rate'],
+            'line_total' => $this->money($line['line_total']),
+        ];
     }
 
     private function buildLine(User $user, int $lineNo, array $item, Collection $presentations, Collection $balances, float $maxDiscountPercent): array
@@ -239,17 +422,7 @@ class SaleService
 
     private function persistLine(Sale $sale, User $user, array $line): void
     {
-        $saleItem = $sale->items()->create([
-            'presentation_id' => $line['presentation']->id,
-            'line_no' => $line['line_no'],
-            'sale_unit' => $line['sale_unit'],
-            'quantity' => $line['quantity'],
-            'quantity_base_units' => $line['base_units'],
-            'unit_price' => $line['unit_price'],
-            'discount_amount' => $this->money($line['discount']),
-            'tax_rate' => $line['tax_rate'],
-            'line_total' => $this->money($line['line_total']),
-        ]);
+        $saleItem = $sale->items()->create($this->itemAttributes($line));
 
         foreach ($line['allocations'] as ['balance' => $balance, 'quantity' => $quantity]) {
             $saleItem->batches()->create([

@@ -70,6 +70,25 @@
                     @endif
                 </div>
 
+                @if ($this->heldSales->isNotEmpty())
+                    <div class="flex flex-wrap items-center gap-2" aria-label="Ventes en attente">
+                        <span class="text-xs font-medium uppercase text-slate-500">En attente</span>
+                        @foreach ($this->heldSales as $held)
+                            <span wire:key="held-{{ $held->id }}" class="inline-flex items-center overflow-hidden rounded-full border border-amber-300 bg-amber-50 text-sm">
+                                <button wire:click="resume('{{ $held->id }}')" class="px-3 py-1 hover:bg-amber-100" title="Reprendre">
+                                    {{ $held->held_at->format('H:i') }} · {{ $held->items_count }} art. · {{ number_format($held->total, 2, ',', ' ') }}
+                                </button>
+                                <button wire:click="cancelHeld('{{ $held->id }}')" wire:confirm="Annuler cette vente en attente et libérer le stock ?"
+                                        class="border-s border-amber-300 px-2 py-1 text-amber-800 hover:bg-red-50 hover:text-red-700" aria-label="Annuler la vente en attente">✕</button>
+                            </span>
+                        @endforeach
+                    </div>
+                @endif
+
+                @if ($heldSaleId)
+                    <p class="rounded-lg bg-sky-50 px-4 py-2 text-sm text-sky-800">Vente en attente reprise : son stock reste réservé jusqu'à l'encaissement.</p>
+                @endif
+
                 @if ($error)
                     <p class="rounded-lg bg-red-50 px-4 py-2 text-sm text-red-800" role="alert">{{ $error }}</p>
                 @endif
@@ -207,6 +226,8 @@
                 <div class="flex gap-2">
                     <button wire:click="clear" wire:confirm="Vider le panier ?" @disabled(! $this->lines)
                             class="rounded-lg border border-slate-300 px-3 py-3 text-sm hover:bg-slate-50 disabled:opacity-40">Vider</button>
+                    <button wire:click="hold" @disabled(! $this->lines)
+                            class="rounded-lg border border-amber-400 px-3 py-3 text-sm text-amber-900 hover:bg-amber-50 disabled:opacity-40">Attente</button>
                     <button wire:click="checkout" wire:loading.attr="disabled" @disabled(! $this->lines || ! $this->can['sell'])
                             class="flex-1 rounded-lg bg-emerald-700 px-4 py-3 text-lg font-semibold text-white hover:bg-emerald-800 disabled:opacity-40">
                         <span wire:loading.remove wire:target="checkout">Encaisser — F9</span>

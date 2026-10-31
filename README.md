@@ -35,7 +35,8 @@ php artisan test
 - [x] Service de vente : validation atomique, FEFO, verrous multi-caisses, idempotence, numérotation des tickets
 - [x] Écran de caisse et ticket 58/80 mm
 - [x] Clôture de caisse, écarts, validation
-- [ ] Ventes en attente, retours et avoirs
+- [x] Ventes en attente (réservation de stock, reprise, expiration)
+- [ ] Retours et avoirs
 - [ ] Réceptions fournisseurs, inventaires
 - [ ] Scanner smartphone (PWA)
 - [ ] Synchronisation cloud
