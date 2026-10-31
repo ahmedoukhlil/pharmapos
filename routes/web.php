@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\ScannerController;
 use App\Http\Controllers\TicketController;
 use App\Livewire\Alerts\AlertIndex;
 use App\Livewire\Cash\SessionIndex;
@@ -62,5 +63,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/sessions', SessionIndex::class)->name('sessions.index');
     Route::get('/sessions/{session}', SessionShow::class)->name('sessions.show');
     Route::get('/tickets/{sale}', [TicketController::class, 'show'])->name('tickets.show');
+    Route::get('/scanner/appairer/{token}', [ScannerController::class, 'pair'])->name('scanner.pair');
+    Route::get('/scanner/{session}', [ScannerController::class, 'show'])->name('scanner.show');
+    Route::get('/scanner/{session}/etat', [ScannerController::class, 'status'])->name('scanner.status');
+    Route::post('/scanner/{session}/scans', [ScannerController::class, 'scan'])->middleware('throttle:120,1')->name('scanner.scan');
     Route::post('/deconnexion', [LoginController::class, 'destroy'])->name('logout');
 });

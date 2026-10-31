@@ -18,6 +18,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
+use Livewire\Attributes\On;
 use Livewire\Attributes\Title;
 use Livewire\Attributes\Url;
 use Livewire\Component;
@@ -158,6 +159,26 @@ class Checkout extends Component
             // Plusieurs résultats : on garde la saisie pour laisser choisir dans la liste
             $this->search = $term;
         }
+    }
+
+    /** Scan reçu du smartphone associé (ScannerPanel). */
+    #[On('remote-scan')]
+    public function addRemote(string $presentationId): void
+    {
+        abort_unless(Presentation::where('pharmacy_id', auth()->user()->pharmacy_id)->whereKey($presentationId)->exists(), 404);
+        $this->add($presentationId);
+    }
+
+    #[On('remote-scan-unknown')]
+    public function remoteUnknown(string $barcode): void
+    {
+        $this->error = "Code inconnu scanné par le téléphone : $barcode";
+    }
+
+    #[On('scanner-error')]
+    public function scannerError(string $message): void
+    {
+        $this->error = $message;
     }
 
     public function add(string $presentationId): void

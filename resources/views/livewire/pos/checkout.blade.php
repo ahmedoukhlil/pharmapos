@@ -22,6 +22,7 @@
         </label>
         @if ($this->session)
             <span class="text-xs text-emerald-200">Session ouverte {{ $this->session->opened_at->format('d/m H:i') }}</span>
+            <livewire:pos.scanner-panel :register-id="$this->register->id" :key="'scanner-'.$this->register->id" />
         @endif
     </x-nav>
 

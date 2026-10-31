@@ -1,0 +1,10 @@
+{
+    "name": "PharmaPOS Scanner",
+    "short_name": "Scanner",
+    "start_url": "/caisse",
+    "display": "standalone",
+    "orientation": "portrait",
+    "background_color": "#0f172a",
+    "theme_color": "#065f46",
+    "icons": [{ "src": "/favicon.ico", "sizes": "48x48", "type": "image/x-icon" }]
+}
