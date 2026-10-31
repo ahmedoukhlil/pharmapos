@@ -155,7 +155,8 @@ class PurchaseInvoiceTest extends TestCase
         $this->service->cancel($this->user('accountant'), $invoice);
         $this->assertCount(1, $this->service->uninvoicedReceipts($receipt->pharmacy_id, $receipt->supplier_id));
 
-        $this->invoice($receipt, '2500');
+        $this->service->create($this->user('accountant'), ['supplier_id' => $receipt->supplier_id, 'supplier_invoice_number' => 'FA-1001-B',
+            'invoice_date' => now()->toDateString(), 'total_amount' => 2500, 'receipt_ids' => [$receipt->id]]);
 
         $this->expectException(PurchaseOrderException::class);
         $this->service->create($this->user('cashier'), []);
