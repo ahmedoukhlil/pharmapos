@@ -133,6 +133,23 @@ class ScannerTest extends TestCase
             ->assertStatus(410)->assertJson(['error' => 'session_inactive']);
     }
 
+    /** Application installée : /scanner reprend la session active du téléphone, sinon propose de lire le QR. */
+    public function test_installed_app_home_resumes_active_session_or_reads_qr(): void
+    {
+        $this->assertSame('/scanner', json_decode(file_get_contents(public_path('manifest.webmanifest')), true)['start_url']);
+
+        $this->get(route('scanner.home'))->assertRedirect(route('login'));
+
+        $this->actingAs($this->user('assistant_pharmacist'));
+        $this->get(route('scanner.home'))->assertOk()->assertSee('Scanner le QR code');
+
+        $session = $this->activeScanner();
+        $this->get(route('scanner.home'))->assertRedirect(route('scanner.show', $session));
+
+        $this->service->revoke($this->user('cashier'), $session);
+        $this->get(route('scanner.home'))->assertOk();
+    }
+
     public function test_end_to_end_qr_phone_and_checkout(): void
     {
         $register = $this->register();

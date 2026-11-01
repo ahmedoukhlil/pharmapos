@@ -2,7 +2,7 @@
     <x-nav />
 
     <main class="mx-auto max-w-6xl space-y-4 p-4">
-        <div class="flex items-center gap-3">
+        <div class="flex flex-wrap items-center gap-3">
             <h1 class="text-xl font-semibold">Sauvegardes</h1>
             <button wire:click="backupNow" wire:loading.attr="disabled" class="ms-auto rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">
                 <span wire:loading.remove wire:target="backupNow">Sauvegarder maintenant</span>

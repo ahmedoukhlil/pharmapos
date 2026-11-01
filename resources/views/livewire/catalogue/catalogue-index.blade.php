@@ -6,7 +6,7 @@
     <x-nav />
 
     <main class="mx-auto max-w-6xl space-y-4 p-4">
-        <div class="flex items-center gap-3">
+        <div class="flex flex-wrap items-center gap-3">
             <h1 class="text-xl font-semibold">Catalogue</h1>
             @if ($canManage)
                 <a href="{{ route('catalogue.import') }}" class="ms-auto rounded-lg border border-emerald-700 px-4 py-2 text-sm text-emerald-800">Importer</a>

@@ -15,7 +15,7 @@
     <main class="mx-auto max-w-7xl space-y-4 p-4">
         <div class="flex flex-wrap items-center gap-3">
             <h1 class="text-xl font-semibold">Rapports</h1>
-            <nav class="flex gap-1 text-sm print:hidden">
+            <nav class="-mx-1 flex max-w-full gap-1 overflow-x-auto px-1 text-sm whitespace-nowrap print:hidden">
                 @foreach ($reports as $k => $label)
                     <button wire:click="$set('report', '{{ $k }}')" @class(['rounded-full px-3 py-1', 'bg-emerald-700 text-white' => $report === $k, 'bg-white shadow-sm' => $report !== $k])>{{ $label }}</button>
                 @endforeach

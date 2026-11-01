@@ -7,7 +7,7 @@
     <x-nav />
 
     <main class="mx-auto max-w-5xl space-y-4 p-4">
-        <div class="flex items-center gap-3">
+        <div class="flex flex-wrap items-center gap-3">
             <a href="{{ route('catalogue.index') }}" class="text-sm text-emerald-800 hover:underline">← Catalogue</a>
             <h1 class="text-xl font-semibold">Import du catalogue</h1>
             <a href="{{ route('catalogue.template') }}" class="ms-auto text-sm text-emerald-800 hover:underline">Télécharger le modèle CSV</a>

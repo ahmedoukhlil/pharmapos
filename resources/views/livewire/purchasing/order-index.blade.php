@@ -6,7 +6,7 @@
     <x-nav />
 
     <main class="mx-auto max-w-5xl space-y-4 p-4">
-        <div class="flex items-center gap-3">
+        <div class="flex flex-wrap items-center gap-3">
             <h1 class="text-xl font-semibold">Commandes fournisseurs</h1>
             <select wire:model.live="status" class="rounded-lg border border-slate-300 px-3 py-1.5 text-sm">
                 <option value="">Tous statuts</option>

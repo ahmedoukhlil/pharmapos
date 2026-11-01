@@ -1,7 +1,9 @@
 {
+    "id": "/scanner",
     "name": "PharmaPOS Scanner",
     "short_name": "Scanner",
-    "start_url": "/caisse",
+    "start_url": "/scanner",
+    "scope": "/",
     "display": "standalone",
     "orientation": "portrait",
     "background_color": "#0f172a",

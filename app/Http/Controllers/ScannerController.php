@@ -18,6 +18,18 @@ class ScannerController extends Controller
 {
     public function __construct(private readonly ScannerService $scanner) {}
 
+    /**
+     * Point d'entrée de l'application installée (start_url) : reprend la session active du téléphone,
+     * sinon lit le QR d'appairage avec la caméra — le QR ouvert par l'appareil photo partirait dans le navigateur.
+     */
+    public function home(Request $request)
+    {
+        $active = ScannerSession::where('user_id', $request->user()->id)->whereNotNull('confirmed_by')
+            ->whereNull('revoked_at')->where('expires_at', '>', now())->latest('paired_at')->first();
+
+        return $active ? redirect()->route('scanner.show', $active) : view('scanner.home');
+    }
+
     /** URL encodée dans le QR. La connexion est demandée d'abord si besoin (redirection « intended »). */
     public function pair(Request $request, string $token)
     {

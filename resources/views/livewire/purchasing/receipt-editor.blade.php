@@ -8,7 +8,7 @@
     <x-nav />
 
     <main class="mx-auto max-w-6xl space-y-4 p-4">
-        <div class="flex items-center gap-3">
+        <div class="flex flex-wrap items-center gap-3">
             <h1 class="text-xl font-semibold">
                 Réception {{ $this->receipt?->number ?? '(nouvelle)' }}
             </h1>

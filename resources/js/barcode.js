@@ -9,6 +9,8 @@ import { BarcodeDetector as Polyfill, setZXingModuleOverrides } from 'barcode-de
 import wasmUrl from 'zxing-wasm/reader/zxing_reader.wasm?url';
 
 const FORMATS = ['ean_13', 'ean_8', 'upc_a', 'code_128'];
+// QR d'appairage, lu depuis l'application installée (page /scanner)
+const ALL = [...FORMATS, 'qr_code'];
 
 setZXingModuleOverrides({
     locateFile: (path, prefix) => (path.endsWith('.wasm') ? wasmUrl : prefix + path),
@@ -18,7 +20,7 @@ async function nativeIsUsable() {
     if (!('BarcodeDetector' in window)) return false;
     try {
         const supported = await window.BarcodeDetector.getSupportedFormats();
-        return FORMATS.every((f) => supported.includes(f));
+        return ALL.every((f) => supported.includes(f));
     } catch {
         return false;
     }

@@ -81,6 +81,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/sessions', SessionIndex::class)->name('sessions.index');
     Route::get('/sessions/{session}', SessionShow::class)->name('sessions.show');
     Route::get('/tickets/{sale}', [TicketController::class, 'show'])->name('tickets.show');
+    Route::get('/scanner', [ScannerController::class, 'home'])->name('scanner.home');
     Route::get('/scanner/appairer/{token}', [ScannerController::class, 'pair'])->name('scanner.pair');
     Route::get('/scanner/{session}', [ScannerController::class, 'show'])->name('scanner.show');
     Route::get('/scanner/{session}/etat', [ScannerController::class, 'status'])->name('scanner.status');

@@ -9,7 +9,7 @@
     <x-nav :register="$s->register->code" />
 
     <main class="mx-auto max-w-3xl space-y-4 p-4 print:p-0">
-        <div class="flex items-center gap-3">
+        <div class="flex flex-wrap items-center gap-3">
             <h1 class="text-xl font-semibold">Session {{ $s->register->name }} — {{ $s->opened_at->format('d/m/Y') }}</h1>
             <span @class([
                 'rounded-full px-2 py-0.5 text-xs font-medium',

@@ -14,14 +14,14 @@
     <x-nav :register="$registerCode">
         <label class="flex items-center gap-2 text-sm">
             <span class="sr-only">Caisse</span>
-            <select wire:model.live="registerCode" class="rounded bg-emerald-900 px-2 py-1 text-sm">
+            <select wire:model.live="registerCode" class="w-24 rounded bg-emerald-900 px-2 py-1 text-sm sm:w-auto">
                 @foreach ($this->registers as $r)
                     <option value="{{ $r->code }}">{{ $r->name }}</option>
                 @endforeach
             </select>
         </label>
         @if ($this->session)
-            <span class="text-xs text-emerald-200">Session ouverte {{ $this->session->opened_at->format('d/m H:i') }}</span>
+            <span class="hidden text-xs text-emerald-200 md:inline">Session ouverte {{ $this->session->opened_at->format('d/m H:i') }}</span>
             <livewire:scanner.scanner-panel mode="pos" :context-id="$this->register->id" :key="'scanner-'.$this->register->id" />
         @endif
     </x-nav>
