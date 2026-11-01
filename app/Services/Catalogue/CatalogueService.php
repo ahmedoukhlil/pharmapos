@@ -146,6 +146,9 @@ class CatalogueService
         $this->assertOwned($user, $presentation);
 
         $code = trim($code);
+        if (! $symbology && $problem = Barcode::problem($code)) {
+            throw ValidationException::withMessages(['barcode' => $problem]);
+        }
         $symbology ??= Barcode::guessSymbology($code);
         if (! Barcode::isValid($code, $symbology)) {
             throw ValidationException::withMessages(['barcode' => "Code-barres invalide pour le format {$symbology} (clé de contrôle ?)."]);

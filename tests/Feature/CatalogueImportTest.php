@@ -68,6 +68,25 @@ class CatalogueImportTest extends TestCase
         $this->assertTrue((bool) $doli8->allow_split_sale);
     }
 
+    public function test_barcodes_mangled_by_excel_are_rejected(): void
+    {
+        $this->actingAs(User::where('username', 'owner')->first());
+        $csv = implode("\n", [
+            'type;nom_commercial;dci;sku;unites_par_boite;prix_vente;code_barres',
+            'medicament;Excel;X;XL-1;1;10;"3,40094E+12"',
+            'medicament;Court;X;XL-2;1;10;123',
+        ]);
+
+        Livewire::test(CatalogueImport::class)
+            ->set('file', UploadedFile::fake()->createWithContent('c.csv', $csv))
+            ->assertSet('preview.created', 0)->assertSet('preview.errors', 2)
+            ->assertSee('notation scientifique')->assertSee('8, 12, 13 ou 14 chiffres');
+
+        $this->assertNull(\App\Support\Barcode::problem('3400936000001'));
+        $this->assertNull(\App\Support\Barcode::problem('INT-0042'));
+        $this->assertNotNull(\App\Support\Barcode::problem('3400936000002'));   // clé de contrôle fausse
+    }
+
     public function test_missing_columns_and_permission(): void
     {
         $this->actingAs(User::where('username', 'owner')->first());

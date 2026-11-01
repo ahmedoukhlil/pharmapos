@@ -19,6 +19,26 @@ class Barcode
         };
     }
 
+    /**
+     * Raison pour laquelle un code ne peut pas être un code-barres, ou null s'il est acceptable.
+     * Détecte notamment les codes abîmés par Excel (« 3,40094E+12 ») et les codes tronqués.
+     */
+    public static function problem(string $code): ?string
+    {
+        $code = trim($code);
+
+        return match (true) {
+            $code === '' => 'Code-barres vide.',
+            preg_match('/^\d+([.,]\d+)?E[+-]?\d+$/i', $code) === 1 => "« {$code} » est un nombre en notation scientifique (Excel a abîmé le code) : saisissez ou scannez le code complet.",
+            ctype_digit($code) && ! in_array(strlen($code), [8, 12, 13, 14], true) => "« {$code} » : un code numérique doit compter 8, 12, 13 ou 14 chiffres (EAN/UPC/GTIN).",
+            ! ctype_digit($code) && strlen($code) < 4 => "« {$code} » est trop court pour un code-barres.",
+            ! self::isValid($code, self::guessSymbology($code)) => ctype_digit($code)
+                ? "« {$code} » : clé de contrôle incorrecte (chiffre mal saisi ?)."
+                : "« {$code} » contient des caractères non autorisés.",
+            default => null,
+        };
+    }
+
     public static function isValid(string $code, string $symbology): bool
     {
         $lengths = ['ean13' => 13, 'ean8' => 8, 'upca' => 12, 'gtin14' => 14];

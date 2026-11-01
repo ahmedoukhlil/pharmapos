@@ -179,17 +179,26 @@
                         <div class="flex flex-wrap items-center gap-2 text-sm">
                             <span class="text-slate-500">Codes-barres :</span>
                             @foreach ($p->barcodes as $b)
-                                <span wire:key="b-{{ $b->id }}" @class(['rounded px-2 py-0.5 font-mono text-xs', 'bg-slate-100' => $b->is_active, 'bg-slate-50 text-slate-400 line-through' => ! $b->is_active])>
-                                    {{ $b->barcode }}
+                                @php $bad = $b->is_active ? \App\Support\Barcode::problem($b->barcode) : null; @endphp
+                                <span wire:key="b-{{ $b->id }}" title="{{ $bad }}" @class(['rounded px-2 py-0.5 font-mono text-xs',
+                                    'bg-slate-100' => $b->is_active && ! $bad, 'bg-red-100 text-red-800 ring-1 ring-red-300' => $bad,
+                                    'bg-slate-50 text-slate-400 line-through' => ! $b->is_active])>
+                                    @if ($bad) ⚠ @endif{{ $b->barcode }}
                                     @if ($canManage && $b->is_active)
                                         <button wire:click="deactivateBarcode('{{ $b->id }}')" wire:confirm="Désactiver ce code-barres ?" class="ms-1 text-red-700" title="Désactiver">×</button>
                                     @endif
                                 </span>
                             @endforeach
                             @if ($canManage)
-                                <input placeholder="Scanner un code"
-                                       x-on:keydown.enter.prevent="$wire.addBarcode('{{ $p->id }}', $el.value); $el.value=''"
-                                       class="rounded border border-slate-300 px-2 py-1 font-mono text-xs">
+                                <form x-data="{ code: '' }" class="flex items-center gap-1"
+                                      x-on:submit.prevent="if (code.trim()) { $wire.addBarcode('{{ $p->id }}', code.trim()); code = '' }">
+                                    <input x-model="code" placeholder="Scanner ou saisir le code-barres" inputmode="numeric" autocomplete="off"
+                                           class="w-60 rounded-lg border border-slate-300 px-2 py-1 font-mono text-xs focus:border-emerald-600 focus:ring-2 focus:ring-emerald-200 focus:outline-none">
+                                    <button class="rounded-lg bg-emerald-700 px-3 py-1 text-xs font-semibold text-white hover:bg-emerald-800">+ Ajouter</button>
+                                </form>
+                                @if ($p->barcodes->where('is_active', true)->contains(fn ($b) => \App\Support\Barcode::problem($b->barcode)))
+                                    <span class="w-full text-xs text-red-700">⚠ Code(s) invalide(s), probablement abîmé(s) par Excel à l'import : retirez-les (×) et scannez le vrai code.</span>
+                                @endif
                                 @error("barcode.$p->id") <span class="w-full text-xs text-red-700">{{ $message }}</span> @enderror
                             @endif
                         </div>

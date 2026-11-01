@@ -168,7 +168,11 @@ class CatalogueImportService
             'reorder_threshold' => $this->nullable($d['reorder_threshold'] ?? null),
         ]);
 
-        foreach (preg_split('/[\s,;|]+/', (string) ($d['barcode'] ?? ''), -1, PREG_SPLIT_NO_EMPTY) as $code) {
+        // Plusieurs codes séparés par « | » ou des espaces (jamais la virgule : « 3,40094E+12 » d'Excel
+        // serait coupé en deux faux codes). Une cellule numérique xlsx arrive en nombre : on la remet en chiffres.
+        $raw = $d['barcode'] ?? '';
+        $raw = is_int($raw) || is_float($raw) ? sprintf('%.0f', $raw) : (string) $raw;
+        foreach (preg_split('/[\s|]+/', $raw, -1, PREG_SPLIT_NO_EMPTY) as $code) {
             $this->catalogue->addBarcode($user, $presentation, $code);
         }
     }
