@@ -31,6 +31,8 @@ class SetupWizardTest extends TestCase
     public function test_fresh_install_creates_pharmacy_and_owner(): void
     {
         $this->get(route('login'))->assertRedirect(route('setup'));
+        // Les requêtes Livewire de l'assistant ne doivent pas être renvoyées vers /installation
+        $this->assertNotSame(route('setup'), $this->post(route('default.livewire.update'))->headers->get('Location'));
 
         Livewire::test(SetupWizard::class)
             ->call('next')->assertHasErrors('pharmacy.name')

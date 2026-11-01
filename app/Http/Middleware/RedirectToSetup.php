@@ -14,7 +14,9 @@ class RedirectToSetup
 {
     public function handle(Request $request, Closure $next): Response
     {
-        if (! $request->routeIs('setup', 'livewire.*') && ! PharmacySetupService::installed()) {
+        // Les requêtes Livewire (route « default.livewire.update ») servent l'assistant lui-même
+        $livewire = $request->routeIs('setup', 'livewire.*', '*.livewire.*') || $request->hasHeader('X-Livewire');
+        if (! $livewire && ! PharmacySetupService::installed()) {
             return redirect()->route('setup');
         }
 
