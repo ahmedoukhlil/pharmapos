@@ -23,6 +23,7 @@
         ],
         'Gestion' => [
             ['reports.index', [], 'Rapports', 'reports.*', $user->hasPermission('report.view')],
+            ['users.index', [], 'Utilisateurs', 'users.*', $user->hasPermission('user.manage')],
             ['payment-methods.index', [], 'Modes de paiement', 'payment-methods.*', $user->hasPermission('settings.manage')],
             ['backups.index', [], 'Sauvegardes', 'backups.*', \App\Livewire\System\BackupIndex::allowed()],
         ],
@@ -68,7 +69,7 @@
     @endif
     <div class="ms-auto flex items-center gap-3">
         {{ $slot }}
-        <span class="text-sm">{{ $user->name }}</span>
+        <a href="{{ route('password.edit') }}" class="rounded px-2 py-1 text-sm hover:bg-emerald-700" title="Mon mot de passe">{{ $user->name }}</a>
         <form method="POST" action="{{ route('logout') }}">
             @csrf
             <button class="rounded px-2 py-1 text-sm hover:bg-emerald-700">Déconnexion</button>

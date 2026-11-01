@@ -23,9 +23,14 @@ use App\Livewire\Purchasing\OrderIndex;
 use App\Livewire\Purchasing\ReceiptEditor;
 use App\Livewire\Purchasing\ReceiptIndex;
 use App\Livewire\Reports\ReportIndex;
+use App\Http\Controllers\Auth\PasswordController;
 use App\Livewire\Settings\PaymentMethodIndex;
+use App\Livewire\Settings\UserIndex;
+use App\Livewire\Setup\SetupWizard;
 use App\Livewire\System\BackupIndex;
 use Illuminate\Support\Facades\Route;
+
+Route::get('/installation', SetupWizard::class)->name('setup');
 
 Route::middleware('guest')->group(function () {
     Route::get('/connexion', [LoginController::class, 'show'])->name('login');
@@ -59,6 +64,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/alertes', AlertIndex::class)->name('alerts.index');
     Route::get('/sauvegardes', BackupIndex::class)->name('backups.index');
     Route::get('/modes-paiement', PaymentMethodIndex::class)->name('payment-methods.index');
+    Route::get('/utilisateurs', UserIndex::class)->name('users.index');
+    Route::get('/mot-de-passe', [PasswordController::class, 'edit'])->name('password.edit');
+    Route::put('/mot-de-passe', [PasswordController::class, 'update'])->name('password.update');
     Route::get('/commandes', OrderIndex::class)->name('orders.index');
     Route::get('/commandes/nouvelle', OrderEditor::class)->name('orders.create');
     Route::get('/commandes/{order}', OrderEditor::class)->name('orders.edit');
