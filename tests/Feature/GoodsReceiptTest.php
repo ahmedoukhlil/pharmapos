@@ -92,7 +92,7 @@ class GoodsReceiptTest extends TestCase
         $this->assertNull(ExpiryDate::parse('demain', $pharmacyId));
     }
 
-    public function test_validation_creates_batches_stock_and_updates_cmup(): void
+    public function test_validation_creates_batches_stock_and_updates_purchase_price(): void
     {
         $ibu = $this->presentation('IBU400-20');           // 400 cp en stock à 7,50 / cp
         $receipt = $this->draft([$this->line('IBU400-20', 10, '170', 'ib2501', $this->future(18))]);
@@ -109,9 +109,7 @@ class GoodsReceiptTest extends TestCase
         $this->assertSame('8.5000', $batch->unit_cost);                  // 170 / 20
         $this->assertSame(200, (int) StockBalance::where('batch_id', $batch->id)->where('location_id', Location::where('code', 'RES')->value('id'))->value('quantity'));
 
-        // CMUP : (400 × 7,50 + 200 × 8,50) / 600 = 7,8333
         $ibu->refresh();
-        $this->assertSame('7.8333', $ibu->weighted_avg_cost);
         $this->assertSame('170.00', $ibu->purchase_price);
         $this->assertTrue(PriceHistory::where('presentation_id', $ibu->id)->where('price_type', 'purchase')->exists());
     }

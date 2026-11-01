@@ -75,7 +75,6 @@ class CatalogueTest extends TestCase
         $this->service->addBarcode($this->user('owner'), $p, '6111234567895');
 
         $this->assertSame($p->id, ProductLookup::find($p->pharmacy_id, '6111234567895')->first()?->id);
-        $this->assertEquals(15, $p->fresh()->weighted_avg_cost);   // 120 / 8 comprimés
         $this->assertSame(1, AuditLog::where('action', 'presentation.created')->count());
     }
 

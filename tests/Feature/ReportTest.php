@@ -90,6 +90,13 @@ class ReportTest extends TestCase
         $stock = collect($reports->build('stock', $pharmacyId, $this->filters())[0]['rows'])->keyBy('sku');
         $this->assertSame(160 - 32 + 480, $stock['PARA500-16']['sellable']);
         $this->assertSame(80, $stock['PARA500-16']['blocked']);   // lot PA2312 périmé
+        // Valorisation : quantité de chaque lot × son coût d'achat réel (pas de coût moyen)
+        $expected = \Illuminate\Support\Facades\DB::table('stock_balances')->join('batches', 'batches.id', '=', 'stock_balances.batch_id')
+            ->where('stock_balances.presentation_id', Presentation::where('sku', 'PARA500-16')->value('id'))
+            ->sum(\Illuminate\Support\Facades\DB::raw('stock_balances.quantity * batches.unit_cost'));
+        $this->assertEqualsWithDelta((float) $expected, $stock['PARA500-16']['value'], 0.01);
+        $this->assertGreaterThan(0, $stock['PARA500-16']['value']);
+        $this->assertArrayNotHasKey('cmup', $stock['PARA500-16']);
 
         [$sessions, $byMethod] = $reports->build('cash', $pharmacyId, $this->filters());
         $this->assertSame('C01', $sessions['rows'][0]['register']);

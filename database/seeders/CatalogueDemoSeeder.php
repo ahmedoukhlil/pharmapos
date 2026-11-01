@@ -70,7 +70,6 @@ class CatalogueDemoSeeder extends Seeder
                 'base_unit' => $unit, 'units_per_pack' => $perPack, 'allow_split_sale' => $split,
                 'purchase_price' => $buy, 'sale_price' => $sell,
                 'unit_sale_price' => $split ? round($sell / $perPack, 4) : null,
-                'weighted_avg_cost' => round($buy / $perPack, 4),
                 'reorder_threshold' => 5 * $perPack, 'reorder_quantity' => 20 * $perPack,
             ]);
 

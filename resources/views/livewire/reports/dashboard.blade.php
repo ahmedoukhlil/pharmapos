@@ -93,7 +93,7 @@
         <h2 class="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-500">Stock aujourd'hui</h2>
         <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
             @foreach ([
-                ['Valeur du stock', $money($s['value']).' MRU', $s['products'].' présentation(s) au CMUP', 'slate', route('reports.index', ['report' => 'stock'])],
+                ['Valeur du stock', $money($s['value']).' MRU', $s['products'].' présentation(s) au coût des lots', 'slate', route('reports.index', ['report' => 'stock'])],
                 ['Ruptures', $s['outOfStock'], 'Produits sans stock vendable', $s['outOfStock'] ? 'red' : 'slate', route('alerts.index', ['tab' => 'low_stock'])],
                 ['Sous le seuil', $s['belowThreshold'], 'À recommander', $s['belowThreshold'] ? 'amber' : 'slate', route('alerts.index', ['tab' => 'low_stock'])],
                 ['Périmés en stock', $money($s['expiredValue']).' MRU', 'À retirer de la vente', $s['expiredValue'] ? 'red' : 'slate', route('alerts.index', ['tab' => 'expiry'])],

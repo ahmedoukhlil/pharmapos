@@ -23,7 +23,7 @@ use Illuminate\Support\Str;
 
 /**
  * Réception fournisseur simple (PRD §10, LOT-01, ACH-03, ACH-04, QA-11) : brouillon modifiable,
- * puis validation atomique qui crée les lots, les entrées de stock et met à jour le CMUP.
+ * puis validation atomique qui crée les lots, les entrées de stock et met à jour le prix d'achat.
  *
  * Données d'un brouillon :
  *   supplier_id, location_id, delivery_note_ref?, notes?
@@ -126,7 +126,7 @@ class GoodsReceiptService
     }
 
     /**
-     * Validation : lots créés ou complétés, stock entré (rayon ou quarantaine), CMUP et prix d'achat mis à jour.
+     * Validation : lots créés ou complétés, stock entré (rayon ou quarantaine), prix d'achat mis à jour.
      */
     public function validate(User $user, GoodsReceipt $receipt): GoodsReceipt
     {
@@ -163,7 +163,7 @@ class GoodsReceiptService
                 $batch = $this->resolveBatch($user, $receipt, $line, $i + 1);
                 $unitCost = round((float) $line->unit_price / $line->presentation->units_per_pack, 4);
 
-                $this->updateCosts($user, $line->presentation, $line->quantity_units, $unitCost, (string) $line->unit_price);
+                $this->updatePurchasePrice($user, $line->presentation, (string) $line->unit_price);
                 $this->addStock($user, $receipt, $batch, $location, $line->quantity_units, $unitCost);
 
                 $line->update(['batch_id' => $batch->id]);
@@ -268,19 +268,12 @@ class GoodsReceiptService
         return $batch;
     }
 
-    /** CMUP par unité de base (valorisation par défaut, Annexe A) et dernier prix d'achat. */
-    private function updateCosts(User $user, Presentation $presentation, int $units, float $unitCost, string $packPrice): void
+    /** Dernier prix d'achat ; le coût réel reste porté par chaque lot (batches.unit_cost). */
+    private function updatePurchasePrice(User $user, Presentation $presentation, string $packPrice): void
     {
         $presentation = Presentation::whereKey($presentation->id)->lockForUpdate()->firstOrFail();
-        $onHand = (int) StockBalance::where('presentation_id', $presentation->id)->sum('quantity');
-        $previousAvg = (float) $presentation->weighted_avg_cost;
-
-        $newAvg = $onHand + $units > 0
-            ? ($onHand * $previousAvg + $units * $unitCost) / ($onHand + $units)
-            : $unitCost;
-
         $previousPrice = (string) $presentation->purchase_price;
-        $presentation->update(['weighted_avg_cost' => round($newAvg, 4), 'purchase_price' => $packPrice]);
+        $presentation->update(['purchase_price' => $packPrice]);
 
         if ((int) round((float) $previousPrice * 100) !== (int) round((float) $packPrice * 100)) {
             PriceHistory::create([

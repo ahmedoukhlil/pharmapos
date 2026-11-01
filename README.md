@@ -37,7 +37,7 @@ php artisan test
 - [x] Clôture de caisse, écarts, validation
 - [x] Ventes en attente (réservation de stock, reprise, expiration)
 - [x] Retours, avoirs et remboursements (quarantaine par défaut)
-- [x] Réceptions fournisseurs (lots, péremptions, quarantaine, CMUP)
+- [x] Réceptions fournisseurs (lots, péremptions, quarantaine, coût par lot)
 - [x] Inventaires par lot (comptage à l'aveugle, recomptage, approbation)
 - [x] Catalogue : produits, présentations, codes-barres, statuts, historique des prix, fournisseurs
 - [x] Import catalogue Excel/CSV avec aperçu (MED-05)

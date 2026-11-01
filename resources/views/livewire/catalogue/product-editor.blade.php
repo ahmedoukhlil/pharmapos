@@ -173,7 +173,6 @@
                         <div class="text-sm">
                             Achat {{ $money($p->purchase_price) }} · Vente <strong>{{ $money($p->sale_price) }}</strong>
                             @if ($p->allow_split_sale) · Unité {{ $money($p->unit_sale_price) }} @endif
-                            · CMUP {{ $money($p->weighted_avg_cost) }}/{{ $p->base_unit }} MRU
                         </div>
 
                         <div class="flex flex-wrap items-center gap-2 text-sm">

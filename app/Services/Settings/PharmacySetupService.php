@@ -37,7 +37,7 @@ class PharmacySetupService
         'expiry.month_year_rule' => 'end_of_month',
         'expiry.block_margin_days' => 0,
         'stock.allow_negative' => false,
-        'stock.valuation_method' => 'cmup',
+        'stock.valuation_method' => 'batch_cost',
         'sale.rounding_step' => 1,
         'sale.hold_reservation_minutes' => 30,
         'scanner.pairing_ttl_seconds' => 120,

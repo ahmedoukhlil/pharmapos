@@ -92,7 +92,6 @@ class CatalogueService
                 $presentation = Presentation::create($data + [
                     'pharmacy_id' => $user->pharmacy_id,
                     'medicine_id' => $medicine->id,
-                    'weighted_avg_cost' => round($data['purchase_price'] / $data['units_per_pack'], 4),
                     'status' => 'active',
                 ]);
                 $this->audit($user, 'presentation.created', 'presentation', $presentation->id, null, $data);

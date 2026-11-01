@@ -121,7 +121,7 @@ class ReportService
         ];
     }
 
-    /** Stock à date : vendable, quarantaine / non vendable, valorisation au CMUP, ruptures. */
+    /** Stock à date : vendable, quarantaine / non vendable, valorisation au coût d'achat réel de chaque lot, ruptures. */
     private function stock(string $pharmacyId, array $f): array
     {
         $today = Carbon::today()->toDateString();
@@ -135,22 +135,20 @@ class ReportService
             ->when($f['location_id'] ?? null, fn ($q, $v) => $q->where(fn ($q) => $q->where('stock_balances.location_id', $v)->orWhereNull('stock_balances.id')))
             ->when($f['type'] ?? null, fn ($q, $v) => $q->where('medicines.type', $v))
             ->groupBy('presentations.id', 'presentations.sku', 'medicines.brand_name', 'medicines.strength', 'presentations.base_unit',
-                'presentations.weighted_avg_cost', 'presentations.reorder_threshold')
+                'presentations.reorder_threshold')
             ->selectRaw("presentations.sku, medicines.brand_name, medicines.strength, presentations.base_unit,
-                presentations.weighted_avg_cost as cmup, presentations.reorder_threshold,
+                presentations.reorder_threshold,
+                SUM(COALESCE(stock_balances.quantity, 0) * COALESCE(batches.unit_cost, 0)) as value,
                 SUM(CASE WHEN locations.is_sellable = 1 AND batches.status = 'available' AND batches.expiry_date >= ? THEN stock_balances.quantity ELSE 0 END) as sellable,
                 SUM(CASE WHEN locations.is_sellable = 1 AND batches.status = 'available' AND batches.expiry_date >= ? THEN 0 ELSE COALESCE(stock_balances.quantity, 0) END) as blocked", [$today, $today])
             ->orderBy('medicines.brand_name')->get()->map(function ($r) {
-                $total = (int) $r->sellable + (int) $r->blocked;
-
                 return [
                     'product' => trim("$r->brand_name $r->strength"),
                     'sku' => $r->sku,
                     'sellable' => (int) $r->sellable,
                     'blocked' => (int) $r->blocked,
                     'unit' => $r->base_unit,
-                    'cmup' => round((float) $r->cmup, 4),
-                    'value' => round($total * (float) $r->cmup, 2),
+                    'value' => round((float) $r->value, 2),
                     'state' => match (true) {
                         (int) $r->sellable <= 0 => 'Rupture',
                         $r->reorder_threshold > 0 && $r->sellable <= $r->reorder_threshold => 'Sous le seuil',
@@ -159,9 +157,9 @@ class ReportService
                 ];
             });
 
-        return [$this->table('Stock et valorisation (CMUP)', [
+        return [$this->table('Stock et valorisation (coût des lots)', [
             'product' => 'Produit', 'sku' => 'SKU', 'sellable' => 'Vendable', 'blocked' => 'Quarantaine / périmé / bloqué',
-            'unit' => 'Unité', 'cmup' => 'CMUP', 'value' => 'Valeur', 'state' => 'État',
+            'unit' => 'Unité', 'value' => 'Valeur', 'state' => 'État',
         ], $rows, ['value'])];
     }
 
