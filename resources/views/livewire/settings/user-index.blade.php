@@ -88,6 +88,7 @@
                                     @else
                                         <button wire:click="toggle('{{ $u->id }}')" class="text-emerald-800 hover:underline">Réactiver</button>
                                     @endif
+                                    <button wire:click="delete('{{ $u->id }}')" wire:confirm="Supprimer définitivement le compte de {{ $u->name }} ? Possible seulement s'il n'a jamais été utilisé ; sinon, désactivez-le." class="text-red-700 hover:underline" title="Supprimer">🗑</button>
                                 @endunless
                             </td>
                         </tr>

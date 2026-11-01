@@ -84,6 +84,17 @@ class UserIndex extends Component
         $this->credentials = [$user->name, $user->username, $service->resetPassword(auth()->user(), $user)];
     }
 
+    public function delete(string $id, UserService $service): void
+    {
+        if (! $this->reauthenticated('user.manage', 'delete', ['id' => $id])) {
+            return;
+        }
+        $service->delete(auth()->user(), $this->user($id));
+        if ($this->editing === $id) {
+            $this->editing = null;
+        }
+    }
+
     private function user(string $id): User
     {
         return User::where('pharmacy_id', auth()->user()->pharmacy_id)->findOrFail($id);

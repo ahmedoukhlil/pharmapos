@@ -5,6 +5,7 @@ namespace App\Services\Settings;
 use App\Models\AuditLog;
 use App\Models\Role;
 use App\Models\User;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -95,6 +96,36 @@ class UserService
             }
             $this->audit($actor, $active ? 'user.activated' : 'user.deactivated', $user, ['is_active' => $active]);
         });
+    }
+
+    /**
+     * Supprime un compte qui n'a laissé aucune trace (ventes, sessions de caisse, réceptions,
+     * journal d'audit…). Sinon, les clés étrangères l'empêchent : il faut le désactiver.
+     */
+    public function delete(User $actor, User $user): void
+    {
+        $this->authorize($actor, $user);
+        if ($actor->is($user)) {
+            throw ValidationException::withMessages(['user' => 'Vous ne pouvez pas supprimer votre propre compte.']);
+        }
+        if ($this->currentRole($user)?->slug === self::OWNER && $actor->roles()->where('slug', self::OWNER)->doesntExist()) {
+            throw ValidationException::withMessages(['user' => 'Seul un propriétaire peut supprimer un propriétaire.']);
+        }
+
+        try {
+            DB::transaction(function () use ($actor, $user) {
+                $snapshot = $user->only(['name', 'username', 'email', 'phone']) + ['role' => $this->currentRole($user)?->slug];
+                DB::table('sessions')->where('user_id', $user->id)->delete();
+                $user->delete();
+                $this->ensureOwner($actor->pharmacy_id);
+                $this->audit($actor, 'user.deleted', $user, [], $snapshot);
+            });
+        } catch (QueryException $e) {
+            if (($e->errorInfo[0] ?? null) !== '23000') {
+                throw $e;
+            }
+            throw ValidationException::withMessages(['user' => "{$user->name} a déjà un historique (ventes, caisse, stock ou journal) : le compte ne peut pas être supprimé. Désactivez-le."]);
+        }
     }
 
     /** Génère un nouveau mot de passe provisoire, à changer à la prochaine connexion. */

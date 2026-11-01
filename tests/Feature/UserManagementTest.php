@@ -54,6 +54,28 @@ class UserManagementTest extends TestCase
         $this->get(route('pos'))->assertOk();
     }
 
+    public function test_delete_only_unused_accounts(): void
+    {
+        $owner = $this->user('owner');
+        $service = app(UserService::class);
+
+        // Compte jamais utilisé : supprimé, rôle retiré, trace dans le journal
+        [$new] = $service->create($owner, ['name' => 'Stagiaire', 'username' => 'stagiaire', 'role' => 'cashier']);
+        $this->actingAs($owner)->withFreshReauth();
+        Livewire::test(UserIndex::class)->call('delete', $new->id)->assertHasNoErrors();
+        $this->assertNull(User::find($new->id));
+        $this->assertEquals(['name' => 'Stagiaire', 'username' => 'stagiaire', 'email' => null, 'phone' => null, 'role' => 'cashier'],
+            AuditLog::where('action', 'user.deleted')->sole()->old_values);
+
+        // Compte avec historique (ici une ligne du journal d'audit) : refusé, il faut désactiver
+        $cashier = $this->user('cashier');
+        AuditLog::create(['pharmacy_id' => $cashier->pharmacy_id, 'user_id' => $cashier->id, 'action' => 'user.password_changed']);
+        Livewire::test(UserIndex::class)->call('delete', $cashier->id)->assertHasErrors('user');
+        $this->assertNotNull(User::find($cashier->id));
+
+        $this->assertThrows(fn () => $service->delete($owner, $owner), ValidationException::class);
+    }
+
     public function test_deactivate_reset_and_guards(): void
     {
         $owner = $this->user('owner');
