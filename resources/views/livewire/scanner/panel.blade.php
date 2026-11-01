@@ -15,7 +15,7 @@
     @endif
 
     @if ($open && $state)
-        <div class="absolute end-0 top-full z-40 mt-2 w-80 rounded-lg bg-white p-4 text-sm text-slate-900 shadow-xl">
+        <div class="absolute end-0 top-full z-40 mt-2 w-80 rounded-lg bg-white p-4 text-sm whitespace-normal text-slate-900 shadow-xl">
             @if ($state === 'waiting_phone' && $qr)
                 <p class="font-semibold">Scannez ce QR avec le téléphone</p>
                 <div class="mx-auto my-2 w-fit">{!! $qr !!}</div>
