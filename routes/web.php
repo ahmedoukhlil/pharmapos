@@ -25,6 +25,7 @@ use App\Livewire\Purchasing\ReceiptIndex;
 use App\Livewire\Reports\ReportIndex;
 use App\Http\Controllers\Auth\PasswordController;
 use App\Livewire\Settings\PaymentMethodIndex;
+use App\Livewire\Settings\StoreLayoutIndex;
 use App\Livewire\Settings\UserIndex;
 use App\Livewire\Setup\SetupWizard;
 use App\Livewire\System\BackupIndex;
@@ -65,6 +66,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/sauvegardes', BackupIndex::class)->name('backups.index');
     Route::get('/modes-paiement', PaymentMethodIndex::class)->name('payment-methods.index');
     Route::get('/utilisateurs', UserIndex::class)->name('users.index');
+    Route::get('/caisses-emplacements', StoreLayoutIndex::class)->name('store-layout.index');
     Route::get('/mot-de-passe', [PasswordController::class, 'edit'])->name('password.edit');
     Route::put('/mot-de-passe', [PasswordController::class, 'update'])->name('password.update');
     Route::get('/commandes', OrderIndex::class)->name('orders.index');

@@ -52,4 +52,5 @@ php artisan test
 - [x] Sauvegardes locales chiffrées (AES-256-GCM) toutes les 15 min, copie sur support distinct, rétention, test de restauration quotidien, alerte d'échec — configurer `BACKUP_KEY` (`php artisan pharmapos:backup --generate-key`), `BACKUP_SECONDARY_PATH` et lancer `php artisan schedule:work`
 - [x] Paramétrage des modes de paiement (ajout, ordre, activation, suppression si jamais utilisé)
 - [x] Assistant de premier démarrage (/installation) et gestion des utilisateurs (mot de passe provisoire, changement obligatoire, désactivation, garde-fous propriétaire)
+- [x] Paramétrage des caisses et des emplacements de stock (code auto, imprimante 58/80 mm, garde-fous stock et sessions)
 - [ ] Synchronisation cloud
