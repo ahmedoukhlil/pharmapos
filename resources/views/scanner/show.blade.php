@@ -9,7 +9,7 @@
     <link rel="icon" type="image/png" href="/images/icon-64.png">
     <link rel="apple-touch-icon" href="/images/icon-192.png">
     <title>Scanner — PharmaPOS</title>
-    @vite(['resources/css/app.css'])
+    @vite(['resources/css/app.css', 'resources/js/barcode.js'])
 </head>
 <body class="min-h-screen bg-slate-900 text-white antialiased">
 <main id="app" class="mx-auto flex min-h-screen max-w-md flex-col gap-3 p-3"
@@ -337,12 +337,15 @@
             timer = false;
             return cameraMessage("Caméra indisponible : la page doit être ouverte en HTTPS. Utilisez la saisie manuelle.");
         }
-        if (!('BarcodeDetector' in window)) {
+        // Le module resources/js/barcode.js (chargé en différé) fournit un lecteur sur tous les navigateurs
+        for (let i = 0; !window.barcodeDetectorReady && i < 50; i++) await new Promise((r) => setTimeout(r, 100));
+        const reader = await window.barcodeDetectorReady?.catch(() => null);
+        if (!reader || !('BarcodeDetector' in window)) {
             timer = false;
-            return cameraMessage("Ce navigateur ne sait pas lire les codes-barres (utilisez Chrome sur Android) : saisie manuelle.");
+            return cameraMessage("Lecteur de codes-barres indisponible sur ce navigateur : utilisez la saisie manuelle.");
         }
         try {
-            stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
+            stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false });
         } catch {
             timer = false;
             return cameraMessage("Accès à la caméra refusé : autorisez-le dans le navigateur ou utilisez la saisie manuelle.");
@@ -355,12 +358,15 @@
             let on = false;
             $('torch').onclick = () => track.applyConstraints({ advanced: [{ torch: (on = !on) }] });
         }
-        const detector = new BarcodeDetector({ formats: ['ean_13', 'ean_8', 'upc_a', 'code_128'] });
+        const detector = new BarcodeDetector({ formats: reader.formats });
+        let busy = false;   // le décodeur WebAssembly peut dépasser 250 ms : pas d'appels empilés
         timer = setInterval(async () => {
+            if (busy || $('video').readyState < 2) return;
+            busy = true;
             try {
                 const codes = await detector.detect($('video'));
                 if (codes[0]?.rawValue) detected(codes[0].rawValue);
-            } catch {}
+            } catch {} finally { busy = false; }
         }, 250);
     }
     function stopCamera() {

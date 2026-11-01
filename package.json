@@ -15,6 +15,7 @@
         "vite": "^7.0.7"
     },
     "dependencies": {
+        "barcode-detector": "^2.3.1",
         "chart.js": "^4.4.7"
     }
 }
