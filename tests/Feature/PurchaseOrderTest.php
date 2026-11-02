@@ -75,6 +75,17 @@ class PurchaseOrderTest extends TestCase
         return $receiptService->validate($this->user(), $receipt);
     }
 
+    public function test_printable_purchase_order(): void
+    {
+        $order = $this->sentOrder();
+        $this->actingAs($this->user());
+        $this->get(route('orders.print', $order))->assertOk()
+            ->assertSee('BON DE COMMANDE')->assertSee($order->number)->assertSee($order->supplier->name)->assertSee('2 705,00');
+
+        $this->actingAs(User::where('username', 'cashier')->firstOrFail());
+        $this->get(route('orders.print', $order))->assertForbidden();
+    }
+
     public function test_order_lifecycle_with_partial_receipts(): void
     {
         $order = $this->sentOrder();

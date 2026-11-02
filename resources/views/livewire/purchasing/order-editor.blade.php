@@ -21,7 +21,7 @@
             @endif
             <div class="ms-auto flex gap-2 print:hidden">
                 @if ($order && $order->status !== 'draft')
-                    <button onclick="window.print()" class="rounded-lg border border-slate-300 px-3 py-2 text-sm">Imprimer</button>
+                    <a href="{{ route('orders.print', $order) }}" target="_blank" class="rounded-lg border border-slate-300 px-3 py-2 text-sm">Imprimer le bon</a>
                 @endif
                 @if ($order && in_array($order->status, ['sent', 'partially_received']))
                     <button wire:click="receive" class="rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white">Réceptionner</button>

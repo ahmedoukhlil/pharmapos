@@ -76,6 +76,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/commandes', OrderIndex::class)->name('orders.index');
     Route::get('/commandes/nouvelle', OrderEditor::class)->name('orders.create');
     Route::get('/commandes/{order}', OrderEditor::class)->name('orders.edit');
+    Route::get('/commandes/{order}/bon', [TicketController::class, 'showOrder'])->name('orders.print');
     Route::get('/factures', InvoiceIndex::class)->name('invoices.index');
     Route::get('/factures/nouvelle', InvoiceEditor::class)->name('invoices.create');
     Route::get('/factures/{invoice}', InvoiceEditor::class)->name('invoices.show');

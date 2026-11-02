@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Payment;
+use App\Models\PurchaseOrder;
 use App\Models\Sale;
 use App\Models\SaleReturn;
 use Illuminate\Http\Request;
@@ -39,5 +40,16 @@ class TicketController extends Controller
             'width' => $saleReturn->cashSession->register->printer_width,
             'autoPrint' => $request->boolean('print'),
         ]);
+    }
+
+    /** Bon de commande A4 à remettre ou envoyer au fournisseur. */
+    public function showOrder(Request $request, PurchaseOrder $order): View
+    {
+        abort_unless($request->user()->hasPermission('purchase.manage'), 403);
+        abort_unless($order->pharmacy_id === $request->user()->pharmacy_id && $order->status !== 'draft', 404);
+
+        $order->load(['pharmacy', 'supplier', 'creator', 'lines.presentation.medicine', 'lines.presentation.barcodes']);
+
+        return view('orders.print', ['order' => $order]);
     }
 }
