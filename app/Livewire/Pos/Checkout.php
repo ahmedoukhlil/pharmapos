@@ -134,6 +134,20 @@ class Checkout extends Component
         return $this->lookup($term)->take(8);
     }
 
+    /** Produits trouvés par nom ou DCI mais invendables faute de présentation. */
+    #[Computed]
+    public function withoutPresentation(): Collection
+    {
+        $term = trim($this->search);
+        if (mb_strlen($term) < 2) {
+            return collect();
+        }
+
+        return \App\Models\Medicine::where('pharmacy_id', auth()->user()->pharmacy_id)
+            ->where(fn ($q) => $q->where('brand_name', 'like', "%$term%")->orWhere('inn', 'like', "%$term%"))
+            ->whereDoesntHave('presentations')->limit(3)->get();
+    }
+
     private function lookup(string $term): Collection
     {
         return ProductLookup::find(auth()->user()->pharmacy_id, $term);
