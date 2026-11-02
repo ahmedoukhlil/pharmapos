@@ -144,11 +144,15 @@ class ReportTest extends TestCase
         $this->assertStringContainsString('PARA500-16', $csv);
         $this->assertSame(1, AuditLog::where('action', 'report.exported')->count());
 
+        $this->get(route('reports.print', ['report' => 'sales', 'from' => now()->toDateString(), 'to' => now()->toDateString()]))
+            ->assertOk()->assertSee('Ventes par période')->assertSee('PARA500-16');
+
         // Le préparateur consulte sans exporter ; le caissier n'a pas accès
         $this->actingAs($this->user('assistant_pharmacist'));
         $this->get(route('reports.index'))->assertOk()->assertDontSee('Exporter CSV');
         $this->get(route('reports.export', ['report' => 'sales']))->assertForbidden();
         $this->actingAs($this->user('cashier'));
         $this->get(route('reports.index'))->assertForbidden();
+        $this->get(route('reports.print', ['report' => 'sales']))->assertForbidden();
     }
 }

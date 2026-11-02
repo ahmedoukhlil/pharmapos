@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\ReportExportController;
 use App\Http\Controllers\ScannerController;
 use App\Http\Controllers\TicketController;
@@ -66,6 +67,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/catalogue/{medicine}', ProductEditor::class)->name('catalogue.edit');
     Route::get('/rapports', ReportIndex::class)->name('reports.index');
     Route::get('/rapports/export', ReportExportController::class)->name('reports.export');
+    Route::get('/rapports/imprimer', [DocumentController::class, 'report'])->name('reports.print');
     Route::get('/alertes', AlertIndex::class)->name('alerts.index');
     Route::get('/sauvegardes', BackupIndex::class)->name('backups.index');
     Route::get('/modes-paiement', PaymentMethodIndex::class)->name('payment-methods.index');
@@ -85,6 +87,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/inventaires/{session}', InventorySheet::class)->name('inventories.show');
     Route::get('/sessions', SessionIndex::class)->name('sessions.index');
     Route::get('/sessions/{session}', SessionShow::class)->name('sessions.show');
+    Route::get('/sessions/{session}/imprimer', [DocumentController::class, 'session'])->name('sessions.print');
     Route::get('/tickets/{sale}', [TicketController::class, 'show'])->name('tickets.show');
     Route::get('/scanner', [ScannerController::class, 'home'])->name('scanner.home');
     Route::get('/scanner/appairer/{token}', [ScannerController::class, 'pair'])->name('scanner.pair');

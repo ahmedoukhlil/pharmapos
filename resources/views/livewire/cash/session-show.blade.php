@@ -17,7 +17,7 @@
                 'bg-amber-100 text-amber-900' => $s->status === 'closed',
                 'bg-emerald-100 text-emerald-800' => $s->status === 'validated',
             ])>{{ $labels[$s->status] }}</span>
-            <button onclick="window.print()" class="ms-auto rounded-lg border border-slate-300 px-3 py-1 text-sm hover:bg-white print:hidden">Imprimer</button>
+            <a href="{{ route('sessions.print', $s) }}" target="_blank" class="ms-auto rounded-lg border border-slate-300 px-3 py-1 text-sm hover:bg-white print:hidden">Imprimer</a>
         </div>
 
         @if ($error)

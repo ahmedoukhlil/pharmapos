@@ -164,5 +164,6 @@ class CashSessionTest extends TestCase
 
         $this->assertSame('validated', $session->fresh()->status);
         $this->get(route('sessions.index', ['status' => 'validated']))->assertOk()->assertSee('Caisse 1');
+        $this->get(route('sessions.print', $session))->assertOk()->assertSee('Session de caisse')->assertSee('1 650,00')->assertSee('Le responsable');
     }
 }

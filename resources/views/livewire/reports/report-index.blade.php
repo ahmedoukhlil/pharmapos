@@ -20,7 +20,11 @@
                     <button wire:click="$set('report', '{{ $k }}')" @class(['rounded-full px-3 py-1', 'bg-emerald-700 text-white' => $report === $k, 'bg-white shadow-sm' => $report !== $k])>{{ $label }}</button>
                 @endforeach
             </nav>
-            <button onclick="window.print()" class="ms-auto rounded-lg border border-slate-300 px-3 py-1.5 text-sm print:hidden">Imprimer / PDF</button>
+            @if ($report === 'dashboard')
+                <button onclick="window.print()" class="ms-auto rounded-lg border border-slate-300 px-3 py-1.5 text-sm print:hidden">Imprimer / PDF</button>
+            @else
+                <a href="{{ route('reports.print', $query) }}" target="_blank" class="ms-auto rounded-lg border border-slate-300 px-3 py-1.5 text-sm print:hidden">Imprimer / PDF</a>
+            @endif
         </div>
 
         <div class="flex flex-wrap items-end gap-3 rounded-lg bg-white p-3 text-sm shadow-sm print:hidden">
