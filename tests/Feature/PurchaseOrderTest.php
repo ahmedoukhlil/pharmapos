@@ -80,7 +80,7 @@ class PurchaseOrderTest extends TestCase
         $order = $this->sentOrder();
         $this->actingAs($this->user());
         $this->get(route('orders.print', $order))->assertOk()
-            ->assertSee('BON DE COMMANDE')->assertSee($order->number)->assertSee($order->supplier->name)->assertSee('2 705,00');
+            ->assertSee('BON DE COMMANDE')->assertSee($order->number)->assertSee($order->supplier->name)->assertDontSee('2 705,00');
 
         $this->actingAs(User::where('username', 'cashier')->firstOrFail());
         $this->get(route('orders.print', $order))->assertForbidden();

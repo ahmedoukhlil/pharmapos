@@ -108,25 +108,19 @@
         <tr>
             <th class="c" style="width:7mm">#</th>
             <th>Désignation</th>
-            <th>Code-barres / SKU</th>
-            <th class="r">Qté (boîtes)</th>
-            <th class="r">Prix unit.</th>
-            <th class="r">Montant</th>
+            <th class="r" style="width:30mm">Quantité (boîtes)</th>
         </tr>
         </thead>
         <tbody>
         @foreach ($order->lines as $i => $l)
-            @php $m = $l->presentation->medicine; $code = $l->presentation->barcodes->firstWhere('is_active', true)?->barcode; @endphp
+            @php $m = $l->presentation->medicine @endphp
             <tr>
                 <td class="c muted">{{ $i + 1 }}</td>
                 <td>
                     <strong>{{ $m->brand_name }} {{ $m->strength }}</strong>
                     <div class="muted">{{ collect([$m->inn, $m->dosage_form, $l->presentation->label])->filter()->implode(' · ') }}</div>
                 </td>
-                <td class="mono">{{ $code ?? $l->presentation->sku }}</td>
                 <td class="r"><strong>{{ $l->quantity_packs }}</strong></td>
-                <td class="r">{{ $money($l->unit_price) }}</td>
-                <td class="r">{{ $money($l->quantity_packs * $l->unit_price) }}</td>
             </tr>
         @endforeach
         </tbody>
@@ -135,7 +129,6 @@
     <table class="totals">
         <tr><td class="muted">Lignes</td><td class="r">{{ $order->lines->count() }}</td></tr>
         <tr><td class="muted">Boîtes</td><td class="r">{{ $packs }}</td></tr>
-        <tr class="grand"><td>Total {{ $p->currency }}</td><td class="r">{{ $money($order->lines->sum(fn ($l) => $l->quantity_packs * $l->unit_price)) }}</td></tr>
     </table>
 
     @if ($order->notes)
