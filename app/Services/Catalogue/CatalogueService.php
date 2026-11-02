@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 
 /**
  * Référentiel produits (PRD §5) : MED-01 archivage plutôt que suppression, MED-03 codes-barres
@@ -61,13 +62,27 @@ class CatalogueService
      * Création ou modification d'une présentation. Un changement de prix exige price.update et
      * alimente l'historique ; le conditionnement d'un produit déjà stocké n'est plus modifiable.
      */
+    /** SKU automatique : nom commercial + dosage + conditionnement, ex. DOLIPRANE500-16. */
+    public function generateSku(User $user, Medicine $medicine, int $unitsPerPack): string
+    {
+        $name = substr(preg_replace('/[^A-Z0-9]/', '', strtoupper(Str::ascii($medicine->brand_name))), 0, 10) ?: 'PROD';
+        $dose = preg_replace('/[^0-9]/', '', (string) $medicine->strength);
+        $base = substr($name.$dose, 0, 16).'-'.$unitsPerPack;
+        $sku = $base;
+        for ($i = 2; Presentation::where('pharmacy_id', $user->pharmacy_id)->where('sku', $sku)->exists(); $i++) {
+            $sku = $base.'-'.$i;
+        }
+
+        return $sku;
+    }
+
     public function savePresentation(User $user, Medicine $medicine, array $data, ?Presentation $presentation = null): Presentation
     {
         $this->authorize($user, 'catalogue.manage');
         $this->assertOwned($user, $medicine);
 
         $data = Validator::make($data, [
-            'sku' => ['required', 'string', 'max:50',
+            'sku' => ['nullable', 'string', 'max:50',
                 Rule::unique('presentations', 'sku')->where('pharmacy_id', $user->pharmacy_id)->ignore($presentation?->id)],
             'label' => ['required', 'string', 'max:255'],
             'base_unit' => ['required', 'string', 'max:30'],
@@ -80,7 +95,8 @@ class CatalogueService
             'reorder_quantity' => ['nullable', 'integer', 'min:0'],
         ], [], $this->labels())->validate();
 
-        $data['sku'] = strtoupper(trim($data['sku']));
+        $data['sku'] = filled($data['sku'] ?? null) ? strtoupper(trim($data['sku']))
+            : ($presentation?->sku ?? $this->generateSku($user, $medicine, (int) $data['units_per_pack']));
         $data['reorder_threshold'] = (int) ($data['reorder_threshold'] ?? 0);
         $data['reorder_quantity'] = (int) ($data['reorder_quantity'] ?? 0);
         if (! ($data['allow_split_sale'] ?? false)) {

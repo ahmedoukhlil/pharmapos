@@ -69,6 +69,18 @@ class CatalogueTest extends TestCase
         $this->assertSame('ean13', Barcode::guessSymbology('0612345678901'));
     }
 
+    public function test_blank_sku_is_generated_and_kept_unique(): void
+    {
+        $p = $this->newProduct();
+        $first = $this->service->savePresentation($this->user('owner'), $p->medicine, $this->presentationData(['sku' => '']));
+        $second = $this->service->savePresentation($this->user('owner'), $p->medicine, $this->presentationData(['sku' => null]));
+
+        $this->assertSame('DOLIPRANE1000-8', $first->sku);
+        $this->assertSame('DOLIPRANE1000-8-2', $second->sku);
+        // Modifiée sans SKU : on garde l'existant
+        $this->assertSame('DOLIPRANE1000-8', $this->service->savePresentation($this->user('owner'), $p->medicine, $this->presentationData(['sku' => '']), $first)->sku);
+    }
+
     public function test_created_product_is_found_by_barcode(): void
     {
         $p = $this->newProduct();

@@ -113,10 +113,10 @@
 
                 @if ($editing !== null)
                     <form wire:submit="savePresentation" class="grid gap-3 rounded-lg border border-emerald-200 bg-white p-4 shadow-sm sm:grid-cols-4">
-                        @foreach (['sku' => 'SKU *', 'label' => 'Libellé *', 'base_unit' => 'Unité de base *', 'units_per_pack' => 'Unités / boîte *'] as $f => $l)
+                        @foreach (['sku' => 'SKU', 'label' => 'Libellé *', 'base_unit' => 'Unité de base *', 'units_per_pack' => 'Unités / boîte *'] as $f => $l)
                             <label class="block">
                                 <span class="text-sm font-medium">{{ $l }}</span>
-                                <input wire:model="pres.{{ $f }}" @if ($f === 'units_per_pack') type="number" min="1" @endif class="{{ $input }}">
+                                <input wire:model="pres.{{ $f }}" @if ($f === 'units_per_pack') type="number" min="1" @endif @if ($f === 'sku') placeholder="Vide = généré automatiquement" @endif class="{{ $input }}">
                                 @error("pres.$f") <span class="text-xs text-red-700">{{ $message }}</span> @enderror
                             </label>
                         @endforeach

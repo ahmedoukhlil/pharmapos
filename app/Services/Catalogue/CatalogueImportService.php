@@ -53,7 +53,7 @@ class CatalogueImportService
                 $cells = array_map(fn ($v) => is_string($v) ? trim($v) : $v, $row->toArray());
                 if ($headers === null) {
                     $headers = array_map(fn ($h) => Str::of(str_replace("\u{FEFF}", '', (string) $h))->ascii()->lower()->replaceMatches('/[^a-z0-9]+/', '_')->trim('_')->value(), $cells);
-                    $unknown = array_diff(['nom_commercial', 'sku', 'prix_vente'], $headers);
+                    $unknown = array_diff(['nom_commercial', 'prix_vente'], $headers);
                     if ($unknown) {
                         throw ValidationException::withMessages(['file' => 'Colonnes obligatoires absentes : '.implode(', ', $unknown).'.']);
                     }
