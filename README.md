@@ -53,4 +53,5 @@ php artisan test
 - [x] Paramétrage des modes de paiement (ajout, ordre, activation, suppression si jamais utilisé)
 - [x] Assistant de premier démarrage (/installation) et gestion des utilisateurs (mot de passe provisoire, changement obligatoire, désactivation, garde-fous propriétaire)
 - [x] Paramétrage des caisses et des emplacements de stock (code auto, imprimante 58/80 mm, garde-fous stock et sessions)
+- [x] SaaS : console super-administrateur (/admin) — création des pharmacies, abonnement et échéance, suspension, réinitialisation du propriétaire ; connexion par code pharmacie + identifiant ; premier démarrage = compte super-administrateur (ou `php artisan pharmapos:super-admin <identifiant>`)
 - [ ] Synchronisation cloud

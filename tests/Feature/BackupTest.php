@@ -4,7 +4,6 @@ namespace Tests\Feature;
 
 use App\Livewire\Alerts\AlertIndex;
 use App\Livewire\System\BackupIndex;
-use App\Models\AuditLog;
 use App\Models\Backup;
 use App\Models\Pharmacy;
 use App\Models\User;
@@ -117,15 +116,16 @@ class BackupTest extends TestCase
 
     public function test_screen_and_permissions(): void
     {
-        $this->actingAs($this->user('owner'));
+        // SaaS : base commune à toutes les pharmacies, sauvegardée par l'exploitant seul
+        $this->actingAs(User::where('is_super_admin', true)->firstOrFail());
         Livewire::test(BackupIndex::class)->call('backupNow')->assertHasNoErrors()->assertSee('Réussie');
         $backup = Backup::firstOrFail();
         Livewire::test(BackupIndex::class)->call('testRestore', $backup->id)->assertHasNoErrors();
         $this->assertNotNull($backup->fresh()->restore_tested_at);
-        $this->assertSame(1, AuditLog::where('action', 'backup.created')->count());
-        $this->assertSame(1, AuditLog::where('action', 'backup.restore_tested')->count());
 
-        $this->actingAs($this->user('cashier'));
-        $this->get(route('backups.index'))->assertForbidden();
+        foreach (['owner', 'cashier'] as $username) {
+            $this->actingAs($this->user($username));
+            $this->get(route('backups.index'))->assertForbidden();
+        }
     }
 }

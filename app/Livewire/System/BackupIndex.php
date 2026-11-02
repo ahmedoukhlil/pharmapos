@@ -22,16 +22,14 @@ class BackupIndex extends Component
 
     public static function allowed(): bool
     {
-        $user = auth()->user();
-
-        return $user->hasPermission('system.maintain') || $user->hasPermission('settings.manage');
+        // SaaS : la base est commune à toutes les pharmacies, seul l'exploitant la sauvegarde
+        return (bool) auth()->user()?->is_super_admin;
     }
 
     public function backupNow(BackupService $backups): void
     {
         abort_unless(self::allowed(), 403);
         $backup = $backups->run('manual', auth()->user());
-        cache()->forget('alerts.count.'.auth()->user()->pharmacy_id);
         $backup->status === 'success'
             ? session()->flash('status', "Sauvegarde {$backup->filename} créée.")
             : $this->addError('backup', 'Échec : '.$backup->error);

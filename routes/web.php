@@ -4,6 +4,8 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\ReportExportController;
 use App\Http\Controllers\ScannerController;
 use App\Http\Controllers\TicketController;
+use App\Livewire\Admin\PharmacyCreate;
+use App\Livewire\Admin\PharmacyIndex;
 use App\Livewire\Alerts\AlertIndex;
 use App\Livewire\Cash\SessionIndex;
 use App\Livewire\Cash\SessionShow;
@@ -40,6 +42,8 @@ Route::middleware('guest')->group(function () {
 
 Route::middleware('auth')->group(function () {
     Route::redirect('/', '/caisse');
+    Route::get('/admin', PharmacyIndex::class)->name('admin.pharmacies');
+    Route::get('/admin/pharmacies/nouvelle', PharmacyCreate::class)->name('admin.pharmacies.create');
     Route::get('/caisse', Checkout::class)->name('pos');
     Route::get('/caisse/cloture', CloseSession::class)->name('pos.close');
     Route::get('/retours', Returns::class)->name('returns');

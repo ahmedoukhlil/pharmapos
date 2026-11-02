@@ -1,5 +1,8 @@
 @props(['register' => null])
 
+@if (auth()->user()->is_super_admin)
+    <x-admin-nav />
+@else
 @php
     $user = auth()->user();
     $q = $register ? ['caisse' => $register] : [];
@@ -108,3 +111,4 @@
         </div>
     </nav>
 </header>
+@endif

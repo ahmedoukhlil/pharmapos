@@ -277,6 +277,11 @@ class BackupService
 
     private function audit(User $user, string $action, Backup $backup, array $values): void
     {
+        if (! $user->pharmacy_id) {   // super-administrateur : hors journal des pharmacies
+            \Illuminate\Support\Facades\Log::info("$action par {$user->username}", ['backup' => $backup->id] + $values);
+
+            return;
+        }
         AuditLog::create(['pharmacy_id' => $user->pharmacy_id, 'user_id' => $user->id, 'action' => $action,
             'auditable_type' => 'backup', 'auditable_id' => $backup->id, 'new_values' => $values]);
     }

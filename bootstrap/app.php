@@ -14,6 +14,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(append: [
             \App\Http\Middleware\EnsurePasswordChanged::class,
             \App\Http\Middleware\RedirectToSetup::class,
+            \App\Http\Middleware\TenantGate::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

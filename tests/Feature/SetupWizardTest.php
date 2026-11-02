@@ -3,18 +3,14 @@
 namespace Tests\Feature;
 
 use App\Livewire\Setup\SetupWizard;
-use App\Models\PaymentMethod;
-use App\Models\Pharmacy;
-use App\Models\Register;
 use App\Models\User;
-use App\Services\Settings\UserService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\RefreshDatabaseState;
 use Livewire\Livewire;
 use Tests\TestCase;
 
 /**
- * Assistant de premier démarrage sur une base vide (sans données de démonstration).
+ * Premier démarrage du SaaS sur une base vide : création du super-administrateur.
  */
 class SetupWizardTest extends TestCase
 {
@@ -28,31 +24,28 @@ class SetupWizardTest extends TestCase
         $this->beginDatabaseTransaction();
     }
 
-    public function test_fresh_install_creates_pharmacy_and_owner(): void
+    public function test_fresh_install_creates_the_super_admin(): void
     {
+        cache()->forget(\App\Services\Settings\PharmacySetupService::INSTALLED_KEY);
         $this->get(route('login'))->assertRedirect(route('setup'));
         // Les requêtes Livewire de l'assistant ne doivent pas être renvoyées vers /installation
         $this->assertNotSame(route('setup'), $this->post(route('default.livewire.update'))->headers->get('Location'));
 
         Livewire::test(SetupWizard::class)
-            ->call('next')->assertHasErrors('pharmacy.name')
-            ->set('pharmacy.name', 'Pharmacie Ennour')->call('next')->assertSet('step', 2)
-            ->set('owner.name', 'Dr Sidi')->set('owner.username', 'Sidi')
-            ->set('owner.password', 'abc')->set('owner.password_confirmation', 'abc')->call('next')->assertHasErrors('owner.password')
-            ->set('owner.password', 'Ennour2026')->set('owner.password_confirmation', 'Ennour2026')->call('next')->assertSet('step', 3)
-            ->call('addRegister')->set('methods.CLICK', true)->set('methods.MASRVI', false)->call('next')->assertSet('step', 4)
-            ->call('install')->assertRedirect(route('catalogue.import'));
+            ->set('admin.name', 'Exploitant')->set('admin.username', 'Root')
+            ->set('admin.password', 'court1')->set('admin.password_confirmation', 'court1')
+            ->call('install')->assertHasErrors('admin.password')
+            ->set('admin.password', 'Exploit2026')->set('admin.password_confirmation', 'Exploit2026')
+            ->call('install')->assertRedirect(route('admin.pharmacies'));
 
-        $pharmacy = Pharmacy::sole();
-        $owner = User::where('username', 'sidi')->sole();
-        $this->assertSame('PHARMACIEENNOUR', $pharmacy->code);
-        $this->assertSame('owner', app(UserService::class)->currentRole($owner)->slug);
-        $this->assertTrue($owner->hasPermission('user.manage'));
-        $this->assertSame(['C01', 'C02'], Register::orderBy('code')->pluck('code')->all());
-        $this->assertSame(['CASH', 'BANKILY', 'SEDAD', 'CLICK'], PaymentMethod::where('is_active', true)->orderBy('sort_order')->pluck('code')->all());
-        $this->assertAuthenticatedAs($owner);
+        $admin = User::sole();
+        $this->assertSame('root', $admin->username);
+        $this->assertTrue($admin->is_super_admin);
+        $this->assertNull($admin->pharmacy_id);
+        $this->assertAuthenticatedAs($admin);
 
         // Une fois installé, l'assistant n'est plus accessible
+        $this->post(route('logout'));
         $this->get(route('setup'))->assertNotFound();
     }
 }

@@ -181,7 +181,7 @@ class UserService
         }
         if (! preg_match('/^[a-z0-9._-]{3,30}$/', $values['username'])) {
             $errors['username'] = 'Identifiant de 3 à 30 caractères : lettres minuscules, chiffres, point, tiret.';
-        } elseif (User::where('username', $values['username'])->when($user, fn ($q) => $q->whereKeyNot($user->id))->exists()) {
+        } elseif (User::where('pharmacy_id', $actor->pharmacy_id)->where('username', $values['username'])->when($user, fn ($q) => $q->whereKeyNot($user->id))->exists()) {
             $errors['username'] = 'Cet identifiant est déjà utilisé.';
         }
         if ($values['email'] && ! filter_var($values['email'], FILTER_VALIDATE_EMAIL)) {

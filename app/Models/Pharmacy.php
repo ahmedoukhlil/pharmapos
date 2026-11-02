@@ -18,7 +18,19 @@ class Pharmacy extends Model
     {
         return [
             'is_active' => 'boolean',
+            'subscription_ends_at' => 'date',
         ];
+    }
+
+    /** SaaS : une pharmacie suspendue ou dont l'abonnement a expiré ne peut plus se connecter. */
+    public function isAccessible(): bool
+    {
+        return $this->is_active && ! $this->subscriptionExpired();
+    }
+
+    public function subscriptionExpired(): bool
+    {
+        return $this->subscription_ends_at !== null && $this->subscription_ends_at->endOfDay()->isPast();
     }
 
     public function locations(): HasMany

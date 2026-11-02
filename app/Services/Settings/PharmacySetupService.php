@@ -3,7 +3,6 @@
 namespace App\Services\Settings;
 
 use App\Models\AlertRule;
-use App\Models\AuditLog;
 use App\Models\Location;
 use App\Models\PaymentMethod;
 use App\Models\Pharmacy;
@@ -18,8 +17,8 @@ use Illuminate\Support\Str;
 
 /**
  * Création d'une officine prête à l'emploi : emplacements, caisses, modes de paiement,
- * règles par défaut (Annexe A) et compte propriétaire. Utilisé par l'assistant de premier
- * démarrage et par les données de démonstration.
+ * règles par défaut (Annexe A) et compte propriétaire. Utilisé par la console d'administration
+ * SaaS (TenantService) et par les données de démonstration.
  */
 class PharmacySetupService
 {
@@ -45,14 +44,17 @@ class PharmacySetupService
         'locale.default' => 'fr',
     ];
 
+    public const INSTALLED_KEY = 'pharmapos.saas_installed';
+
+    /** Installée dès qu'un super-administrateur existe : c'est lui qui crée ensuite les pharmacies. */
     public static function installed(): bool
     {
-        if (Cache::get('pharmapos.installed')) {
+        if (Cache::get(self::INSTALLED_KEY)) {
             return true;
         }
-        $installed = Pharmacy::exists();
+        $installed = User::where('is_super_admin', true)->exists();
         if ($installed) {
-            Cache::forever('pharmapos.installed', true);
+            Cache::forever(self::INSTALLED_KEY, true);
         }
 
         return $installed;
@@ -107,22 +109,6 @@ class PharmacySetupService
     {
         $user = User::create($data + ['pharmacy_id' => $pharmacy->id]);
         $user->roleAssignments()->create(['role_id' => Role::where('slug', $roleSlug)->value('id'), 'pharmacy_id' => $pharmacy->id]);
-
-        return $user;
-    }
-
-    /** Assistant de premier démarrage : officine + propriétaire, en une transaction. */
-    public function install(array $pharmacy, array $registers, array $methods, array $owner): User
-    {
-        $user = DB::transaction(function () use ($pharmacy, $registers, $methods, $owner) {
-            $p = $this->createPharmacy($pharmacy, $registers, $methods);
-            $user = $this->createUser($p, UserService::OWNER, $owner);
-            AuditLog::create(['pharmacy_id' => $p->id, 'user_id' => $user->id, 'action' => 'pharmacy.installed',
-                'auditable_type' => 'pharmacy', 'auditable_id' => $p->id, 'new_values' => ['name' => $p->name, 'registers' => count($registers)]]);
-
-            return $user;
-        });
-        Cache::forever('pharmapos.installed', true);
 
         return $user;
     }

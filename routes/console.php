@@ -10,6 +10,25 @@ Artisan::command('pos:release-expired-reservations', function (SaleService $sale
 
 Schedule::command('pos:release-expired-reservations')->everyMinute()->withoutOverlapping();
 
+Artisan::command('pharmapos:super-admin {username} {--name=Administrateur}', function (\App\Services\Admin\TenantService $tenants) {
+    $password = $this->secret('Mot de passe (10 caractères minimum, lettres et chiffres)');
+    if (strlen((string) $password) < 10 || ! preg_match('/[a-z]/i', $password) || ! preg_match('/\d/', $password)) {
+        $this->error('Mot de passe trop faible.');
+
+        return 1;
+    }
+    try {
+        $user = $tenants->createSuperAdmin(['name' => $this->option('name'), 'username' => $this->argument('username'), 'password' => $password]);
+    } catch (\Illuminate\Validation\ValidationException $e) {
+        $this->error(collect($e->errors())->flatten()->implode(' '));
+
+        return 1;
+    }
+    $this->info("Super-administrateur {$user->username} créé : connectez-vous en laissant le code pharmacie vide.");
+
+    return 0;
+})->purpose('Crée un compte super-administrateur SaaS (gestion des pharmacies)');
+
 Artisan::command('pharmapos:backup {--generate-key : Affiche une nouvelle clé BACKUP_KEY} {--test-restore : Teste la restauration de la dernière sauvegarde}', function (\App\Services\Backup\BackupService $backups) {
     if ($this->option('generate-key')) {
         $this->line('BACKUP_KEY='.\App\Services\Backup\BackupService::generateKey());
