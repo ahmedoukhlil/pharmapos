@@ -121,7 +121,8 @@ class QuickProduct extends Component
 
         return view('livewire.catalogue.quick-product', [
             'categories' => Category::where('pharmacy_id', $pharmacyId)->orderBy('name')->get(),
-            'margin' => CatalogueService::margin($pharmacyId, $this->form['type'] ?? 'medicine'),
+            'margin' => CatalogueService::margin($pharmacyId, $this->form['type'] ?? 'medicine',
+                is_numeric($this->form['purchase_price'] ?? null) ? (float) $this->form['purchase_price'] : null),
         ]);
     }
 }

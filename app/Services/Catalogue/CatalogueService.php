@@ -62,27 +62,83 @@ class CatalogueService
     /** Coefficient appliqué au prix d'achat pour proposer le prix de vente (réglage d'officine). */
     public const DEFAULT_MARGIN = 1.30;
 
-    public static function margin(string $pharmacyId, string $type): float
+    public const MAX_MARGIN_TIERS = 6;
+
+    /**
+     * Tranches de marge par prix d'achat, croissantes ; la dernière (up_to null) couvre « au-delà ».
+     *
+     * @return list<array{up_to: ?float, coef: float}>
+     */
+    public static function marginTiers(string $pharmacyId, string $type): array
     {
-        return (float) PharmacySettings::get($pharmacyId, "pricing.margin_$type", self::DEFAULT_MARGIN);
+        $tiers = PharmacySettings::get($pharmacyId, "pricing.margin_tiers_$type");
+        if (is_array($tiers) && $tiers !== []) {
+            return $tiers;
+        }
+
+        // Ancien réglage à coefficient unique
+        return [['up_to' => null, 'coef' => (float) PharmacySettings::get($pharmacyId, "pricing.margin_$type", self::DEFAULT_MARGIN)]];
     }
 
-    public function setMargins(User $user, float $medicine, float $parapharmacy): void
+    /** Coefficient de la tranche du prix d'achat (sans prix : celui de la première tranche). */
+    public static function margin(string $pharmacyId, string $type, ?float $purchasePrice = null): float
+    {
+        $tiers = self::marginTiers($pharmacyId, $type);
+        if ($purchasePrice === null) {
+            return (float) $tiers[0]['coef'];
+        }
+        foreach ($tiers as $t) {
+            if ($t['up_to'] === null || $purchasePrice <= $t['up_to']) {
+                return (float) $t['coef'];
+            }
+        }
+
+        return (float) end($tiers)['coef'];
+    }
+
+    /**
+     * @param  array<string, list<array{up_to: mixed, coef: mixed}>>  $tiersByType  medicine / parapharmacy
+     *
+     * @throws ValidationException clés margin_medicine, margin_parapharmacy
+     */
+    public function setMarginTiers(User $user, array $tiersByType): void
     {
         $this->authorize($user, 'price.update');
-        foreach (['medicine' => $medicine, 'parapharmacy' => $parapharmacy] as $type => $value) {
-            if ($value < 1 || $value > 5) {
-                throw ValidationException::withMessages(["margin_$type" => 'Coefficient entre 1 et 5 (ex. 1,30 = +30 %).']);
+        $num = fn ($x) => is_numeric($x = str_replace([' ', ','], ['', '.'], (string) $x)) ? (float) $x : null;
+        $clean = [];
+
+        foreach (['medicine', 'parapharmacy'] as $type) {
+            $rows = array_values($tiersByType[$type] ?? []);
+            $fail = fn ($m) => throw ValidationException::withMessages(["margin_$type" => $m]);
+            if ($rows === [] || count($rows) > self::MAX_MARGIN_TIERS) {
+                $fail('Entre 1 et '.self::MAX_MARGIN_TIERS.' tranches.');
             }
-            PharmacySettings::set($user->pharmacy_id, "pricing.margin_$type", round($value, 3));
+            $previous = 0.0;
+            foreach ($rows as $i => $row) {
+                $coef = $num($row['coef'] ?? null);
+                if ($coef === null || $coef < 1 || $coef > 5) {
+                    $fail('Coefficient entre 1 et 5 (ex. 1,30 = +30 %).');
+                }
+                $last = $i === count($rows) - 1;
+                $upTo = $last ? null : $num($row['up_to'] ?? null);
+                if (! $last && ($upTo === null || $upTo <= $previous)) {
+                    $fail('Les seuils « jusqu\'à » doivent être croissants et supérieurs à 0.');
+                }
+                $clean[$type][] = ['up_to' => $upTo, 'coef' => round($coef, 3)];
+                $previous = $upTo ?? $previous;
+            }
         }
-        $this->audit($user, 'pricing.margins_updated', 'pharmacy', $user->pharmacy_id, null, ['medicine' => $medicine, 'parapharmacy' => $parapharmacy]);
+
+        foreach ($clean as $type => $tiers) {
+            PharmacySettings::set($user->pharmacy_id, "pricing.margin_tiers_$type", $tiers);
+        }
+        $this->audit($user, 'pricing.margins_updated', 'pharmacy', $user->pharmacy_id, null, $clean);
     }
 
-    /** Prix de vente proposé : prix d'achat × coefficient, arrondi à l'unité supérieure. */
+    /** Prix de vente proposé : prix d'achat × coefficient de sa tranche, arrondi à l'unité supérieure. */
     public static function suggestedSalePrice(string $pharmacyId, string $type, float $purchasePrice): float
     {
-        return $purchasePrice > 0 ? ceil($purchasePrice * self::margin($pharmacyId, $type)) : 0;
+        return $purchasePrice > 0 ? ceil($purchasePrice * self::margin($pharmacyId, $type, $purchasePrice)) : 0;
     }
 
     /**

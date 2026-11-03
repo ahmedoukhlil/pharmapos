@@ -40,14 +40,37 @@ class CatalogueIndex extends Component
     public function editMargins(): void
     {
         $id = auth()->user()->pharmacy_id;
-        $this->margins = ['medicine' => (string) CatalogueService::margin($id, 'medicine'), 'parapharmacy' => (string) CatalogueService::margin($id, 'parapharmacy')];
+        foreach (['medicine', 'parapharmacy'] as $type) {
+            $this->margins[$type] = array_map(fn ($t) => ['up_to' => $t['up_to'] === null ? '' : (string) $t['up_to'], 'coef' => (string) $t['coef']],
+                CatalogueService::marginTiers($id, $type));
+        }
         $this->marginMessage = null;
+    }
+
+    /** Ajoute une tranche avant « au-delà », seuil proposé au double du précédent. */
+    public function addTier(string $type): void
+    {
+        $rows = $this->margins[$type];
+        if (count($rows) >= CatalogueService::MAX_MARGIN_TIERS) {
+            return;
+        }
+        $previous = count($rows) > 1 ? (float) str_replace(',', '.', $rows[count($rows) - 2]['up_to']) : 0;
+        array_splice($rows, count($rows) - 1, 0, [['up_to' => (string) ($previous > 0 ? $previous * 2 : 100), 'coef' => end($rows)['coef']]]);
+        $this->margins[$type] = $rows;
+    }
+
+    public function removeTier(string $type, int $i): void
+    {
+        $rows = $this->margins[$type];
+        if (count($rows) > 1 && $i < count($rows) - 1) {
+            array_splice($rows, $i, 1);
+            $this->margins[$type] = $rows;
+        }
     }
 
     public function saveMargins(CatalogueService $service): void
     {
-        $v = fn ($x) => (float) str_replace(',', '.', (string) $x);
-        $service->setMargins(auth()->user(), $v($this->margins['medicine']), $v($this->margins['parapharmacy']));
+        $service->setMarginTiers(auth()->user(), $this->margins);
         $this->margins = null;
         $this->marginMessage = 'Coefficients enregistrés : ils s\'appliquent aux prochains produits créés.';
     }
@@ -71,7 +94,7 @@ class CatalogueIndex extends Component
             'medicines' => $medicines,
             'canManage' => auth()->user()->hasPermission('catalogue.manage'),
             'canPrice' => auth()->user()->hasPermission('price.update'),
-            'currentMargins' => ['medicine' => CatalogueService::margin(auth()->user()->pharmacy_id, 'medicine'), 'parapharmacy' => CatalogueService::margin(auth()->user()->pharmacy_id, 'parapharmacy')],
+            'currentMargins' => ['medicine' => CatalogueService::marginTiers(auth()->user()->pharmacy_id, 'medicine'), 'parapharmacy' => CatalogueService::marginTiers(auth()->user()->pharmacy_id, 'parapharmacy')],
         ]);
     }
 }

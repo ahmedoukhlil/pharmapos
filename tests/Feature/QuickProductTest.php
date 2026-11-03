@@ -47,9 +47,18 @@ class QuickProductTest extends TestCase
         $this->actingAs($this->owner());
         $this->get(route('catalogue.create'))->assertOk()->assertSee('Créer le produit');
 
-        Livewire::test(CatalogueIndex::class)->call('editMargins')->set('margins.medicine', '1,5')->set('margins.parapharmacy', '0.5')
-            ->call('saveMargins')->assertHasErrors('margin_parapharmacy')
-            ->set('margins.parapharmacy', '1.4')->call('saveMargins')->assertHasNoErrors()->assertSee('× 1,50');
+        // Médicaments : ≤ 50 × 1,8 · ≤ 200 × 1,5 · au-delà × 1,25 ; parapharmacie × 1,4
+        Livewire::test(CatalogueIndex::class)->call('editMargins')
+            ->set('margins.medicine.0.coef', '1,25')->call('addTier', 'medicine')->call('addTier', 'medicine')
+            ->set('margins.medicine.0', ['up_to' => '50', 'coef' => '1,8'])->set('margins.medicine.1', ['up_to' => '30', 'coef' => '1.5'])
+            ->set('margins.parapharmacy.0.coef', '0.5')
+            ->call('saveMargins')->assertHasErrors(['margin_medicine'])
+            ->set('margins.medicine.1.up_to', '200')->call('saveMargins')->assertHasErrors(['margin_parapharmacy'])
+            ->set('margins.parapharmacy.0.coef', '1.4')->call('saveMargins')->assertHasNoErrors()
+            ->assertSee('≤ 50 × 1,80 · ≤ 200 × 1,50 · au-delà × 1,25');
+        $id = $this->owner()->pharmacy_id;
+        $this->assertSame([90.0, 150.0, 375.0], [CatalogueService::suggestedSalePrice($id, 'medicine', 50),
+            CatalogueService::suggestedSalePrice($id, 'medicine', 100), CatalogueService::suggestedSalePrice($id, 'medicine', 300)]);
 
         Livewire::test(QuickProduct::class, ['mode' => 'page'])
             ->set('form.brand_name', 'Cétirizine Teva')->set('form.inn', 'Cétirizine')->set('form.strength', '10 mg')
