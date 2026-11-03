@@ -33,12 +33,12 @@
             @php [$pName, $pCode, $login, $password] = $credentials; @endphp
             <section class="rounded-xl bg-emerald-50 p-4 text-sm ring-1 ring-emerald-200">
                 <div class="flex items-start gap-2">
-                    <p class="font-semibold text-emerald-900">Nouveau mot de passe provisoire du propriétaire de {{ $pName }}</p>
+                    <p class="font-semibold text-emerald-900">Nouveau mot de passe provisoire — {{ $pName }}</p>
                     <button wire:click="$set('credentials', null)" class="ms-auto text-slate-500 hover:text-slate-800" title="Fermer">✕</button>
                 </div>
                 <p class="mt-1">Code <span class="font-mono font-semibold">{{ $pCode }}</span> · identifiant <span class="font-mono font-semibold">{{ $login }}</span>
                     · mot de passe <span class="font-mono font-semibold">{{ $password }}</span></p>
-                <p class="mt-1 text-xs text-slate-600">Il ne sera plus affiché. Le propriétaire devra le changer à sa connexion.</p>
+                <p class="mt-1 text-xs text-slate-600">Il ne sera plus affiché. L’utilisateur devra le changer à sa connexion.</p>
             </section>
         @endif
 
@@ -83,7 +83,28 @@
                         </dl>
                     </div>
 
-                    @if ($editing === $p->id)
+                    @if ($editing === $p->id && $mode === 'users')
+                        <div class="mt-3 rounded-lg bg-slate-50 p-3 text-sm">
+                            <table class="w-full">
+                                <thead class="text-xs uppercase text-slate-500"><tr><th class="py-1 text-start">Nom</th><th class="text-start">Identifiant</th><th class="text-start">Rôle</th><th class="text-start">Statut</th><th></th></tr></thead>
+                                <tbody class="divide-y divide-slate-200">
+                                    @foreach ($this->editingUsers as $u)
+                                        <tr wire:key="u-{{ $u->id }}">
+                                            <td class="py-1.5">{{ $u->name }}</td>
+                                            <td class="font-mono">{{ $u->username }}</td>
+                                            <td>{{ $u->roles->pluck('name')->implode(', ') ?: '—' }}</td>
+                                            <td>{{ $u->is_active ? 'Actif' : 'Désactivé' }}{{ $u->must_change_password ? ' · mot de passe provisoire' : '' }}</td>
+                                            <td class="text-end">
+                                                <button wire:click="resetUser('{{ $u->id }}')" wire:confirm="Générer un mot de passe provisoire pour {{ $u->name }} ({{ $u->username }}) ?"
+                                                        class="rounded-lg border border-slate-300 bg-white px-2 py-1 hover:bg-slate-100">Réinitialiser le mot de passe</button>
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                            <button type="button" wire:click="cancel" class="mt-2 rounded-lg px-3 py-1.5 text-slate-600 hover:bg-slate-200">Fermer</button>
+                        </div>
+                    @elseif ($editing === $p->id)
                         <form wire:submit="save" class="mt-3 flex flex-wrap items-end gap-2 rounded-lg bg-slate-50 p-3">
                             @if ($mode === 'suspend')
                                 <label class="min-w-0 flex-1">
@@ -113,6 +134,7 @@
                             <button wire:click="edit('{{ $p->id }}', 'subscription')" class="rounded-lg border border-slate-300 px-3 py-1.5 hover:bg-slate-50">Abonnement…</button>
                             <button wire:click="resetOwner('{{ $p->id }}')" wire:confirm="Générer un nouveau mot de passe provisoire pour le propriétaire de {{ $p->name }} ?"
                                     class="rounded-lg border border-slate-300 px-3 py-1.5 hover:bg-slate-50">Réinitialiser le propriétaire</button>
+                            <button wire:click="edit('{{ $p->id }}', 'users')" class="rounded-lg border border-slate-300 px-3 py-1.5 hover:bg-slate-50">Utilisateurs…</button>
                             @if ($p->is_active)
                                 <button wire:click="edit('{{ $p->id }}', 'suspend')" class="ms-auto rounded-lg px-3 py-1.5 text-red-700 hover:bg-red-50">Suspendre</button>
                             @else

@@ -54,5 +54,5 @@ php artisan test
 - [x] Assistant de premier démarrage (/installation) et gestion des utilisateurs (mot de passe provisoire, changement obligatoire, désactivation, garde-fous propriétaire)
 - [x] Paramétrage des caisses et des emplacements de stock (code auto, imprimante 58/80 mm, garde-fous stock et sessions)
 - [x] SaaS : console super-administrateur (/admin) — création des pharmacies, abonnement et échéance, suspension, réinitialisation du propriétaire ; connexion par code pharmacie + identifiant ; premier démarrage = compte super-administrateur (ou `php artisan pharmapos:super-admin <identifiant>`)
-- [x] Lecture des bordereaux de livraison (photos / PDF multi-pages) par l'API Claude : tableau à contrôler (reconnu / à vérifier / inconnu, alertes prix et péremption, total), ajout aux lignes de réception, mémorisation des désignations par fournisseur — clé `ANTHROPIC_API_KEY` dans `.env`
+- [x] Lecture des bordereaux de livraison (photos / PDF multi-pages) par l'API Claude : tableau à contrôler (reconnu / à vérifier / inconnu, alertes prix et péremption, total), ajout aux lignes de réception, mémorisation des désignations par fournisseur — clé API et modèle dans la console admin → Paramètres (chiffrés ; `.env` en secours)
 - [ ] Synchronisation cloud

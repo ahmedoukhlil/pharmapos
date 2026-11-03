@@ -5,8 +5,10 @@ namespace Tests\Feature;
 use App\Http\Controllers\Auth\LoginController;
 use App\Livewire\Admin\PharmacyCreate;
 use App\Livewire\Admin\PharmacyIndex;
+use App\Livewire\Admin\PlatformSettings;
 use App\Models\AuditLog;
 use App\Models\Pharmacy;
+use App\Models\PlatformSetting;
 use App\Models\Register;
 use App\Models\User;
 use App\Services\Admin\TenantService;
@@ -148,5 +150,38 @@ class SaasAdminTest extends TestCase
 
         $this->expectException(\Symfony\Component\HttpKernel\Exception\HttpException::class);
         app(TenantService::class)->suspend($owner, $p, 'test');
+    }
+    public function test_super_admin_resets_any_user_password(): void
+    {
+        [$p, $owner] = $this->newPharmacy();
+        $cashier = User::create(["pharmacy_id" => $p->id, "name" => "Caissier", "username" => "caisse1", "password" => "Caisse2026x", "is_active" => false]);
+        $this->actingAs($this->admin());
+
+        Livewire::test(PharmacyIndex::class)->call("edit", $p->id, "users")->assertSee("caisse1")->assertSee("Dr Sidi")
+            ->call("resetUser", $cashier->id)->assertSee("Nouveau mot de passe provisoire")->assertSee("caisse1");
+        $this->assertTrue($cashier->fresh()->must_change_password);
+        $this->assertTrue($cashier->fresh()->is_active);
+        $this->assertTrue(AuditLog::where("pharmacy_id", $p->id)->where("action", "pharmacy.user_password_reset")->exists());
+    }
+
+    public function test_platform_settings_store_encrypted_key_and_model(): void
+    {
+        config(["services.anthropic.key" => null]);
+        $this->actingAs($this->admin());
+        $this->get(route("admin.settings"))->assertOk()->assertSee("aucune");
+
+        Livewire::test(PlatformSettings::class)->set("apiKey", "mauvaise")->call("save")->assertHasErrors("apiKey")
+            ->set("apiKey", "sk-ant-api03-secretABCD")->set("model", "claude-sonnet-5-5")->call("save")
+            ->assertHasNoErrors()->assertSee("sk-ant-…ABCD")->assertDontSee("secretABCD");
+
+        $this->assertSame("sk-ant-api03-secretABCD", PlatformSetting::anthropicKey());
+        $this->assertSame("claude-sonnet-5-5", PlatformSetting::anthropicModel());
+        $this->assertStringNotContainsString("secret", (string) PlatformSetting::find(PlatformSetting::ANTHROPIC_KEY)->getRawOriginal("value"));
+
+        Livewire::test(PlatformSettings::class)->call("removeKey");
+        $this->assertNull(PlatformSetting::anthropicKey());
+
+        $this->actingAs(User::where("username", "owner")->firstOrFail());
+        $this->get(route("admin.settings"))->assertForbidden();
     }
 }

@@ -7,6 +7,7 @@ use Anthropic\Core\Exceptions\APIConnectionException;
 use Anthropic\Core\Exceptions\APIStatusException;
 use Anthropic\Core\Exceptions\AuthenticationException;
 use Anthropic\Core\Exceptions\RateLimitException;
+use App\Models\PlatformSetting;
 
 /**
  * Transcription d'un bordereau par l'API Claude : toutes les pages dans une seule requête,
@@ -32,11 +33,11 @@ class ClaudeDeliveryNoteExtractor implements DeliveryNoteExtractor
 
     public function extract(array $files): array
     {
-        $key = config('services.anthropic.key');
+        $key = PlatformSetting::anthropicKey();
         if (! $key) {
-            throw new DeliveryNoteException('Lecture automatique non configurée : clé ANTHROPIC_API_KEY absente du serveur.');
+            throw new DeliveryNoteException('Lecture automatique non configurée : la clé API Claude n\'est pas renseignée (console admin → Paramètres).');
         }
-        $model = config('services.anthropic.model');
+        $model = PlatformSetting::anthropicModel();
 
         $content = array_map(fn (array $f) => $this->block($f), $files);
         $content[] = ['type' => 'text', 'text' => 'Transcris ce bordereau de livraison ('.count($files).' fichier(s)).'];
@@ -53,7 +54,7 @@ class ClaudeDeliveryNoteExtractor implements DeliveryNoteExtractor
                 betas: ['server-side-fallback-2026-07-01'],
             );
         } catch (AuthenticationException) {
-            throw new DeliveryNoteException('Clé API Claude refusée : vérifiez ANTHROPIC_API_KEY.');
+            throw new DeliveryNoteException('Clé API Claude refusée : vérifiez-la dans la console admin → Paramètres.');
         } catch (RateLimitException) {
             throw new DeliveryNoteException('Service de lecture momentanément saturé : réessayez dans une minute.');
         } catch (APIStatusException $e) {

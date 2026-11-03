@@ -106,6 +106,18 @@ class TenantService
         return [$owner, $password];
     }
 
+    /** Mot de passe provisoire pour n'importe quel utilisateur d'une pharmacie (compte réactivé). */
+    public function resetUserPassword(User $actor, User $user): string
+    {
+        $this->authorize($actor);
+        abort_if($user->is_super_admin || ! $user->pharmacy_id, 404);
+        $password = $this->users->temporaryPassword();
+        $user->forceFill(['password' => $password, 'must_change_password' => true, 'is_active' => true])->save();
+        $this->audit($actor, $user->pharmacy, 'pharmacy.user_password_reset', ['user' => $user->username]);
+
+        return $password;
+    }
+
     /** Compte super-administrateur (premier démarrage ou commande artisan). */
     public function createSuperAdmin(array $data): User
     {

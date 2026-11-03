@@ -41,7 +41,7 @@ class PharmacyIndex extends Component
     {
         $p = Pharmacy::findOrFail($id);
         $this->editing = $p->id;
-        $this->mode = $mode === 'suspend' ? 'suspend' : 'subscription';
+        $this->mode = in_array($mode, ['suspend', 'users'], true) ? $mode : 'subscription';
         $this->form = ['plan' => (string) $p->plan, 'subscription_ends_at' => (string) $p->subscription_ends_at?->toDateString(), 'reason' => ''];
         $this->resetErrorBag();
     }
@@ -79,6 +79,22 @@ class PharmacyIndex extends Component
         $p = Pharmacy::findOrFail($id);
         [$owner, $password] = $tenants->resetOwnerPassword(auth()->user(), $p);
         $this->credentials = [$p->name, $p->code, $owner->username, $password];
+    }
+
+    public function resetUser(string $userId, TenantService $tenants): void
+    {
+        $user = \App\Models\User::with('pharmacy')->whereNotNull('pharmacy_id')->findOrFail($userId);
+        $password = $tenants->resetUserPassword(auth()->user(), $user);
+        $this->credentials = [$user->pharmacy->name, $user->pharmacy->code, $user->username, $password];
+    }
+
+    /** Utilisateurs de la pharmacie ouverte en mode « Utilisateurs ». */
+    #[Computed]
+    public function editingUsers()
+    {
+        return $this->mode === 'users' && $this->editing
+            ? \App\Models\User::where('pharmacy_id', $this->editing)->with('roles')->orderByDesc('is_active')->orderBy('name')->get()
+            : collect();
     }
 
     #[Computed]
