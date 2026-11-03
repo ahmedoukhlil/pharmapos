@@ -10,12 +10,24 @@ Artisan::command('pos:release-expired-reservations', function (SaleService $sale
 
 Schedule::command('pos:release-expired-reservations')->everyMinute()->withoutOverlapping();
 
-Artisan::command('pharmapos:super-admin {username} {--name=Administrateur}', function (\App\Services\Admin\TenantService $tenants) {
+Artisan::command('pharmapos:super-admin {username} {--name=Administrateur} {--reset : Change le mot de passe d\'un super-administrateur existant}', function (\App\Services\Admin\TenantService $tenants) {
     $password = $this->secret('Mot de passe (10 caractères minimum, lettres et chiffres)');
     if (strlen((string) $password) < 10 || ! preg_match('/[a-z]/i', $password) || ! preg_match('/\d/', $password)) {
         $this->error('Mot de passe trop faible.');
 
         return 1;
+    }
+    if ($this->option('reset')) {
+        $user = \App\Models\User::where('is_super_admin', true)->where('username', strtolower($this->argument('username')))->first();
+        if (! $user) {
+            $this->error('Aucun super-administrateur avec cet identifiant. Existants : '.\App\Models\User::where('is_super_admin', true)->pluck('username')->implode(', '));
+
+            return 1;
+        }
+        $user->forceFill(['password' => $password, 'must_change_password' => false, 'is_active' => true])->save();
+        $this->info("Mot de passe de {$user->username} changé : connectez-vous en laissant le code pharmacie vide.");
+
+        return 0;
     }
     try {
         $user = $tenants->createSuperAdmin(['name' => $this->option('name'), 'username' => $this->argument('username'), 'password' => $password]);

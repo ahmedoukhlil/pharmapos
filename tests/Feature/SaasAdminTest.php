@@ -184,4 +184,13 @@ class SaasAdminTest extends TestCase
         $this->actingAs(User::where("username", "owner")->firstOrFail());
         $this->get(route("admin.settings"))->assertForbidden();
     }
+    public function test_super_admin_password_reset_command(): void
+    {
+        $this->artisan("pharmapos:super-admin", ["username" => "ADMIN", "--reset" => true])
+            ->expectsQuestion("Mot de passe (10 caractères minimum, lettres et chiffres)", "Nouveau2026x")->assertExitCode(0);
+        $this->post(route("login"), ["username" => "admin", "password" => "Nouveau2026x"])->assertRedirect(route("admin.pharmacies"));
+
+        $this->artisan("pharmapos:super-admin", ["username" => "inconnu", "--reset" => true])
+            ->expectsQuestion("Mot de passe (10 caractères minimum, lettres et chiffres)", "Nouveau2026x")->assertExitCode(1);
+    }
 }
