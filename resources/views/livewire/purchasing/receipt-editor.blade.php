@@ -60,6 +60,109 @@
             </label>
         </section>
 
+        @if (! $ro && ! $note)
+            {{-- Lecture automatique du bordereau papier --}}
+            <section class="flex flex-wrap items-center gap-3 rounded-lg border border-dashed border-emerald-300 bg-emerald-50/50 p-4 text-sm"
+                     x-data="{ uploading: false }" x-on:livewire-upload-start="uploading = true" x-on:livewire-upload-finish="uploading = false" x-on:livewire-upload-error="uploading = false">
+                <div class="min-w-48 flex-1">
+                    <p class="font-semibold text-emerald-900">Lire un bordereau de livraison</p>
+                    <p class="text-slate-600">Photos ou PDF, plusieurs pages possibles. Les lignes sont proposées pour contrôle avant d'être ajoutées.</p>
+                </div>
+                <label class="cursor-pointer rounded-lg border border-emerald-700 bg-white px-3 py-2 font-medium text-emerald-800 hover:bg-emerald-50">
+                    {{ $noteFiles ? count($noteFiles).' page(s) choisie(s)' : 'Photographier / choisir' }}
+                    <input type="file" wire:model="noteFiles" multiple accept="image/*,application/pdf" class="sr-only">
+                </label>
+                <button wire:click="readNote" wire:loading.attr="disabled" wire:target="readNote,noteFiles" x-bind:disabled="uploading" @disabled(! $noteFiles)
+                        class="rounded-lg bg-emerald-700 px-4 py-2 font-semibold text-white hover:bg-emerald-800 disabled:opacity-50">
+                    <span wire:loading.remove wire:target="readNote">Lire le bordereau</span>
+                    <span wire:loading wire:target="readNote">Lecture en cours… (jusqu'à 1 min)</span>
+                </button>
+                @error('noteFiles') <p class="w-full text-red-700">{{ $message }}</p> @enderror
+                @error('noteFiles.*') <p class="w-full text-red-700">{{ $message }}</p> @enderror
+            </section>
+        @endif
+
+        @if ($note)
+            @php
+                $statusStyle = ['ok' => ['✓ Reconnu', 'bg-emerald-100 text-emerald-800'], 'check' => ['À vérifier', 'bg-amber-100 text-amber-900'], 'unknown' => ['Inconnu', 'bg-red-100 text-red-800']];
+                $readTotal = collect($note['lines'])->sum(fn ($l) => (float) $l['quantity'] * (float) $l['unit_price']);
+                $diff = $note['total'] > 0 && abs($note['total'] - $readTotal) > 1;
+            @endphp
+            <section class="space-y-3 rounded-lg border-2 border-emerald-600 bg-white p-4 shadow-sm">
+                <div class="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+                    <h2 class="text-lg font-semibold">Bordereau lu — à contrôler</h2>
+                    <span class="text-sm text-slate-600">
+                        @if ($note['number']) N° {{ $note['number'] }} @endif
+                        @if ($note['date']) · {{ $note['date'] }} @endif
+                        @if ($note['supplier_name']) · {{ $note['supplier_name'] }} @endif
+                    </span>
+                </div>
+                @if ($note['supplier_name'] && ! str_contains(\Illuminate\Support\Str::lower($note['supplier_name']), \Illuminate\Support\Str::lower(\Illuminate\Support\Str::before($this->suppliers->firstWhere('id', $supplierId)?->name ?? '', ' '))))
+                    <p class="rounded bg-amber-50 px-3 py-1.5 text-sm text-amber-900">Le bordereau semble venir de « {{ $note['supplier_name'] }} » : vérifiez le fournisseur choisi.</p>
+                @endif
+
+                <div class="overflow-x-auto">
+                    <table class="w-full min-w-[900px] text-sm">
+                        <thead class="bg-slate-50 text-xs uppercase text-slate-500">
+                            <tr>
+                                <th class="px-2 py-2 text-start">Sur le bordereau</th>
+                                <th class="px-2 py-2 text-start">Produit PharmaPOS</th>
+                                <th class="px-2 py-2 text-start">Lot</th>
+                                <th class="px-2 py-2 text-start">Péremption</th>
+                                <th class="px-2 py-2 text-end">Boîtes</th>
+                                <th class="px-2 py-2 text-end">Prix achat</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            @foreach ($note['lines'] as $i => $l)
+                                <tr wire:key="note-{{ $i }}" @class(['bg-red-50/40' => $l['status'] === 'unknown', 'bg-amber-50/40' => $l['status'] === 'check'])>
+                                    <td class="px-2 py-2 align-top">
+                                        <span class="font-medium">{{ $l['designation'] }}</span>
+                                        @if ($l['code']) <span class="block font-mono text-xs text-slate-500">{{ $l['code'] }}</span> @endif
+                                        <span class="mt-1 inline-block rounded-full px-2 py-0.5 text-xs {{ $statusStyle[$l['status']][1] }}">{{ $statusStyle[$l['status']][0] }}</span>
+                                        @foreach ($l['warnings'] as $w) <span class="block text-xs text-amber-800">⚠ {{ $w }}</span> @endforeach
+                                    </td>
+                                    <td class="px-2 py-2 align-top">
+                                        <select wire:model.live="note.lines.{{ $i }}.presentation_id" class="w-64 rounded border border-slate-300 px-2 py-1">
+                                            <option value="">— Choisir le produit —</option>
+                                            @if ($l['candidates'])
+                                                <optgroup label="Suggestions">
+                                                    @foreach ($l['candidates'] as $c) <option value="{{ $c['id'] }}">{{ $c['label'] }}</option> @endforeach
+                                                </optgroup>
+                                            @endif
+                                            <optgroup label="Catalogue">
+                                                @foreach ($this->catalogue as $p)
+                                                    <option value="{{ $p->id }}">{{ $p->medicine->brand_name }} {{ $p->medicine->strength }} — {{ $p->label }}</option>
+                                                @endforeach
+                                            </optgroup>
+                                        </select>
+                                        @if (! $l['presentation_id'])
+                                            <a href="{{ route('catalogue.create') }}" target="_blank" class="mt-1 block text-xs text-emerald-800 underline">Créer le produit</a>
+                                        @endif
+                                    </td>
+                                    <td class="px-2 py-2 align-top"><input wire:model="note.lines.{{ $i }}.lot" class="w-28 rounded border border-slate-300 px-2 py-1"></td>
+                                    <td class="px-2 py-2 align-top"><input wire:model="note.lines.{{ $i }}.expiry" placeholder="MM/AAAA" class="w-24 rounded border border-slate-300 px-2 py-1"></td>
+                                    <td class="px-2 py-2 align-top text-end"><input wire:model="note.lines.{{ $i }}.quantity" inputmode="numeric" class="w-16 rounded border border-slate-300 px-2 py-1 text-end"></td>
+                                    <td class="px-2 py-2 align-top text-end"><input wire:model="note.lines.{{ $i }}.unit_price" inputmode="decimal" class="w-24 rounded border border-slate-300 px-2 py-1 text-end"></td>
+                                    <td class="px-2 py-2 align-top"><button wire:click="removeNoteLine({{ $i }})" class="text-red-700" title="Retirer la ligne">×</button></td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="flex flex-wrap items-center gap-3 text-sm">
+                    <span>Total lu : <strong class="tabular-nums">{{ number_format($readTotal, 2, ',', ' ') }}</strong> MRU</span>
+                    @if ($note['total'] > 0)
+                        <span @class(['text-red-700 font-semibold' => $diff])>Total imprimé : {{ number_format($note['total'], 2, ',', ' ') }} MRU {{ $diff ? '— écart, vérifiez les lignes' : '✓' }}</span>
+                    @endif
+                    <button wire:click="discardNote" wire:confirm="Abandonner la lecture de ce bordereau ?" class="ms-auto rounded-lg border border-slate-300 px-3 py-2">Abandonner</button>
+                    <button wire:click="applyNote" class="rounded-lg bg-emerald-700 px-4 py-2 font-semibold text-white hover:bg-emerald-800">Ajouter à la réception</button>
+                </div>
+            </section>
+        @endif
+
         @if (! $ro)
             <div class="relative">
                 <label for="search" class="sr-only">Scanner ou rechercher un produit</label>

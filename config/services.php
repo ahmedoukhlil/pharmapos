@@ -14,6 +14,12 @@ return [
     |
     */
 
+    // Lecture des bordereaux de livraison (photo / PDF) par Claude
+    'anthropic' => [
+        'key' => env('ANTHROPIC_API_KEY'),
+        'model' => env('ANTHROPIC_MODEL', 'claude-opus-5-5'),
+    ],
+
     'postmark' => [
         'key' => env('POSTMARK_API_KEY'),
     ],

@@ -6,6 +6,8 @@ use App\Models\GoodsReceipt;
 use App\Models\Location;
 use App\Models\Presentation;
 use App\Models\Supplier;
+use App\Services\DeliveryNotes\DeliveryNoteException;
+use App\Services\DeliveryNotes\DeliveryNoteReader;
 use App\Services\Purchasing\GoodsReceiptService;
 use App\Services\Purchasing\ReceiptException;
 use App\Support\ExpiryDate;
@@ -16,6 +18,7 @@ use Livewire\Attributes\Layout;
 use Livewire\Attributes\On;
 use Livewire\Attributes\Title;
 use Livewire\Component;
+use Livewire\WithFileUploads;
 
 /**
  * Saisie d'une réception (ACH-03) : scan des produits, lot, péremption, quantité, décision.
@@ -25,6 +28,8 @@ use Livewire\Component;
 #[Title('Réception — PharmaPOS')]
 class ReceiptEditor extends Component
 {
+    use WithFileUploads;
+
     public ?string $receiptId = null;
 
     public string $supplierId = '';
@@ -43,6 +48,12 @@ class ReceiptEditor extends Component
     public ?string $error = null;
 
     public ?string $message = null;
+
+    /** Pages du bordereau (photos ou PDF) à faire lire. */
+    public array $noteFiles = [];
+
+    /** Bordereau lu, en attente de contrôle avant ajout à la réception. */
+    public ?array $note = null;
 
     public function mount(?GoodsReceipt $receipt = null): void
     {
@@ -192,6 +203,87 @@ class ReceiptEditor extends Component
     public function scannerError(string $message): void
     {
         $this->error = $message;
+    }
+
+    /** Lecture du bordereau par Claude : propose un tableau à contrôler, sans rien enregistrer. */
+    public function readNote(DeliveryNoteReader $reader): void
+    {
+        abort_unless($this->editable, 403);
+        $this->error = null;
+        $this->validate([
+            'noteFiles' => ['required', 'array', 'max:10'],
+            'noteFiles.*' => ['file', 'mimes:jpg,jpeg,png,webp,heic,pdf', 'max:10240'],
+        ], [], ['noteFiles' => 'bordereau', 'noteFiles.*' => 'page']);
+
+        $files = array_map(fn ($f) => ['path' => $f->getRealPath(), 'mime' => $f->getMimeType()], $this->noteFiles);
+        try {
+            $this->note = $reader->read(auth()->user(), Supplier::findOrFail($this->supplierId), $files);
+        } catch (DeliveryNoteException $e) {
+            $this->error = $e->getMessage();
+
+            return;
+        }
+        $this->noteFiles = [];
+        if ($this->note['lines'] === []) {
+            $this->note = null;
+            $this->error = 'Aucune ligne de produit trouvée sur ce document.';
+        }
+    }
+
+    public function removeNoteLine(int $i): void
+    {
+        unset($this->note['lines'][$i]);
+        $this->note['lines'] = array_values($this->note['lines']);
+    }
+
+    public function discardNote(): void
+    {
+        $this->note = null;
+    }
+
+    /** Ajoute les lignes contrôlées à la réception et mémorise les associations pour ce fournisseur. */
+    public function applyNote(DeliveryNoteReader $reader): void
+    {
+        abort_unless($this->editable && $this->note, 403);
+        $pending = collect($this->note['lines'])->filter(fn ($l) => $l['presentation_id'] === '')->count();
+        if ($pending) {
+            $this->error = "$pending ligne(s) sans produit : choisissez le produit ou retirez la ligne.";
+
+            return;
+        }
+
+        $owned = Presentation::where('pharmacy_id', auth()->user()->pharmacy_id)
+            ->whereIn('id', array_column($this->note['lines'], 'presentation_id'))->pluck('id')->all();
+        foreach ($this->note['lines'] as $l) {
+            if (! in_array($l['presentation_id'], $owned, true)) {
+                continue;
+            }
+            $reader->learn(auth()->user(), $this->supplierId, $l['designation'], $l['presentation_id']);
+            $this->lines[] = [
+                'presentation_id' => $l['presentation_id'],
+                'purchase_order_line_id' => null,
+                'quantity_packs' => (string) (int) round((float) $l['quantity']),
+                'unit_price' => (string) $l['unit_price'],
+                'lot_number' => (string) $l['lot'],
+                'expiry' => (string) $l['expiry'],
+                'decision' => 'accepted',
+                'anomaly' => '',
+            ];
+        }
+        if ($this->deliveryNoteRef === '' && $this->note['number'] !== '') {
+            $this->deliveryNoteRef = mb_substr($this->note['number'], 0, 50);
+        }
+        $this->message = count($this->note['lines']).' ligne(s) du bordereau ajoutée(s) : vérifiez puis enregistrez.';
+        $this->note = null;
+        unset($this->presentations);
+    }
+
+    /** Produits proposés dans la liste de choix d'une ligne inconnue du bordereau. */
+    #[Computed]
+    public function catalogue(): Collection
+    {
+        return Presentation::where('pharmacy_id', auth()->user()->pharmacy_id)->where('status', 'active')
+            ->with('medicine')->get()->sortBy(fn ($p) => $p->medicine->brand_name.' '.$p->medicine->strength)->values();
     }
 
     /** Duplique une ligne pour saisir un second lot du même produit. */
