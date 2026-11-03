@@ -129,7 +129,10 @@ class DeliveryNoteReader
             ->limit(20)->get()
             ->map(function (Presentation $p) use ($key, $numbers) {
                 $name = SupplierProductAlias::key($p->medicine->brand_name);
-                $score = str_starts_with($key, $name) ? 2 : (str_contains($key, explode(' ', $name)[0]) ? 1 : 0);
+                $inn = SupplierProductAlias::key((string) $p->medicine->inn);
+                // Les grossistes écrivent souvent la DCI (METFORMINE) plutôt que le nom commercial (Glucophage)
+                $score = str_starts_with($key, $name) || ($inn !== '' && str_starts_with($key, $inn)) ? 2
+                    : (str_contains($key, explode(' ', $name)[0]) ? 1 : 0);
                 preg_match('/\d+(?:[.,]\d+)?/', (string) $p->medicine->strength, $dose);
                 if ($dose && in_array((float) str_replace(',', '.', $dose[0]), $numbers, true)) {
                     $score++;

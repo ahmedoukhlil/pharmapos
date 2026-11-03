@@ -98,6 +98,16 @@ class DeliveryNoteReaderTest extends TestCase
         app(ClaudeDeliveryNoteExtractor::class)->extract([]);
     }
 
+    public function test_line_written_with_the_inn_is_matched(): void
+    {
+        $this->fakeNote([$this->line('AMOXICILLINE 500 MG B/12 - LOT: A1', 3, 300)]);
+        $this->actingAs(User::where('username', 'storekeeper')->firstOrFail());
+        $line = Livewire::test(ReceiptEditor::class)->set('noteFiles', [UploadedFile::fake()->image('bl.jpg')])->call('readNote')->get('note')['lines'][0];
+
+        $this->assertSame(['check', 'name'], [$line['status'], $line['source']]);
+        $this->assertSame(Presentation::where('sku', 'AMOX500-12')->value('id'), $line['presentation_id']);
+    }
+
     public function test_cashier_cannot_read_notes(): void
     {
         $this->fakeNote([]);
