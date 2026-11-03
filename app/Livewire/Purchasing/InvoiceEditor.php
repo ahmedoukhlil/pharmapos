@@ -2,8 +2,10 @@
 
 namespace App\Livewire\Purchasing;
 
+use App\Models\GoodsReceipt;
 use App\Models\PurchaseInvoice;
 use App\Models\Supplier;
+use App\Models\SupplierPayment;
 use App\Services\Purchasing\PurchaseInvoiceService;
 use App\Services\Purchasing\PurchaseOrderException;
 use Livewire\Attributes\Layout;
@@ -48,6 +50,33 @@ class InvoiceEditor extends Component
             'due_date' => '',
             'total_amount' => '',
         ];
+
+        // Ouverte depuis une réception : fournisseur, réception cochée, montant et n° de bordereau repris
+        $receipt = GoodsReceipt::where('pharmacy_id', auth()->user()->pharmacy_id)->find(request()->query('reception'));
+        $service = app(PurchaseInvoiceService::class);
+        if ($receipt && $service->uninvoicedReceipts($receipt->pharmacy_id, $receipt->supplier_id)->contains('id', $receipt->id)) {
+            $this->form['supplier_id'] = $receipt->supplier_id;
+            $this->form['supplier_invoice_number'] = (string) $receipt->delivery_note_ref;
+            $this->form['total_amount'] = number_format($service->receiptValue($receipt), 2, '.', '');
+            $this->form['due_date'] = now()->addDays(30)->toDateString();
+            $this->receiptIds = [$receipt->id];
+        }
+    }
+
+    public function applyAdvance(string $advanceId, PurchaseInvoiceService $service): void
+    {
+        $this->reset('error', 'message');
+        try {
+            $service->applyAdvance(auth()->user(), $this->invoice,
+                SupplierPayment::where('pharmacy_id', auth()->user()->pharmacy_id)->findOrFail($advanceId));
+        } catch (PurchaseOrderException $e) {
+            $this->error = $e->getMessage();
+
+            return;
+        }
+        $this->invoice->refresh();
+        $this->message = 'Acompte imputé sur la facture.';
+        $this->resetPayment();
     }
 
     public function updatedFormSupplierId(): void
@@ -127,6 +156,8 @@ class InvoiceEditor extends Component
                 'reconciliation' => $service->reconcile($this->invoice),
                 'payments' => $this->invoice->payments()->latest('paid_on')->get(),
                 'methods' => PurchaseInvoiceService::PAYMENT_METHODS,
+                'advances' => in_array($this->invoice->status, ['open', 'partially_paid'], true)
+                    ? $service->unappliedAdvances($pharmacyId, $this->invoice->supplier_id) : collect(),
             ]);
         }
 

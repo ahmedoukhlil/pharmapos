@@ -9,6 +9,7 @@ use App\Models\Supplier;
 use App\Services\DeliveryNotes\DeliveryNoteException;
 use App\Services\DeliveryNotes\DeliveryNoteReader;
 use App\Services\Purchasing\GoodsReceiptService;
+use App\Services\Purchasing\PurchaseInvoiceService;
 use App\Services\Purchasing\ReceiptException;
 use App\Support\ExpiryDate;
 use App\Support\ProductLookup;
@@ -379,8 +380,13 @@ class ReceiptEditor extends Component
 
     public function render()
     {
+        $canInvoice = auth()->user()->hasPermission('purchase.invoice');
+
         return view('livewire.purchasing.receipt-editor', [
             'canCreateProduct' => auth()->user()->hasPermission('catalogue.manage'),
+            'canInvoice' => $canInvoice,
+            'invoice' => $canInvoice && $this->receipt?->status === 'validated'
+                ? app(PurchaseInvoiceService::class)->invoiceFor($this->receipt) : null,
         ]);
     }
 }

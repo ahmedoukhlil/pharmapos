@@ -85,6 +85,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/factures/nouvelle', InvoiceEditor::class)->name('invoices.create');
     Route::get('/factures/{invoice}', InvoiceEditor::class)->name('invoices.show');
     Route::get('/fournisseurs', SupplierIndex::class)->name('suppliers.index');
+    Route::get('/fournisseurs/{supplier}/releve', [DocumentController::class, 'supplierStatement'])->name('suppliers.statement');
     Route::get('/inventaires', InventoryIndex::class)->name('inventories.index');
     Route::get('/inventaires/{session}', InventorySheet::class)->name('inventories.show');
     Route::get('/sessions', SessionIndex::class)->name('sessions.index');

@@ -157,24 +157,10 @@ class PurchaseInvoiceService
                 throw new PurchaseOrderException('not_payable', 'Cette facture ne peut plus être réglée.');
             }
 
-            $amount = $this->cents($data['amount'] ?? null);
+            [$amount, $method, $reference, $paidOn] = $this->paymentFields($data);
             $balance = $this->cents($invoice->total_amount) - $this->cents($invoice->paid_amount);
-            if ($amount === null || $amount <= 0) {
-                throw new PurchaseOrderException('invalid_amount', 'Montant du règlement invalide.');
-            }
             if ($amount > $balance) {
                 throw new PurchaseOrderException('overpayment', 'Le règlement dépasse le solde de la facture ('.number_format($balance / 100, 2, ',', ' ').' MRU).');
-            }
-            $method = $data['method'] ?? '';
-            if (! isset(self::PAYMENT_METHODS[$method])) {
-                throw new PurchaseOrderException('invalid_method', 'Mode de règlement invalide.');
-            }
-            if ($method !== 'cash' && trim((string) ($data['reference'] ?? '')) === '') {
-                throw new PurchaseOrderException('reference_required', 'Référence obligatoire (n° de virement, de chèque ou de transaction).');
-            }
-            $paidOn = $this->date($data['paid_on'] ?? null) ?? Carbon::today();
-            if ($paidOn->isFuture()) {
-                throw new PurchaseOrderException('invalid_date', 'La date de règlement ne peut pas être dans le futur.');
             }
 
             $payment = SupplierPayment::create([
@@ -183,20 +169,153 @@ class PurchaseInvoiceService
                 'purchase_invoice_id' => $invoice->id,
                 'amount' => $amount / 100,
                 'method' => $method,
-                'reference' => trim((string) ($data['reference'] ?? '')) ?: null,
+                'reference' => $reference,
                 'paid_on' => $paidOn,
                 'recorded_by' => $user->id,
             ]);
 
-            $paid = $this->cents($invoice->paid_amount) + $amount;
-            $invoice->update([
-                'paid_amount' => $paid / 100,
-                'status' => $paid === $this->cents($invoice->total_amount) ? 'paid' : 'partially_paid',
-            ]);
-            $this->audit($user, $invoice, 'supplier_payment.recorded', ['amount' => $amount / 100, 'method' => $method, 'reference' => $payment->reference]);
+            $this->addPaid($invoice, $amount);
+            $this->audit($user, $invoice, 'supplier_payment.recorded', ['amount' => $amount / 100, 'method' => $method, 'reference' => $reference]);
 
             return $payment;
         });
+    }
+
+    /** Acompte : règlement versé au fournisseur avant ou sans facture, imputé plus tard. */
+    public function advance(User $user, Supplier $supplier, array $data): SupplierPayment
+    {
+        $this->authorize($user);
+        abort_unless($supplier->pharmacy_id === $user->pharmacy_id, 404);
+        [$amount, $method, $reference, $paidOn] = $this->paymentFields($data);
+
+        $payment = SupplierPayment::create([
+            'pharmacy_id' => $supplier->pharmacy_id,
+            'supplier_id' => $supplier->id,
+            'purchase_invoice_id' => null,
+            'amount' => $amount / 100,
+            'method' => $method,
+            'reference' => $reference,
+            'paid_on' => $paidOn,
+            'recorded_by' => $user->id,
+        ]);
+        AuditLog::create([
+            'pharmacy_id' => $supplier->pharmacy_id, 'user_id' => $user->id, 'action' => 'supplier_payment.advance',
+            'auditable_type' => 'supplier', 'auditable_id' => $supplier->id,
+            'new_values' => ['amount' => $amount / 100, 'method' => $method, 'reference' => $reference],
+        ]);
+
+        return $payment;
+    }
+
+    /** Acomptes du fournisseur pas encore imputés sur une facture. */
+    public function unappliedAdvances(string $pharmacyId, string $supplierId): Collection
+    {
+        return SupplierPayment::where('pharmacy_id', $pharmacyId)->where('supplier_id', $supplierId)
+            ->whereNull('purchase_invoice_id')->orderBy('paid_on')->get();
+    }
+
+    /**
+     * Impute un acompte sur une facture, dans la limite du solde ; le reliquat reste un acompte.
+     */
+    public function applyAdvance(User $user, PurchaseInvoice $invoice, SupplierPayment $advance): void
+    {
+        $this->authorize($user);
+
+        DB::transaction(function () use ($user, $invoice, $advance) {
+            $invoice = PurchaseInvoice::whereKey($invoice->id)->lockForUpdate()->firstOrFail();
+            $advance = SupplierPayment::whereKey($advance->id)->lockForUpdate()->firstOrFail();
+            abort_unless($invoice->pharmacy_id === $user->pharmacy_id && $advance->pharmacy_id === $user->pharmacy_id, 404);
+            if ($advance->purchase_invoice_id !== null || $advance->supplier_id !== $invoice->supplier_id) {
+                throw new PurchaseOrderException('invalid_advance', 'Cet acompte n\'est pas disponible pour ce fournisseur.');
+            }
+            if (! in_array($invoice->status, ['open', 'partially_paid'], true)) {
+                throw new PurchaseOrderException('not_payable', 'Cette facture ne peut plus être réglée.');
+            }
+
+            $balance = $this->cents($invoice->total_amount) - $this->cents($invoice->paid_amount);
+            $available = $this->cents($advance->amount);
+            $used = min($balance, $available);
+            if ($used === $available) {
+                $advance->update(['purchase_invoice_id' => $invoice->id]);
+            } else {
+                // Acompte supérieur au solde : la part imputée devient un règlement, le reste demeure un acompte
+                $advance->update(['amount' => ($available - $used) / 100]);
+                $advance->replicate()->fill(['purchase_invoice_id' => $invoice->id, 'amount' => $used / 100])->save();
+            }
+
+            $this->addPaid($invoice, $used);
+            $this->audit($user, $invoice, 'supplier_payment.advance_applied', ['amount' => $used / 100, 'reference' => $advance->reference]);
+        });
+    }
+
+    /**
+     * Relevé de compte : factures (débit) et règlements (crédit) avec solde cumulé.
+     *
+     * @return array{opening: float, entries: list<array>, closing: float}
+     */
+    public function statement(Supplier $supplier, ?Carbon $from = null, ?Carbon $to = null): array
+    {
+        $invoices = PurchaseInvoice::where('supplier_id', $supplier->id)->where('status', '!=', 'cancelled')->get()
+            ->map(fn ($i) => ['date' => $i->invoice_date, 'label' => 'Facture '.$i->supplier_invoice_number, 'due' => $i->due_date,
+                'debit' => $this->cents($i->total_amount), 'credit' => 0]);
+        $payments = SupplierPayment::with('invoice')->where('supplier_id', $supplier->id)->get()
+            ->map(fn ($p) => ['date' => $p->paid_on, 'due' => null, 'debit' => 0, 'credit' => $this->cents($p->amount),
+                'label' => ($p->purchase_invoice_id ? 'Règlement facture '.$p->invoice->supplier_invoice_number : 'Acompte')
+                    .' — '.self::PAYMENT_METHODS[$p->method].($p->reference ? ' '.$p->reference : '')]);
+
+        $all = $invoices->concat($payments)->sortBy(fn ($e) => $e['date']->format('Ymd').($e['debit'] ? '0' : '1'))->values();
+        $opening = $all->filter(fn ($e) => $from && $e['date']->lt($from))->sum(fn ($e) => $e['debit'] - $e['credit']);
+        $balance = $opening;
+        $entries = [];
+        foreach ($all as $e) {
+            if (($from && $e['date']->lt($from)) || ($to && $e['date']->gt($to))) {
+                continue;
+            }
+            $balance += $e['debit'] - $e['credit'];
+            $entries[] = ['date' => $e['date'], 'label' => $e['label'], 'due' => $e['due'],
+                'debit' => $e['debit'] / 100, 'credit' => $e['credit'] / 100, 'balance' => $balance / 100];
+        }
+
+        return ['opening' => $opening / 100, 'entries' => $entries, 'closing' => $balance / 100];
+    }
+
+    /** Facture active (non annulée) à laquelle la réception est rattachée. */
+    public function invoiceFor(GoodsReceipt $receipt): ?PurchaseInvoice
+    {
+        return PurchaseInvoice::where('status', '!=', 'cancelled')
+            ->whereHas('goodsReceipts', fn ($q) => $q->whereKey($receipt->id))->first();
+    }
+
+    /** @return array{int, string, ?string, Carbon} montant en centimes, mode, référence, date */
+    private function paymentFields(array $data): array
+    {
+        $amount = $this->cents($data['amount'] ?? null);
+        if ($amount === null || $amount <= 0) {
+            throw new PurchaseOrderException('invalid_amount', 'Montant du règlement invalide.');
+        }
+        $method = $data['method'] ?? '';
+        if (! isset(self::PAYMENT_METHODS[$method])) {
+            throw new PurchaseOrderException('invalid_method', 'Mode de règlement invalide.');
+        }
+        $reference = trim((string) ($data['reference'] ?? '')) ?: null;
+        if ($method !== 'cash' && $reference === null) {
+            throw new PurchaseOrderException('reference_required', 'Référence obligatoire (n° de virement, de chèque ou de transaction).');
+        }
+        $paidOn = $this->date($data['paid_on'] ?? null) ?? Carbon::today();
+        if ($paidOn->isFuture()) {
+            throw new PurchaseOrderException('invalid_date', 'La date de règlement ne peut pas être dans le futur.');
+        }
+
+        return [$amount, $method, $reference, $paidOn];
+    }
+
+    private function addPaid(PurchaseInvoice $invoice, int $amount): void
+    {
+        $paid = $this->cents($invoice->paid_amount) + $amount;
+        $invoice->update([
+            'paid_amount' => $paid / 100,
+            'status' => $paid === $this->cents($invoice->total_amount) ? 'paid' : 'partially_paid',
+        ]);
     }
 
     /** Annulation d'une facture saisie par erreur, uniquement sans règlement ; ses réceptions redeviennent facturables. */

@@ -188,4 +188,54 @@ class PurchaseInvoiceTest extends TestCase
         $this->actingAs($this->user('cashier'));
         $this->get(route('invoices.index'))->assertForbidden();
     }
+
+    public function test_invoice_created_from_receipt_screen(): void
+    {
+        $receipt = $this->receivedOrder();
+        $receipt->update(['delivery_note_ref' => 'BL-778']);
+        $this->actingAs($this->user('owner'));
+
+        $this->get(route('receipts.edit', $receipt))->assertOk()->assertSee('Créer la facture')
+            ->assertSee(route('invoices.create', ['reception' => $receipt->id]), false);
+
+        Livewire::withQueryParams(['reception' => $receipt->id])->test(InvoiceEditor::class)
+            ->assertSet('form.supplier_id', $receipt->supplier_id)->assertSet('form.supplier_invoice_number', 'BL-778')
+            ->assertSet('form.total_amount', '2500.00')->assertSet('receiptIds', [$receipt->id])
+            ->call('create')->assertRedirect();
+
+        $invoice = $this->service->invoiceFor($receipt);
+        $this->assertSame('2500.00', $invoice->total_amount);
+        $this->get(route('receipts.edit', $receipt))->assertSee('Facture BL-778')->assertSee('Enregistrer un paiement');
+    }
+
+    public function test_advance_applied_and_statement(): void
+    {
+        $receipt = $this->receivedOrder();
+        $accountant = $this->user('accountant');
+        $supplier = $receipt->supplier;
+
+        try {
+            $this->service->advance($accountant, $supplier, ['amount' => '100', 'method' => 'transfer']);
+            $this->fail('Référence exigée pour un virement');
+        } catch (PurchaseOrderException $e) {
+            $this->assertStringContainsString('Référence obligatoire', $e->getMessage());
+        }
+        $this->service->advance($accountant, $supplier, ['amount' => '3000', 'method' => 'cheque', 'reference' => 'CH-1', 'paid_on' => now()->subDay()->toDateString()]);
+        $invoice = $this->invoice($receipt);
+
+        $advance = $this->service->unappliedAdvances($supplier->pharmacy_id, $supplier->id)->sole();
+        $this->service->applyAdvance($accountant, $invoice, $advance);
+
+        $invoice->refresh();
+        $this->assertSame(['paid', '2500.00'], [$invoice->status, $invoice->paid_amount]);
+        $this->assertSame('500.00', $this->service->unappliedAdvances($supplier->pharmacy_id, $supplier->id)->sole()->amount);
+
+        $s = $this->service->statement($supplier);
+        $this->assertEquals(-500, $s['closing']);       // crédit en faveur de la pharmacie
+        $this->assertCount(3, $s['entries']);           // acompte reliquat, facture, imputation
+
+        $this->actingAs($accountant)->get(route('suppliers.statement', $supplier))->assertOk()->assertSee('Relevé de compte fournisseur')->assertSee('Facture FA-1001');
+        Livewire::test(\App\Livewire\Purchasing\InvoiceIndex::class)->call('openAdvance', $supplier->id)
+            ->set('advance.amount', '50')->set('advance.method', 'cash')->call('saveAdvance')->assertSee('Acompte enregistré');
+    }
 }

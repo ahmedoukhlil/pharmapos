@@ -44,6 +44,7 @@ php artisan test
 - [x] Alertes : péremption par paliers, stock bas, écarts de caisse
 - [x] Commandes fournisseurs, réceptions partielles et reliquats (ACH-02)
 - [x] Factures et règlements fournisseurs, rapprochement (ACH-05, ACH-06)
+- [x] Dette fournisseur depuis la réception (facture pré-remplie, état des paiements), acomptes et imputation, relevé de compte fournisseur A4
 - [x] Réauthentification des opérations sensibles (remise, hors FEFO, remboursement, prix, mouvements et validation de caisse, approbation d'inventaire)
 - [x] Scanner smartphone de caisse (appairage QR, accusés, déduplication)
 - [x] Scanner smartphone : modes inventaire et réception

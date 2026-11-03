@@ -36,6 +36,33 @@
             <p class="rounded-lg bg-emerald-50 px-4 py-2 text-sm text-emerald-800" role="status">{{ $message }}</p>
         @endif
 
+        {{-- Dette fournisseur liée à cette réception --}}
+        @if ($canInvoice && $this->receipt?->status === 'validated')
+            @php $istat = ['open' => 'À régler', 'partially_paid' => 'Réglée en partie', 'paid' => 'Réglée']; @endphp
+            <section class="flex flex-wrap items-center gap-3 rounded-lg border border-emerald-200 bg-emerald-50/60 p-4 text-sm">
+                @if ($invoice)
+                    <div>
+                        <div class="font-semibold">Facture {{ $invoice->supplier_invoice_number }} · {{ $istat[$invoice->status] }}</div>
+                        <div class="text-slate-600">
+                            {{ number_format((float) $invoice->total_amount, 2, ',', ' ') }} MRU · payé {{ number_format((float) $invoice->paid_amount, 2, ',', ' ') }}
+                            · <strong>reste {{ number_format((float) $invoice->total_amount - (float) $invoice->paid_amount, 2, ',', ' ') }} MRU</strong>
+                            @if ($invoice->due_date) · échéance {{ $invoice->due_date->format('d/m/Y') }} @endif
+                        </div>
+                    </div>
+                    <a href="{{ route('invoices.show', $invoice) }}" class="ms-auto rounded-lg bg-emerald-700 px-4 py-2 font-semibold text-white hover:bg-emerald-800">
+                        {{ $invoice->status === 'paid' ? 'Voir la facture' : 'Enregistrer un paiement' }}
+                    </a>
+                @else
+                    <div>
+                        <div class="font-semibold">Pas encore de facture fournisseur</div>
+                        <div class="text-slate-600">Créez la dette pour suivre les paiements à {{ $this->receipt->supplier->name }}.</div>
+                    </div>
+                    <a href="{{ route('invoices.create', ['reception' => $this->receipt->id]) }}" class="ms-auto rounded-lg bg-emerald-700 px-4 py-2 font-semibold text-white hover:bg-emerald-800">Créer la facture</a>
+                @endif
+                <a href="{{ route('suppliers.statement', $this->receipt->supplier_id) }}" target="_blank" class="text-emerald-800 hover:underline">Relevé fournisseur</a>
+            </section>
+        @endif
+
         {{-- En-tête --}}
         <section class="grid gap-3 rounded-lg bg-white p-4 shadow-sm sm:grid-cols-3">
             <label class="block">

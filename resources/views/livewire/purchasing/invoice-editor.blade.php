@@ -145,6 +145,20 @@
                     </ul>
                 @endif
 
+                @if ($advances->isNotEmpty())
+                    <div class="mb-3 rounded-lg bg-amber-50 p-3 text-sm">
+                        <div class="mb-1 font-medium text-amber-900">Acomptes disponibles chez ce fournisseur</div>
+                        @foreach ($advances as $a)
+                            <div class="flex items-center gap-3 py-1" wire:key="adv-{{ $a->id }}">
+                                <span>{{ $a->paid_on->format('d/m/Y') }}</span>
+                                <span>{{ $methods[$a->method] ?? $a->method }} <span class="font-mono text-slate-500">{{ $a->reference }}</span></span>
+                                <span class="ms-auto font-semibold">{{ $money($a->amount) }} MRU</span>
+                                <button type="button" wire:click="applyAdvance('{{ $a->id }}')" class="rounded-lg border border-amber-400 px-3 py-1 text-amber-900 hover:bg-amber-100">Imputer</button>
+                            </div>
+                        @endforeach
+                    </div>
+                @endif
+
                 @if (in_array($invoice->status, ['open', 'partially_paid']))
                     <form wire:submit="pay" class="flex flex-wrap items-end gap-3">
                         <label class="block text-sm">
