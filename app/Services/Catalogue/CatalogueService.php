@@ -12,6 +12,7 @@ use App\Models\StockBalance;
 use App\Models\Supplier;
 use App\Models\User;
 use App\Support\Barcode;
+use App\Support\PharmacySettings;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -55,6 +56,76 @@ class CatalogueService
             }
 
             return $medicine;
+        });
+    }
+
+    /** Coefficient appliqué au prix d'achat pour proposer le prix de vente (réglage d'officine). */
+    public const DEFAULT_MARGIN = 1.30;
+
+    public static function margin(string $pharmacyId, string $type): float
+    {
+        return (float) PharmacySettings::get($pharmacyId, "pricing.margin_$type", self::DEFAULT_MARGIN);
+    }
+
+    public function setMargins(User $user, float $medicine, float $parapharmacy): void
+    {
+        $this->authorize($user, 'price.update');
+        foreach (['medicine' => $medicine, 'parapharmacy' => $parapharmacy] as $type => $value) {
+            if ($value < 1 || $value > 5) {
+                throw ValidationException::withMessages(["margin_$type" => 'Coefficient entre 1 et 5 (ex. 1,30 = +30 %).']);
+            }
+            PharmacySettings::set($user->pharmacy_id, "pricing.margin_$type", round($value, 3));
+        }
+        $this->audit($user, 'pricing.margins_updated', 'pharmacy', $user->pharmacy_id, null, ['medicine' => $medicine, 'parapharmacy' => $parapharmacy]);
+    }
+
+    /** Prix de vente proposé : prix d'achat × coefficient, arrondi à l'unité supérieure. */
+    public static function suggestedSalePrice(string $pharmacyId, string $type, float $purchasePrice): float
+    {
+        return $purchasePrice > 0 ? ceil($purchasePrice * self::margin($pharmacyId, $type)) : 0;
+    }
+
+    /**
+     * Création rapide en une fois : produit + présentation (+ code-barres). Si le produit
+     * (même type, nom et dosage) existe déjà, la présentation lui est ajoutée.
+     *
+     * @throws ValidationException clés : brand_name, inn, strength, label, units_per_pack, purchase_price, sale_price, barcode…
+     */
+    public function quickCreate(User $user, array $data): Presentation
+    {
+        $this->authorize($user, 'catalogue.manage');
+        $n = fn ($k) => filled($data[$k] ?? null) ? trim((string) $data[$k]) : null;
+
+        return DB::transaction(function () use ($user, $data, $n) {
+            $medicine = Medicine::where('pharmacy_id', $user->pharmacy_id)->where('type', $data['type'] ?? 'medicine')
+                ->where('brand_name', $n('brand_name'))->where('strength', $n('strength'))->first()
+                ?? $this->saveMedicine($user, [
+                    'type' => $data['type'] ?? 'medicine',
+                    'brand_name' => $n('brand_name'),
+                    'inn' => $n('inn'),
+                    'strength' => $n('strength'),
+                    'dosage_form' => $n('dosage_form'),
+                    'route' => $n('route'),
+                    'manufacturer' => $n('manufacturer'),
+                    'category_id' => $n('category_id'),
+                    'prescription_required' => (bool) ($data['prescription_required'] ?? false),
+                ]);
+
+            $presentation = $this->savePresentation($user, $medicine, [
+                'sku' => $n('sku'),
+                'label' => $n('label') ?? 'Boîte',
+                'base_unit' => $n('base_unit') ?? 'unité',
+                'units_per_pack' => $data['units_per_pack'] ?? 1,
+                'allow_split_sale' => false,
+                'purchase_price' => $data['purchase_price'] ?? null,
+                'sale_price' => $data['sale_price'] ?? null,
+            ]);
+
+            if ($code = $n('barcode')) {
+                $this->addBarcode($user, $presentation, $code);
+            }
+
+            return $presentation;
         });
     }
 

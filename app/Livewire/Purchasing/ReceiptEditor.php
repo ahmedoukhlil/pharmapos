@@ -278,6 +278,16 @@ class ReceiptEditor extends Component
         unset($this->presentations);
     }
 
+    /** Produit créé depuis une ligne inconnue du bordereau : la ligne lui est associée. */
+    #[On('quick-product-created')]
+    public function noteProductCreated(string $presentationId, ?string $ref = null): void
+    {
+        if ($this->note && $ref !== null && isset($this->note['lines'][(int) $ref])) {
+            $this->note['lines'][(int) $ref] = [...$this->note['lines'][(int) $ref], 'presentation_id' => $presentationId, 'status' => 'ok', 'source' => 'created'];
+        }
+        unset($this->catalogue);
+    }
+
     /** Produits proposés dans la liste de choix d'une ligne inconnue du bordereau. */
     #[Computed]
     public function catalogue(): Collection
@@ -369,6 +379,8 @@ class ReceiptEditor extends Component
 
     public function render()
     {
-        return view('livewire.purchasing.receipt-editor');
+        return view('livewire.purchasing.receipt-editor', [
+            'canCreateProduct' => auth()->user()->hasPermission('catalogue.manage'),
+        ]);
     }
 }

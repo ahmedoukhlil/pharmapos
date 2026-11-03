@@ -30,6 +30,10 @@
             <p class="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-800" role="status">{{ $flash }}</p>
         @endif
 
+        @if (! $medicine && $canManage)
+            {{-- Création en un écran : produit + présentation + prix + code-barres --}}
+            <livewire:catalogue.quick-product mode="page" />
+        @else
         <form wire:submit="save" class="grid gap-3 rounded-lg bg-white p-4 shadow-sm sm:grid-cols-2">
             <fieldset @disabled(! $canManage) class="contents">
                 <label class="block">
@@ -217,6 +221,7 @@
                     <p class="text-sm text-slate-500">Aucune présentation : ajoutez-en une pour pouvoir vendre ce produit.</p>
                 @endforelse
             </section>
+        @endif
         @endif
     </main>
 

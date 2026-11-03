@@ -54,6 +54,7 @@ class ProductEditor extends Component
             'prescription_required' => (bool) ($medicine?->prescription_required ?? false),
             'storage_conditions' => $medicine?->storage_conditions ?? '',
         ];
+        $this->flash = session('flash');
     }
 
     public function save(CatalogueService $service)

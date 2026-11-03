@@ -138,7 +138,10 @@
                                             </optgroup>
                                         </select>
                                         @if (! $l['presentation_id'])
-                                            <a href="{{ route('catalogue.create') }}" target="_blank" class="mt-1 block text-xs text-emerald-800 underline">Créer le produit</a>
+                                            @if ($canCreateProduct)
+                                                <button type="button" wire:click="$dispatch('quick-product-open', { prefill: @js(['designation' => $l['designation'], 'purchase_price' => $l['unit_price'], 'barcode' => $l['code']]), ref: '{{ $i }}' })"
+                                                        class="mt-1 block rounded border border-emerald-700 px-2 py-0.5 text-xs font-medium text-emerald-800 hover:bg-emerald-50">+ Créer ce produit</button>
+                                            @endif
                                         @endif
                                     </td>
                                     <td class="px-2 py-2 align-top"><input wire:model="note.lines.{{ $i }}.lot" class="w-28 rounded border border-slate-300 px-2 py-1"></td>
@@ -267,4 +270,7 @@
             @endunless
         </div>
     </main>
+    @if ($note && $canCreateProduct)
+        <livewire:catalogue.quick-product mode="modal" />
+    @endif
 </div>

@@ -15,4 +15,9 @@ class PharmacySettings
 
         return $setting ? $setting->value : $default;
     }
+
+    public static function set(string $pharmacyId, string $key, mixed $value): void
+    {
+        Setting::updateOrCreate(['pharmacy_id' => $pharmacyId, 'key' => $key], ['value' => $value]);
+    }
 }

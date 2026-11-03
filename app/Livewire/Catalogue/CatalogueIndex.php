@@ -3,6 +3,7 @@
 namespace App\Livewire\Catalogue;
 
 use App\Models\Medicine;
+use App\Services\Catalogue\CatalogueService;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Attributes\Url;
@@ -24,9 +25,31 @@ class CatalogueIndex extends Component
     #[Url]
     public string $status = 'active';
 
+    /** Coefficients de marge affichés dans le panneau « Marge par défaut ». */
+    public ?array $margins = null;
+
+    public ?string $marginMessage = null;
+
     public function updating($name): void
     {
-        $this->resetPage();
+        if (! str_starts_with($name, 'margins')) {
+            $this->resetPage();
+        }
+    }
+
+    public function editMargins(): void
+    {
+        $id = auth()->user()->pharmacy_id;
+        $this->margins = ['medicine' => (string) CatalogueService::margin($id, 'medicine'), 'parapharmacy' => (string) CatalogueService::margin($id, 'parapharmacy')];
+        $this->marginMessage = null;
+    }
+
+    public function saveMargins(CatalogueService $service): void
+    {
+        $v = fn ($x) => (float) str_replace(',', '.', (string) $x);
+        $service->setMargins(auth()->user(), $v($this->margins['medicine']), $v($this->margins['parapharmacy']));
+        $this->margins = null;
+        $this->marginMessage = 'Coefficients enregistrés : ils s\'appliquent aux prochains produits créés.';
     }
 
     public function render()
@@ -47,6 +70,8 @@ class CatalogueIndex extends Component
         return view('livewire.catalogue.catalogue-index', [
             'medicines' => $medicines,
             'canManage' => auth()->user()->hasPermission('catalogue.manage'),
+            'canPrice' => auth()->user()->hasPermission('price.update'),
+            'currentMargins' => ['medicine' => CatalogueService::margin(auth()->user()->pharmacy_id, 'medicine'), 'parapharmacy' => CatalogueService::margin(auth()->user()->pharmacy_id, 'parapharmacy')],
         ]);
     }
 }

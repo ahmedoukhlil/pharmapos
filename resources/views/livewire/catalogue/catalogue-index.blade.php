@@ -14,6 +14,27 @@
             @endif
         </div>
 
+        @if ($canPrice)
+            <div class="flex flex-wrap items-center gap-3 rounded-lg bg-white px-4 py-2 text-sm shadow-sm">
+                <span class="font-medium">Marge par défaut</span>
+                @if ($margins === null)
+                    <span class="text-slate-600">Médicaments × {{ number_format($currentMargins['medicine'], 2, ',', ' ') }} · Parapharmacie × {{ number_format($currentMargins['parapharmacy'], 2, ',', ' ') }}</span>
+                    <span class="text-xs text-slate-500">(prix de vente proposé = prix d'achat × coefficient)</span>
+                    <button wire:click="editMargins" class="ms-auto text-emerald-800 hover:underline">Modifier</button>
+                @else
+                    <form wire:submit="saveMargins" class="flex flex-wrap items-center gap-2">
+                        <label>Médicaments × <input wire:model="margins.medicine" inputmode="decimal" class="w-20 rounded border border-slate-300 px-2 py-1 text-end"></label>
+                        <label>Parapharmacie × <input wire:model="margins.parapharmacy" inputmode="decimal" class="w-20 rounded border border-slate-300 px-2 py-1 text-end"></label>
+                        <button class="rounded-lg bg-emerald-700 px-3 py-1 font-semibold text-white">Enregistrer</button>
+                        <button type="button" wire:click="$set('margins', null)" class="text-slate-600">Annuler</button>
+                    </form>
+                    @error('margin_medicine') <span class="w-full text-xs text-red-700">{{ $message }}</span> @enderror
+                    @error('margin_parapharmacy') <span class="w-full text-xs text-red-700">{{ $message }}</span> @enderror
+                @endif
+                @if ($marginMessage) <span class="w-full text-emerald-800">{{ $marginMessage }}</span> @endif
+            </div>
+        @endif
+
         <div class="flex flex-wrap gap-3 rounded-lg bg-white p-4 shadow-sm">
             <input type="search" wire:model.live.debounce.300ms="search" placeholder="Nom, DCI, SKU ou code-barres"
                    x-init="$nextTick(() => $el.focus())"
