@@ -161,6 +161,7 @@ class Checkout extends Component
     {
         $term = trim($term ?? $this->search);
         $this->search = '';
+        $this->error = null;   // le scanner caméra lit l'erreur de CE code, pas celle du précédent
         if ($term === '') {
             return;
         }
