@@ -1,5 +1,5 @@
 {{-- En-tête de la console SaaS (super-administrateur) --}}
-<header x-data="{ drawer: false }" @click.outside="drawer = false" class="relative z-40 bg-slate-900 text-white print:hidden">
+<header x-data="{ drawer: false }" @click.outside="drawer = false" class="sticky top-0 z-40 bg-slate-900 text-white print:hidden sm:relative" style="padding-top: env(safe-area-inset-top)">
     <div class="flex items-center gap-2 px-3 py-2 lg:gap-3 lg:px-4">
         <a href="{{ route('admin.pharmacies') }}" class="flex shrink-0 items-center gap-2 font-semibold">
             <img src="/images/icon-64.png" alt="" class="size-8 rounded-md bg-white p-0.5">
@@ -22,6 +22,7 @@
         </button>
     </div>
     <nav x-show="drawer" x-cloak class="absolute inset-x-0 top-full z-50 bg-white text-slate-800 shadow-lg sm:hidden">
+        <a href="{{ route('admin.pharmacies.create') }}" class="block px-4 py-3 font-semibold text-emerald-800">+ Nouvelle pharmacie</a>
         <a href="{{ route('admin.pharmacies') }}" class="block px-4 py-3">Pharmacies</a>
         <a href="{{ route('admin.settings') }}" class="block px-4 py-3">Paramètres</a>
         <a href="{{ route('backups.index') }}" class="block px-4 py-3">Sauvegardes</a>

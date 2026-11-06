@@ -11,3 +11,8 @@
 }
 
 [x-cloak] { display: none !important; }
+
+/* Onglets du bas sur téléphone : le contenu ne passe pas dessous */
+@media (width < 64rem) {
+    body:has(.bottom-tabs) { padding-bottom: calc(4rem + env(safe-area-inset-bottom)); }
+}

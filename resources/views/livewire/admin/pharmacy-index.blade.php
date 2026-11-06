@@ -60,8 +60,8 @@
                         : ($p->subscription_ends_at && $p->subscription_ends_at->lte(today()->addDays(15)) ? ['Bientôt échue', 'bg-amber-50 text-amber-800'] : ['Active', 'bg-emerald-100 text-emerald-800']));
                 @endphp
                 <article wire:key="p-{{ $p->id }}" class="rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-900/5">
-                    <div class="flex flex-wrap items-start gap-x-4 gap-y-2">
-                        <div class="min-w-0 flex-1">
+                    <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:gap-4">
+                        <div class="min-w-0 sm:flex-1">
                             <div class="flex flex-wrap items-center gap-2">
                                 <h2 class="font-semibold">{{ $p->name }}</h2>
                                 <span class="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-xs">{{ $p->code }}</span>
@@ -76,9 +76,9 @@
                                 <p class="text-sm text-red-700">Motif : {{ $p->suspended_reason }}</p>
                             @endif
                         </div>
-                        <dl class="grid grid-cols-3 gap-4 text-sm">
+                        <dl class="grid grid-cols-3 gap-3 rounded-lg bg-slate-50 p-2 text-sm sm:shrink-0 sm:gap-4 sm:bg-transparent sm:p-0">
                             <div><dt class="text-xs text-slate-500">Utilisateurs</dt><dd class="font-semibold tabular-nums">{{ $p->users_count }}</dd></div>
-                            <div><dt class="text-xs text-slate-500">Ventes 30 j</dt><dd class="font-semibold tabular-nums">{{ $p->sales_30d }} <span class="font-normal text-slate-500">· {{ $money($p->revenue_30d) }} MRU</span></dd></div>
+                            <div><dt class="text-xs text-slate-500">Ventes 30 j</dt><dd class="font-semibold tabular-nums">{{ $p->sales_30d }} <span class="block font-normal text-slate-500 sm:inline">{{ $money($p->revenue_30d) }} MRU</span></dd></div>
                             <div><dt class="text-xs text-slate-500">Dernière vente</dt><dd class="font-semibold">{{ $p->last_sale_at ? \Illuminate\Support\Carbon::parse($p->last_sale_at)->diffForHumans() : '—' }}</dd></div>
                         </dl>
                     </div>
@@ -86,15 +86,15 @@
                     @if ($editing === $p->id && $mode === 'users')
                         <div class="mt-3 rounded-lg bg-slate-50 p-3 text-sm">
                             <table class="w-full">
-                                <thead class="text-xs uppercase text-slate-500"><tr><th class="py-1 text-start">Nom</th><th class="text-start">Identifiant</th><th class="text-start">Rôle</th><th class="text-start">Statut</th><th></th></tr></thead>
+                                <thead class="hidden text-xs uppercase text-slate-500 sm:table-header-group"><tr><th class="py-1 text-start">Nom</th><th class="text-start">Identifiant</th><th class="text-start">Rôle</th><th class="text-start">Statut</th><th></th></tr></thead>
                                 <tbody class="divide-y divide-slate-200">
                                     @foreach ($this->editingUsers as $u)
-                                        <tr wire:key="u-{{ $u->id }}">
-                                            <td class="py-1.5">{{ $u->name }}</td>
+                                        <tr wire:key="u-{{ $u->id }}" class="flex flex-wrap items-center gap-x-2 py-2 sm:table-row">
+                                            <td class="font-medium sm:py-1.5 sm:font-normal">{{ $u->name }}</td>
                                             <td class="font-mono">{{ $u->username }}</td>
-                                            <td>{{ $u->roles->pluck('name')->implode(', ') ?: '—' }}</td>
-                                            <td>{{ $u->is_active ? 'Actif' : 'Désactivé' }}{{ $u->must_change_password ? ' · mot de passe provisoire' : '' }}</td>
-                                            <td class="text-end">
+                                            <td class="w-full text-slate-600 sm:w-auto">{{ $u->roles->pluck('name')->implode(', ') ?: '—' }}</td>
+                                            <td class="text-slate-600">{{ $u->is_active ? 'Actif' : 'Désactivé' }}{{ $u->must_change_password ? ' · mot de passe provisoire' : '' }}</td>
+                                            <td class="ms-auto text-end">
                                                 <button wire:click="resetUser('{{ $u->id }}')" wire:confirm="Générer un mot de passe provisoire pour {{ $u->name }} ({{ $u->username }}) ?"
                                                         class="rounded-lg border border-slate-300 bg-white px-2 py-1 hover:bg-slate-100">Réinitialiser le mot de passe</button>
                                             </td>
@@ -111,14 +111,15 @@
                                     <span class="text-xs font-medium">Motif de la suspension (interne, non montré aux utilisateurs)</span>
                                     <input wire:model="form.reason" class="{{ $input }} mt-1" placeholder="ex. Facture impayée" autofocus>
                                     @error('reason') <span class="text-xs text-red-700">{{ $message }}</span> @enderror
+                                    @error('form.reason') <span class="text-xs text-red-700">{{ $message }}</span> @enderror
                                 </label>
                                 <button class="rounded-lg bg-red-700 px-4 py-2 text-sm font-semibold text-white hover:bg-red-800">Suspendre</button>
                             @else
-                                <label class="w-40">
+                                <label class="w-full sm:w-40">
                                     <span class="text-xs font-medium">Formule</span>
                                     <input wire:model="form.plan" class="{{ $input }} mt-1">
                                 </label>
-                                <label class="w-44">
+                                <label class="w-full sm:w-44">
                                     <span class="text-xs font-medium">Échéance (vide = aucune)</span>
                                     <input wire:model="form.subscription_ends_at" type="date" class="{{ $input }} mt-1">
                                     @error('form.subscription_ends_at') <span class="text-xs text-red-700">{{ $message }}</span> @enderror
