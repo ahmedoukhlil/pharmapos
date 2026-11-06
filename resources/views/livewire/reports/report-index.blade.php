@@ -73,7 +73,11 @@
             @include('livewire.reports.dashboard', ['d' => $dashboard])
         @endif
 
-        @foreach ($tables as $i => $t)
+        @if ($report === 'sales' && count($tables) === 4)
+            @include('livewire.reports.sales')
+        @endif
+
+        @foreach ($report === 'sales' ? [] : $tables as $i => $t)
             <section wire:key="t-{{ $report }}-{{ $i }}" class="overflow-x-auto rounded-lg bg-white shadow-sm print:break-inside-avoid print:shadow-none">
                 <div class="flex items-center px-3 py-2">
                     <h2 class="font-semibold">{{ $t['title'] }}</h2>
@@ -93,7 +97,7 @@
                         @forelse ($t['rows'] as $row)
                             <tr>
                                 @foreach ($t['columns'] as $key => $label)
-                                    <td @class(['px-3 py-1.5', 'text-end tabular-nums' => is_numeric($row[$key]) || str_ends_with($key, '_packs'), 'text-red-700' => ($key === 'state' && str_starts_with((string) $row[$key], 'Rupture')) || $row[$key] === 'Périmé', 'text-amber-700' => $key === 'state' && $row[$key] !== '' && ! str_starts_with((string) $row[$key], 'Rupture') || ($key === 'difference' && ($row[$key] ?? 0) < 0)])>{{ $fmt($row[$key]) }}</td>
+                                    <td @class(['px-3 py-1.5', 'text-end tabular-nums' => is_numeric($row[$key]) || str_ends_with($key, '_packs'), 'text-red-700' => ($key === 'state' && str_starts_with((string) $row[$key], 'Rupture')) || $row[$key] === 'Périmé' || ($key === 'difference' && ($row[$key] ?? 0) < 0), 'text-amber-700' => $key === 'state' && $row[$key] !== '' && ! str_starts_with((string) $row[$key], 'Rupture')])>{{ $fmt($row[$key]) }}</td>
                                 @endforeach
                             </tr>
                         @empty

@@ -69,16 +69,16 @@ class ReportService
 
         $byProduct = $items()->join('presentations', 'presentations.id', '=', 'sale_items.presentation_id')
             ->join('medicines', 'medicines.id', '=', 'presentations.medicine_id')
-            ->groupBy('presentations.id', 'presentations.sku', 'medicines.brand_name', 'medicines.strength', 'presentations.base_unit')
-            ->selectRaw('presentations.sku, medicines.brand_name, medicines.strength, presentations.base_unit,
+            ->groupBy('presentations.id', 'presentations.sku', 'presentations.label', 'presentations.units_per_pack', 'medicines.brand_name', 'medicines.strength', 'presentations.base_unit')
+            ->selectRaw('presentations.sku, presentations.label, presentations.units_per_pack, medicines.brand_name, medicines.strength, presentations.base_unit,
                 SUM(sale_items.quantity_base_units) as qty, SUM(sale_items.line_total) as revenue, SUM(COALESCE(c.cost, 0)) as cost')
             ->orderByDesc('revenue')->get()->map(fn ($r) => [
-                'product' => trim("$r->brand_name $r->strength"),
+                'product' => trim("$r->brand_name $r->strength").' · '.$r->label,
                 'sku' => $r->sku,
-                'qty' => (int) $r->qty.' '.$r->base_unit.'(s)',
+                'qty' => self::packs((int) $r->qty, (int) $r->units_per_pack, $r->base_unit),
                 'revenue' => round((float) $r->revenue, 2),
                 'margin' => round($r->revenue - $r->cost, 2),
-                'margin_rate' => $r->revenue > 0 ? round(($r->revenue - $r->cost) / $r->revenue * 100, 1).' %' : '—',
+                'margin_rate' => $r->revenue > 0 ? number_format(($r->revenue - $r->cost) / $r->revenue * 100, 1, ',', ' ').' %' : '—',
             ]);
 
         $byCategory = $items()->join('presentations', 'presentations.id', '=', 'sale_items.presentation_id')
@@ -323,7 +323,8 @@ class ReportService
             $totals = array_fill_keys(array_keys($columns), '');
             $totals[array_key_first($columns)] = 'Total';
             foreach ($sum as $c) {
-                $totals[$c] = round($rows->sum($c), 2);
+                $sum = $rows->sum($c);
+                $totals[$c] = is_int($sum) ? $sum : round($sum, 2);   // tickets : entier, montants : 2 décimales
             }
             foreach ($computed as $c => $fn) {
                 $totals[$c] = $fn($rows);

@@ -76,7 +76,7 @@ class ReportTest extends TestCase
         $this->assertEquals(round((360 + $ibuPrice) / 2, 2), $byPeriod['rows'][0]['average']);
 
         $para = collect($byProduct['rows'])->firstWhere('sku', 'PARA500-16');
-        $this->assertSame('32 comprimé(s)', $para['qty']);
+        $this->assertSame('2 boîtes (32 comprimés)', $para['qty']);
         $this->assertEquals(360 - 32 * 7.5, $para['margin']);   // coût des lots : 7,50 par comprimé
         $this->assertSame('Démo Caissier', $byCashier['rows'][0]['cashier']);
     }
@@ -131,7 +131,7 @@ class ReportTest extends TestCase
         $this->assertNull($d['kpis']['revenue']['change']);   // aucune vente la veille
         $this->assertCount(1, $d['trend']);
         $this->assertSame(2, collect($d['hours'])->sum('tickets'));
-        $this->assertSame('Paracétamol Démo 500 mg', collect($d['topProducts'])->sortByDesc('value')->first()['label']);
+        $this->assertSame('Paracétamol Démo 500 mg · Boîte de 16 cp', collect($d['topProducts'])->sortByDesc('value')->first()['label']);
         $this->assertCount(2, $d['methods']);
         $this->assertGreaterThan(0, $d['stock']['value']);
 
@@ -145,7 +145,7 @@ class ReportTest extends TestCase
         $this->sell();
         $this->actingAs($this->user('owner'));
 
-        Livewire::test(ReportIndex::class)->set('report', 'sales')->assertSee('Ventes par période')->assertSee('Panier moyen')
+        Livewire::test(ReportIndex::class)->set('report', 'sales')->assertSee("Chiffre d'affaires net")->assertSee('Panier moyen')->assertSee('Produits vendus')->assertSee('Détail par période')
             ->set('report', 'stock')->assertSee('Stock et valorisation')
             ->set('report', 'cash')->assertSee('Encaissements par mode');
 
