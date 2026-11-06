@@ -52,7 +52,7 @@
                         </label>
                     @endforeach
                 </div>
-                <p class="text-xs text-slate-500">Ces informations figurent sur les tickets de caisse. Le code pharmacie est saisi par ses utilisateurs à la connexion.</p>
+                <p class="text-xs text-slate-500">Ces informations figurent sur les reçus de caisse. Le code pharmacie est saisi par ses utilisateurs à la connexion.</p>
 
                 <h2 class="pt-2 font-semibold">Abonnement</h2>
                 <div class="grid gap-3 sm:grid-cols-2">

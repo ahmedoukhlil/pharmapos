@@ -34,7 +34,7 @@
                         @error('location_id') <span class="text-xs text-red-700">{{ $message }}</span> @enderror
                     </label>
                     <label class="block">
-                        <span class="text-sm font-medium">Imprimante ticket</span>
+                        <span class="text-sm font-medium">Imprimante reçus</span>
                         <select wire:model="form.printer_width" class="{{ $input }}">
                             <option value="80">80 mm (standard)</option>
                             <option value="58">58 mm (petite)</option>
@@ -67,7 +67,7 @@
             <div class="flex items-center">
                 <div>
                     <h2 class="font-semibold">Caisses</h2>
-                    <p class="text-sm text-slate-500">Chaque poste d'encaissement, avec son fond de caisse et sa numérotation de tickets.</p>
+                    <p class="text-sm text-slate-500">Chaque poste d'encaissement, avec son fond de caisse et sa numérotation de reçus.</p>
                 </div>
                 <button wire:click="editRegister" class="ms-auto rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-800">Ajouter une caisse</button>
             </div>

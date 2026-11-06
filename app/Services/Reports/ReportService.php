@@ -106,7 +106,7 @@ class ReportService
 
         return [
             $this->table('Ventes par période', [
-                'period' => 'Période', 'tickets' => 'Tickets', 'revenue' => "Chiffre d'affaires", 'average' => 'Panier moyen',
+                'period' => 'Période', 'tickets' => 'Reçus', 'revenue' => "Chiffre d'affaires", 'average' => 'Panier moyen',
                 'discounts' => 'Remises', 'returns' => 'Retours', 'net' => 'Net',
             ], $byPeriod, ['tickets', 'revenue', 'discounts', 'returns', 'net'], ['average' => fn ($rows) => round($rows->sum('revenue') / max(1, $rows->sum('tickets')), 2)]),
             $this->table('Ventes par produit', [
@@ -116,7 +116,7 @@ class ReportService
                 'category' => 'Catégorie', 'type' => 'Type', 'revenue' => "Chiffre d'affaires", 'margin' => 'Marge',
             ], $byCategory, ['revenue', 'margin']),
             $this->table('Ventes par caissier', [
-                'cashier' => 'Caissier', 'tickets' => 'Tickets', 'revenue' => "Chiffre d'affaires", 'average' => 'Panier moyen', 'discounts' => 'Remises',
+                'cashier' => 'Caissier', 'tickets' => 'Reçus', 'revenue' => "Chiffre d'affaires", 'average' => 'Panier moyen', 'discounts' => 'Remises',
             ], $byCashier, ['tickets', 'revenue', 'discounts']),
         ];
     }

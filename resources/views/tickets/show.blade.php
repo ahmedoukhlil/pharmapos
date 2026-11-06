@@ -3,7 +3,7 @@
 <html lang="fr">
 <head>
     <meta charset="utf-8">
-    <title>Ticket {{ $sale->ticket_number }}</title>
+    <title>Reçu {{ $sale->ticket_number }}</title>
     <style>
         @page { size: {{ $width }}mm auto; margin: 0; }
         * { box-sizing: border-box; }
@@ -27,7 +27,7 @@
         @if ($sale->pharmacy->nif)NIF {{ $sale->pharmacy->nif }}@endif
     </div>
     <hr>
-    <div>Ticket : <span class="b">{{ $sale->ticket_number }}</span></div>
+    <div>Reçu : <span class="b">{{ $sale->ticket_number }}</span></div>
     <div>{{ $sale->finalized_at->timezone($sale->pharmacy->timezone)->format('d/m/Y H:i') }} · {{ $sale->register->name }}</div>
     <div>Caissier : {{ $sale->user->name }}</div>
     <hr>
@@ -60,7 +60,7 @@
         @endif
     </table>
     <hr>
-    <div class="c small">Merci de votre visite.<br>Conservez ce ticket pour tout retour.</div>
+    <div class="c small">Merci de votre visite.<br>Conservez ce reçu pour tout retour.</div>
 </div>
 
 <div class="actions">

@@ -100,7 +100,7 @@ class Returns extends Component
             ->first();
 
         if (! $sale) {
-            $this->error = "Aucun ticket encaissé « {$this->ticket} ».";
+            $this->error = "Aucun reçu encaissé « {$this->ticket} ».";
 
             return;
         }

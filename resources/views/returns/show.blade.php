@@ -25,7 +25,7 @@
     <hr>
     <div class="c b">AVOIR {{ $return->credit_note_number }}</div>
     <div>{{ $return->created_at->timezone($p->timezone)->format('d/m/Y H:i') }}</div>
-    <div>Ticket d'origine : {{ $return->sale->ticket_number }}</div>
+    <div>Reçu d'origine : {{ $return->sale->ticket_number }}</div>
     <div>Opérateur : {{ $return->user->name }}</div>
     <div class="small">Motif : {{ $return->reason }}</div>
     <hr>

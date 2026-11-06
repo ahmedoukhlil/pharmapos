@@ -189,7 +189,7 @@ class SaleReturnService
         foreach ($items as $i => $item) {
             $allocation = $allocations->get($item['sale_item_batch_id'] ?? null);
             if (! $allocation || $allocation->saleItem->sale_id !== $sale->id) {
-                throw new SaleException('unknown_line', "Article introuvable sur ce ticket.", ['line' => $i + 1]);
+                throw new SaleException('unknown_line', "Article introuvable sur ce reçu.", ['line' => $i + 1]);
             }
 
             $quantity = (int) $item['quantity'];

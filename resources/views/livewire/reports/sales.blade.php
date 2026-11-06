@@ -12,7 +12,7 @@
     $export = fn ($i) => $canExport ? route('reports.export', $query + ['table' => $i]) : null;
     $kpis = [
         ['Chiffre d\'affaires net', $money($t['net'] ?? 0), 'MRU', 'emerald'],
-        ['Tickets', number_format((int) ($t['tickets'] ?? 0), 0, ',', ' '), '', 'slate'],
+        ['Reçus', number_format((int) ($t['tickets'] ?? 0), 0, ',', ' '), '', 'slate'],
         ['Panier moyen', $money($t['average'] ?? 0), 'MRU', 'slate'],
         ['Marge', $money($margin), $revenue > 0 ? number_format($margin / $revenue * 100, 1, ',', ' ').' %' : '', 'emerald'],
         ['Remises', $money($t['discounts'] ?? 0), 'MRU', 'amber'],
@@ -100,7 +100,7 @@
                             <span class="truncate font-medium">{{ $c['cashier'] }}</span>
                         </div>
                         <p class="mt-2 text-lg font-semibold tabular-nums">{{ $money($c['revenue']) }}</p>
-                        <p class="text-xs text-slate-500">{{ $c['tickets'] }} ticket(s) · panier {{ $money($c['average']) }}@if ($c['discounts'] > 0) · remises {{ $money($c['discounts']) }}@endif</p>
+                        <p class="text-xs text-slate-500">{{ $c['tickets'] }} reçu(s) · panier {{ $money($c['average']) }}@if ($c['discounts'] > 0) · remises {{ $money($c['discounts']) }}@endif</p>
                     </div>
                 @endforeach
             </div>
@@ -119,7 +119,7 @@
                 <div class="rounded-xl border border-slate-100 p-3">
                     <p class="text-xs font-medium text-slate-500">{{ ucfirst($day($r['period'])) }}</p>
                     <p class="mt-1 font-semibold tabular-nums">{{ $money($r['net']) }}</p>
-                    <p class="text-xs text-slate-500">{{ $r['tickets'] }} ticket(s)@if ($r['returns'] > 0) · <span class="text-red-700">retours {{ $money($r['returns']) }}</span>@endif</p>
+                    <p class="text-xs text-slate-500">{{ $r['tickets'] }} reçu(s)@if ($r['returns'] > 0) · <span class="text-red-700">retours {{ $money($r['returns']) }}</span>@endif</p>
                     <div class="mt-2 h-1 rounded-full bg-slate-100"><div class="h-1 rounded-full bg-emerald-600" style="width: {{ round(max(0, $r['net']) / $peak * 100) }}%"></div></div>
                 </div>
             @endforeach

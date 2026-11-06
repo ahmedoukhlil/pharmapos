@@ -129,7 +129,7 @@ class BackupService
                 $issued = (int) $restored->table('document_sequences')->where('document_type', 'ticket')->sum('last_number');
                 $used = $restored->table('sales')->whereNotNull('ticket_number')->count();
                 if ($used > $issued) {
-                    $result['issues'][] = "Séquence des tickets en retard ($used tickets, compteur $issued)";
+                    $result['issues'][] = "Séquence des reçus en retard ($used reçus, compteur $issued)";
                 }
             }
             $result['ok'] = $result['tables'] > 0 && ! $result['issues'];

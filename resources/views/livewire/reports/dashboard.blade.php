@@ -4,8 +4,8 @@
     // [clé, libellé, valeur affichée, unité, sous-titre, une hausse est-elle bonne ?]
     $cards = [
         ['revenue', "Chiffre d'affaires", $money($k['revenue']['value']), 'MRU', 'Net des retours : '.$money($k['net']['value']).' MRU', true],
-        ['tickets', 'Tickets', number_format($k['tickets']['value'], 0, ',', ' '), '', 'Ventes finalisées', true],
-        ['average', 'Panier moyen', $money($k['average']['value']), 'MRU', 'Par ticket', true],
+        ['tickets', 'Reçus', number_format($k['tickets']['value'], 0, ',', ' '), '', 'Ventes finalisées', true],
+        ['average', 'Panier moyen', $money($k['average']['value']), 'MRU', 'Par reçu', true],
         ['margin', 'Marge brute', $money($k['margin']['value']), 'MRU', 'Taux de marge : '.number_format($k['marginRate']['value'], 1, ',', ' ').' %', true],
         ['returns', 'Retours', $money($k['returns']['value']), 'MRU', 'Remboursés aux clients', false],
     ];
@@ -46,7 +46,7 @@
     <section class="{{ $panel }}">
         <div class="mb-4 flex flex-wrap items-baseline gap-x-3">
             <h2 class="font-semibold text-slate-900">Évolution des ventes</h2>
-            <p class="text-sm text-slate-500">Chiffre d'affaires et nombre de tickets — comparaison avec le {{ $d['previousLabel'] }}</p>
+            <p class="text-sm text-slate-500">Chiffre d'affaires et nombre de reçus — comparaison avec le {{ $d['previousLabel'] }}</p>
         </div>
         <div class="h-72" {!! $chart('trend', $d['trend']) !!}><canvas x-ref="canvas"></canvas></div>
     </section>

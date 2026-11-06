@@ -14,8 +14,8 @@
         @endif
 
         <form wire:submit="findSale" class="flex gap-2">
-            <label for="ticket" class="sr-only">Numéro de ticket</label>
-            <input id="ticket" wire:model="ticket" placeholder="Numéro de ticket (ex. C01-2026-000012)" autofocus
+            <label for="ticket" class="sr-only">Numéro de reçu</label>
+            <input id="ticket" wire:model="ticket" placeholder="Numéro de reçu (ex. C01-2026-000012)" autofocus
                    class="flex-1 rounded-lg border border-slate-300 bg-white px-4 py-2 font-mono">
             <button class="rounded-lg bg-slate-800 px-4 py-2 text-white hover:bg-slate-900">Rechercher</button>
         </form>
@@ -36,7 +36,7 @@
             <form wire:submit="submit" class="space-y-4">
                 <section class="overflow-x-auto rounded-lg bg-white shadow-sm">
                     <div class="border-b border-slate-100 px-4 py-2 text-sm text-slate-600">
-                        Ticket <span class="font-mono font-medium">{{ $this->sale->ticket_number }}</span>
+                        Reçu <span class="font-mono font-medium">{{ $this->sale->ticket_number }}</span>
                         du {{ $this->sale->finalized_at->format('d/m/Y H:i') }} · {{ number_format($this->sale->total, 2, ',', ' ') }} MRU
                         @if ($this->sale->returns->isNotEmpty())
                             · <span class="text-amber-800">{{ $this->sale->returns->count() }} retour(s) déjà enregistré(s)</span>
