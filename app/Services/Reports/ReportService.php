@@ -134,33 +134,94 @@ class ReportService
             ->where('presentations.pharmacy_id', $pharmacyId)->where('presentations.status', 'active')
             ->when($f['location_id'] ?? null, fn ($q, $v) => $q->where(fn ($q) => $q->where('stock_balances.location_id', $v)->orWhereNull('stock_balances.id')))
             ->when($f['type'] ?? null, fn ($q, $v) => $q->where('medicines.type', $v))
-            ->groupBy('presentations.id', 'presentations.sku', 'medicines.brand_name', 'medicines.strength', 'presentations.base_unit',
-                'presentations.reorder_threshold')
-            ->selectRaw("presentations.sku, medicines.brand_name, medicines.strength, presentations.base_unit,
-                presentations.reorder_threshold,
+            ->groupBy('presentations.id', 'presentations.sku', 'presentations.label', 'medicines.brand_name', 'medicines.strength',
+                'presentations.base_unit', 'presentations.units_per_pack', 'presentations.reorder_threshold')
+            ->selectRaw("presentations.id, presentations.sku, presentations.label, medicines.brand_name, medicines.strength, presentations.base_unit,
+                presentations.units_per_pack, presentations.reorder_threshold,
                 SUM(COALESCE(stock_balances.quantity, 0) * COALESCE(batches.unit_cost, 0)) as value,
                 SUM(CASE WHEN locations.is_sellable = 1 AND batches.status = 'available' AND batches.expiry_date >= ? THEN stock_balances.quantity ELSE 0 END) as sellable,
-                SUM(CASE WHEN locations.is_sellable = 1 AND batches.status = 'available' AND batches.expiry_date >= ? THEN 0 ELSE COALESCE(stock_balances.quantity, 0) END) as blocked", [$today, $today])
-            ->orderBy('medicines.brand_name')->get()->map(function ($r) {
-                return [
-                    'product' => trim("$r->brand_name $r->strength"),
-                    'sku' => $r->sku,
-                    'sellable' => (int) $r->sellable,
-                    'blocked' => (int) $r->blocked,
-                    'unit' => $r->base_unit,
-                    'value' => round((float) $r->value, 2),
-                    'state' => match (true) {
-                        (int) $r->sellable <= 0 => 'Rupture',
-                        $r->reorder_threshold > 0 && $r->sellable <= $r->reorder_threshold => 'Sous le seuil',
-                        default => '',
-                    },
-                ];
-            });
+                SUM(CASE WHEN locations.is_sellable = 1 AND batches.status = 'available' AND batches.expiry_date >= ? THEN 0 ELSE COALESCE(stock_balances.quantity, 0) END) as blocked,
+                MIN(CASE WHEN stock_balances.quantity > 0 AND batches.status = 'available' AND batches.expiry_date >= ? THEN batches.expiry_date END) as next_expiry",
+                [$today, $today, $today])
+            ->orderBy('medicines.brand_name')->get();
 
-        return [$this->table('Stock et valorisation (coût des lots)', [
-            'product' => 'Produit', 'sku' => 'SKU', 'sellable' => 'Vendable', 'blocked' => 'Quarantaine / périmé / bloqué',
-            'unit' => 'Unité', 'value' => 'Valeur', 'state' => 'État',
-        ], $rows, ['value'])];
+        // Dernière vente de chaque format, pour repérer le stock dormant
+        $lastSale = DB::table('sale_items')->join('sales', 'sales.id', '=', 'sale_items.sale_id')
+            ->where('sales.pharmacy_id', $pharmacyId)->where('sales.status', 'finalized')
+            ->whereIn('sale_items.presentation_id', $rows->pluck('id'))
+            ->groupBy('sale_items.presentation_id')
+            ->selectRaw('sale_items.presentation_id, MAX(sales.finalized_at) as last_at')->pluck('last_at', 'presentation_id');
+        $soon = Carbon::today()->addMonths(6);
+        $dormantSince = Carbon::today()->subDays(self::DORMANT_DAYS);
+
+        $rows = $rows->map(function ($r) use ($lastSale, $soon, $dormantSince) {
+            $sellable = (int) $r->sellable;
+            $states = [];
+            if ($sellable <= 0) {
+                $states[] = 'Rupture';
+            } elseif ($r->reorder_threshold > 0 && $sellable <= $r->reorder_threshold) {
+                $states[] = 'Sous le seuil';
+            }
+            if ($r->next_expiry && Carbon::parse($r->next_expiry)->lt($soon)) {
+                $states[] = 'Péremption '.Carbon::parse($r->next_expiry)->format('m/Y');
+            }
+            if ($sellable > 0 && (! isset($lastSale[$r->id]) || Carbon::parse($lastSale[$r->id])->lt($dormantSince))) {
+                $states[] = 'Dormant';
+            }
+
+            return [
+                'product' => trim("$r->brand_name $r->strength").' · '.$r->label,
+                'sku' => $r->sku,
+                'sellable' => $sellable,
+                'sellable_packs' => self::packs($sellable, (int) $r->units_per_pack, $r->base_unit),
+                'blocked' => (int) $r->blocked,
+                'blocked_packs' => self::packs((int) $r->blocked, (int) $r->units_per_pack, $r->base_unit),
+                'unit' => $r->base_unit,
+                'value' => round((float) $r->value, 2),
+                'state' => implode(' · ', $states),
+            ];
+        });
+
+        // Écran : quantités en boîtes ; la colonne bloquée n'apparaît que si elle contient quelque chose
+        $columns = ['product' => 'Produit', 'sellable_packs' => 'Vendable'];
+        if ($rows->contains(fn ($r) => $r['blocked'] > 0)) {
+            $columns['blocked_packs'] = 'Quarantaine / périmé / bloqué';
+        }
+        $columns += ['value' => 'Valeur', 'state' => 'État'];
+
+        $table = $this->table('Stock et valorisation (coût des lots)', $columns, $rows, ['value']);
+        // CSV : chiffres bruts exploitables dans un tableur
+        $table['export_columns'] = ['product' => 'Produit', 'sku' => 'SKU', 'sellable' => 'Vendable (unités)', 'blocked' => 'Quarantaine / périmé / bloqué (unités)',
+            'unit' => 'Unité', 'value' => 'Valeur', 'state' => 'État'];
+        if ($table['totals']) {
+            $table['totals'] += array_fill_keys(array_keys($table['export_columns']), '');
+            $table['totals']['product'] = 'Total';
+        }
+
+        return [$table];
+    }
+
+    /** Sans vente depuis ce nombre de jours, un produit en stock est signalé « Dormant ». */
+    public const DORMANT_DAYS = 90;
+
+    /** Quantité lisible : « 51 boîtes (408 comprimés) », « 2 boîtes + 3 comprimés », « 10 flacons ». */
+    public static function packs(int $units, int $perPack, string $unit): string
+    {
+        if ($units === 0) {
+            return '0';
+        }
+        $plural = fn (int $n, string $w) => $n.' '.($n > 1 && ! str_ends_with($w, 's') ? $w.'s' : $w);
+        if ($perPack <= 1) {
+            return $plural($units, $unit);
+        }
+        $boxes = intdiv($units, $perPack);
+        $rest = $units % $perPack;
+
+        return match (true) {
+            $boxes === 0 => $plural($rest, $unit),
+            $rest === 0 => $plural($boxes, 'boîte')." ($units $unit".($units > 1 && ! str_ends_with($unit, 's') ? 's' : '').')',
+            default => $plural($boxes, 'boîte').' + '.$plural($rest, $unit),
+        };
     }
 
     /** Lots à péremption (paliers de la règle d'alerte) et pertes de la période (destructions, écarts d'inventaire négatifs). */

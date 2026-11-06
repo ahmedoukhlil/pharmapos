@@ -85,7 +85,7 @@
                     <thead class="bg-slate-50 text-xs uppercase text-slate-500">
                         <tr>
                             @foreach ($t['columns'] as $key => $label)
-                                <th class="px-3 py-2 {{ is_numeric($t['rows'][0][$key] ?? null) ? 'text-end' : 'text-start' }}">{{ $label }}</th>
+                                <th class="px-3 py-2 {{ is_numeric($t['rows'][0][$key] ?? null) || str_ends_with($key, '_packs') ? 'text-end' : 'text-start' }}">{{ $label }}</th>
                             @endforeach
                         </tr>
                     </thead>
@@ -93,7 +93,7 @@
                         @forelse ($t['rows'] as $row)
                             <tr>
                                 @foreach ($t['columns'] as $key => $label)
-                                    <td @class(['px-3 py-1.5', 'text-end tabular-nums' => is_numeric($row[$key]), 'text-red-700' => in_array($row[$key], ['Rupture', 'Périmé'], true) || ($key === 'difference' && ($row[$key] ?? 0) < 0)])>{{ $fmt($row[$key]) }}</td>
+                                    <td @class(['px-3 py-1.5', 'text-end tabular-nums' => is_numeric($row[$key]) || str_ends_with($key, '_packs'), 'text-red-700' => ($key === 'state' && str_starts_with((string) $row[$key], 'Rupture')) || $row[$key] === 'Périmé', 'text-amber-700' => $key === 'state' && $row[$key] !== '' && ! str_starts_with((string) $row[$key], 'Rupture') || ($key === 'difference' && ($row[$key] ?? 0) < 0)])>{{ $fmt($row[$key]) }}</td>
                                 @endforeach
                             </tr>
                         @empty

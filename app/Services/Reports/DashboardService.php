@@ -49,8 +49,8 @@ class DashboardService
             'stock' => [
                 'value' => round($stockRows->sum('value'), 2),
                 'products' => $stockRows->count(),
-                'outOfStock' => $stockRows->where('state', 'Rupture')->count(),
-                'belowThreshold' => $stockRows->where('state', 'Sous le seuil')->count(),
+                'outOfStock' => $stockRows->filter(fn ($r) => str_starts_with($r['state'], 'Rupture'))->count(),
+                'belowThreshold' => $stockRows->filter(fn ($r) => str_starts_with($r['state'], 'Sous le seuil'))->count(),
                 'expiredValue' => round($expiring->where('bucket', 0)->sum('value'), 2),
                 'expiringValue' => round($expiring->where('bucket', '>', 0)->where('bucket', '<=', 90)->sum('value'), 2),
             ],

@@ -98,6 +98,18 @@ class ReportTest extends TestCase
         $this->assertGreaterThan(0, $stock['PARA500-16']['value']);
         $this->assertArrayNotHasKey('cmup', $stock['PARA500-16']);
 
+        // Lisible à l'écran : boîtes, conditionnement ; le CSV garde les unités et le SKU
+        $this->assertStringContainsString('boîtes', $stock['PARA500-16']['sellable_packs']);
+        $this->assertStringContainsString(' · ', $stock['PARA500-16']['product']);
+        $this->assertStringNotContainsString('Dormant', $stock['PARA500-16']['state']);   // vendu à l'instant
+        $table = $reports->build('stock', $pharmacyId, $this->filters())[0];
+        $this->assertArrayNotHasKey('sku', $table['columns']);
+        $this->assertArrayHasKey('sku', $table['export_columns']);
+        $this->assertSame(['51 boîtes (408 comprimés)', '2 boîtes + 3 comprimés', '3 comprimés', '10 flacons', '0'], [
+            ReportService::packs(408, 8, 'comprimé'), ReportService::packs(19, 8, 'comprimé'), ReportService::packs(3, 8, 'comprimé'),
+            ReportService::packs(10, 1, 'flacon'), ReportService::packs(0, 8, 'comprimé'),
+        ]);
+
         [$sessions, $byMethod] = $reports->build('cash', $pharmacyId, $this->filters());
         $this->assertSame('C01', $sessions['rows'][0]['register']);
         $this->assertCount(2, $byMethod['rows']);   // espèces et Bankily

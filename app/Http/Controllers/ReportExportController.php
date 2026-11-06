@@ -35,12 +35,14 @@ class ReportExportController extends Controller
 
         $name = 'pharmapos-'.$report.'-'.str($table['title'])->slug().'-'.$filters['from']->format('Ymd').'-'.$filters['to']->format('Ymd').'.csv';
 
-        return response()->streamDownload(function () use ($table) {
+        $columns = $table['export_columns'] ?? $table['columns'];
+
+        return response()->streamDownload(function () use ($table, $columns) {
             $out = fopen('php://output', 'w');
             fwrite($out, "\u{FEFF}");
-            fputcsv($out, array_values($table['columns']), ';');
+            fputcsv($out, array_values($columns), ';');
             foreach ([...$table['rows'], ...($table['totals'] ? [$table['totals']] : [])] as $row) {
-                fputcsv($out, array_map(fn ($key) => $this->cell($row[$key] ?? ''), array_keys($table['columns'])), ';');
+                fputcsv($out, array_map(fn ($key) => $this->cell($row[$key] ?? ''), array_keys($columns)), ';');
             }
             fclose($out);
         }, $name, ['Content-Type' => 'text/csv; charset=UTF-8']);
