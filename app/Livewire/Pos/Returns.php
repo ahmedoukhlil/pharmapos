@@ -17,6 +17,7 @@ use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Attributes\Url;
 use Livewire\Component;
+use Livewire\WithPagination;
 
 /**
  * Retour client sur ticket (POS-09) : quantités par lot, destination du produit, remboursement, avoir.
@@ -27,6 +28,10 @@ use Livewire\Component;
 class Returns extends Component
 {
     use RequiresReauth;
+    use WithPagination;
+
+    /** Liste des reçus : toutes les caisses, ou seulement celle-ci. */
+    public bool $allRegisters = true;
 
     #[Url(as: 'caisse')]
     public string $registerCode = '';
@@ -91,6 +96,45 @@ class Returns extends Component
             : null;
     }
 
+    /** La recherche filtre la liste ; Entrée ouvre le reçu exact, ou le seul reçu trouvé. */
+    public function updatedTicket(): void
+    {
+        $this->error = null;
+        $this->resetPage();
+    }
+
+    public function updatedAllRegisters(): void
+    {
+        $this->resetPage();
+    }
+
+    public function open(string $saleId): void
+    {
+        $sale = Sale::where('pharmacy_id', auth()->user()->pharmacy_id)->where('status', 'finalized')->findOrFail($saleId);
+        $this->ticket = $sale->ticket_number;
+        $this->findSale();
+    }
+
+    public function backToList(): void
+    {
+        $this->reset('ticket', 'saleId', 'quantities', 'dispositions', 'error');
+        unset($this->sale);
+    }
+
+    /** Reçus encaissés, les plus récents d'abord ; recherche par numéro, produit (nom ou DCI) ou caissier. */
+    private function receipts()
+    {
+        $term = trim($this->ticket);
+
+        return Sale::where('pharmacy_id', auth()->user()->pharmacy_id)->where('status', 'finalized')
+            ->when(! $this->allRegisters && $this->register, fn ($q) => $q->where('register_id', $this->register->id))
+            ->when($term !== '', fn ($q) => $q->where(fn ($q) => $q->where('ticket_number', 'like', "%$term%")
+                ->orWhereHas('user', fn ($u) => $u->where('name', 'like', "%$term%"))
+                ->orWhereHas('items.presentation.medicine', fn ($m) => $m->where('brand_name', 'like', "%$term%")->orWhere('inn', 'like', "%$term%"))))
+            ->with(['user:id,name', 'register:id,code', 'items.presentation.medicine:id,brand_name,strength'])->withCount('returns')
+            ->latest('finalized_at')->paginate(15);
+    }
+
     public function findSale(): void
     {
         $this->reset('error', 'saleId', 'quantities', 'dispositions', 'lastReturnId');
@@ -98,6 +142,9 @@ class Returns extends Component
             ->where('ticket_number', trim($this->ticket))
             ->where('status', 'finalized')
             ->first();
+        if (! $sale && trim($this->ticket) !== '' && ($matches = $this->receipts())->total() === 1) {
+            $sale = $matches->first();   // un seul reçu correspond à la recherche : on l'ouvre
+        }
 
         if (! $sale) {
             $this->error = "Aucun reçu encaissé « {$this->ticket} ».";
@@ -196,6 +243,7 @@ class Returns extends Component
     public function render()
     {
         return view('livewire.pos.returns', [
+            'receipts' => $this->saleId ? null : $this->receipts(),
             'canDispose' => auth()->user()->hasPermission('batch.quarantine'),
             'canRefund' => auth()->user()->hasPermission('sale.refund'),
         ]);

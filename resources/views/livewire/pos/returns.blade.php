@@ -13,12 +13,19 @@
             <p class="rounded-lg bg-amber-50 px-4 py-2 text-sm text-amber-900">Aucune session ouverte sur cette caisse : ouvrez-la depuis l'écran Caisse.</p>
         @endif
 
-        <form wire:submit="findSale" class="flex gap-2">
-            <label for="ticket" class="sr-only">Numéro de reçu</label>
-            <input id="ticket" wire:model="ticket" placeholder="Numéro de reçu (ex. C01-2026-000012)" autofocus
-                   class="flex-1 rounded-lg border border-slate-300 bg-white px-4 py-2 font-mono">
-            <button class="rounded-lg bg-slate-800 px-4 py-2 text-white hover:bg-slate-900">Rechercher</button>
-        </form>
+        @if ($this->sale)
+            <button type="button" wire:click="backToList" class="text-sm text-emerald-800 hover:underline">← Tous les reçus</button>
+        @else
+            <form wire:submit="findSale" class="flex flex-wrap gap-2">
+                <label for="ticket" class="sr-only">Rechercher un reçu</label>
+                <input id="ticket" wire:model.live.debounce.300ms="ticket" placeholder="N° de reçu, produit, DCI ou caissier" autofocus autocomplete="off"
+                       class="min-w-0 flex-1 rounded-lg border border-slate-300 bg-white px-4 py-2">
+                <button class="rounded-lg bg-slate-800 px-4 py-2 text-white hover:bg-slate-900">Ouvrir</button>
+                <label class="flex w-full items-center gap-2 text-sm text-slate-600">
+                    <input type="checkbox" wire:model.live="allRegisters" class="rounded border-slate-300"> Toutes les caisses
+                </label>
+            </form>
+        @endif
 
         @if ($error)
             <p class="rounded-lg bg-red-50 px-4 py-2 text-sm text-red-800" role="alert">{{ $error }}</p>
@@ -29,6 +36,45 @@
                 Avoir {{ $this->lastReturn->credit_note_number }} enregistré — remboursé {{ number_format($this->lastReturn->total, 2, ',', ' ') }} MRU ·
                 <a href="{{ route('returns.show', $this->lastReturn) }}" target="ticket" class="underline">imprimer l'avoir</a>
             </p>
+        @endif
+
+        @if ($receipts)
+            <section class="overflow-x-auto rounded-lg bg-white shadow-sm">
+                <table class="w-full text-sm">
+                    <thead class="bg-slate-50 text-xs uppercase text-slate-500">
+                        <tr>
+                            <th class="px-3 py-2 text-start">Reçu</th>
+                            <th class="px-3 py-2 text-start">Date</th>
+                            <th class="px-3 py-2 text-start">Articles</th>
+                            <th class="px-3 py-2 text-start">Caissier</th>
+                            <th class="px-3 py-2 text-end">Total</th>
+                            <th class="px-3 py-2"></th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        @forelse ($receipts as $s)
+                            @php $names = $s->items->map(fn ($i) => trim($i->presentation->medicine->brand_name.' '.$i->presentation->medicine->strength)); @endphp
+                            <tr wire:key="r-{{ $s->id }}" class="hover:bg-slate-50">
+                                <td class="px-3 py-2 font-mono whitespace-nowrap">{{ $s->ticket_number }}</td>
+                                <td class="px-3 py-2 whitespace-nowrap text-slate-600">{{ $s->finalized_at->format('d/m/Y H:i') }}</td>
+                                <td class="max-w-xs px-3 py-2">
+                                    <span class="block truncate" title="{{ $names->join(', ') }}">{{ $names->take(2)->join(', ') }}@if ($names->count() > 2) +{{ $names->count() - 2 }}@endif</span>
+                                    @if ($s->returns_count) <span class="text-xs text-amber-800">{{ $s->returns_count }} retour(s) déjà fait(s)</span> @endif
+                                </td>
+                                <td class="px-3 py-2 whitespace-nowrap text-slate-600">{{ $s->user?->name }}</td>
+                                <td class="px-3 py-2 text-end font-medium tabular-nums whitespace-nowrap">{{ number_format($s->total, 2, ',', ' ') }}</td>
+                                <td class="px-3 py-2 text-end whitespace-nowrap">
+                                    <a href="{{ route('tickets.show', $s) }}" target="ticket" class="me-3 text-slate-600 hover:underline">Voir</a>
+                                    <button wire:click="open('{{ $s->id }}')" class="rounded-lg border border-emerald-700 px-3 py-1 text-emerald-800 hover:bg-emerald-50">Retourner</button>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr><td colspan="6" class="px-3 py-8 text-center text-slate-500">Aucun reçu{{ $ticket !== '' ? ' pour « '.$ticket.' »' : '' }}.</td></tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </section>
+            {{ $receipts->links() }}
         @endif
 
         @if ($this->sale)

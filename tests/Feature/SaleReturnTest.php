@@ -193,4 +193,19 @@ class SaleReturnTest extends TestCase
         $this->assertSame(16, $return->items->first()->quantity_base_units);
         $this->get(route('returns.show', $return))->assertOk()->assertSee($return->credit_note_number)->assertSee($this->sale->ticket_number);
     }
+
+    public function test_receipt_list_search_and_open(): void
+    {
+        $this->actingAs($this->user('assistant_pharmacist'));
+        $number = $this->sale->ticket_number;
+
+        $screen = Livewire::test(Returns::class, ['registerCode' => 'C01'])
+            ->assertSee($number)->assertSee('Retourner')
+            ->set('ticket', 'introuvable-xyz')->assertDontSee($number)->assertSee('Aucun reçu pour')
+            ->set('ticket', 'Paracétamol')->assertSee($number);   // recherche par produit
+
+        $screen->call('findSale')->assertSet('saleId', $this->sale->id)   // un seul résultat : ouvert directement
+            ->call('backToList')->assertSet('saleId', null)->assertSee($number)
+            ->call('open', $this->sale->id)->assertSet('saleId', $this->sale->id)->assertSee('PA2401');
+    }
 }
