@@ -77,8 +77,8 @@
                         <div class="absolute z-10 mt-1 w-full rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 shadow-lg">
                             @foreach ($this->withoutPresentation as $m)
                                 <p wire:key="np-{{ $m->id }}">
-                                    <strong>{{ $m->brand_name }} {{ $m->strength }}</strong> n'a aucune présentation (boîte, prix, code-barres) : il ne peut pas être vendu.
-                                    <a href="{{ route('catalogue.edit', $m) }}" class="font-medium underline">Ajouter une présentation</a>
+                                    <strong>{{ $m->brand_name }} {{ $m->strength }}</strong> n'a aucun format de vente (boîte, prix, code-barres) : il ne peut pas être vendu.
+                                    <a href="{{ route('catalogue.edit', $m) }}" class="font-medium underline">Ajouter un format de vente</a>
                                 </p>
                             @endforeach
                         </div>

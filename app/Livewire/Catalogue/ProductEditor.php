@@ -125,7 +125,7 @@ class ProductEditor extends Component
                 collect($e->errors())->mapWithKeys(fn ($m, $k) => ["pres.$k" => $m])->all());
         }
         $this->editing = null;
-        $this->flash = 'Présentation enregistrée.';
+        $this->flash = 'Format de vente enregistré.';
     }
 
     /** Le code arrive du client : le scanner envoie Entrée avant toute synchronisation. */

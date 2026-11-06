@@ -109,24 +109,28 @@
         @if ($medicine)
             <section class="space-y-3">
                 <div class="flex items-center">
-                    <h2 class="font-semibold">Présentations</h2>
+                    {{-- Un seul format (cas courant) : « Vente et stock » ; plusieurs boîtes du même produit : « Formats de vente » --}}
+                    <h2 class="font-semibold">{{ $presentations->count() > 1 ? 'Formats de vente' : 'Vente et stock' }}</h2>
+                    @if ($presentations->count() > 1)
+                        <span class="ms-2 text-xs text-slate-500">même produit vendu en plusieurs boîtes (ex. boîte de 8 et de 16)</span>
+                    @endif
                     @if ($canManage && $editing === null)
-                        <button wire:click="editPresentation" class="ms-auto rounded-lg border border-emerald-700 px-3 py-1 text-sm text-emerald-800">Ajouter une présentation</button>
+                        <button wire:click="editPresentation" class="ms-auto rounded-lg border border-emerald-700 px-3 py-1 text-sm text-emerald-800">{{ $presentations->isEmpty() ? 'Ajouter un format de vente' : 'Ajouter un autre format' }}</button>
                     @endif
                 </div>
 
                 @if ($editing !== null)
                     <form wire:submit="savePresentation" class="grid gap-3 rounded-lg border border-emerald-200 bg-white p-4 shadow-sm sm:grid-cols-4">
-                        @foreach (['sku' => 'SKU', 'label' => 'Libellé *', 'base_unit' => 'Unité de base *', 'units_per_pack' => 'Unités / boîte *'] as $f => $l)
+                        @foreach (['sku' => 'SKU', 'label' => 'Conditionnement *', 'base_unit' => 'Unité *', 'units_per_pack' => 'Unités / boîte *'] as $f => $l)
                             <label class="block">
                                 <span class="text-sm font-medium">{{ $l }}</span>
                                 <input wire:model="pres.{{ $f }}" @if ($f === 'units_per_pack') type="number" min="1" @endif @if ($f === 'sku') placeholder="Vide = généré automatiquement" @endif class="{{ $input }}">
                                 @error("pres.$f") <span class="text-xs text-red-700">{{ $message }}</span> @enderror
                             </label>
                         @endforeach
-                        @foreach (['purchase_price' => "Prix d'achat (boîte)", 'sale_price' => 'Prix de vente (boîte)'] as $f => $l)
+                        @foreach (['purchase_price' => "Dernier prix d'achat (boîte)", 'sale_price' => 'Prix de vente (boîte) *'] as $f => $l)
                             <label class="block">
-                                <span class="text-sm font-medium">{{ $l }} *</span>
+                                <span class="text-sm font-medium">{{ $l }}</span>
                                 <input wire:model="pres.{{ $f }}" type="number" step="0.01" min="0" @disabled($editing !== '' && ! $canPrice) class="{{ $input }}">
                                 @error("pres.$f") <span class="text-xs text-red-700">{{ $message }}</span> @enderror
                             </label>
@@ -150,7 +154,7 @@
                             <input wire:model="pres.reorder_quantity" type="number" min="0" class="{{ $input }}">
                         </label>
                         <div class="flex items-end gap-2 sm:col-span-4">
-                            <button class="rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white">Enregistrer la présentation</button>
+                            <button class="rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white">Enregistrer le format</button>
                             <button type="button" wire:click="$set('editing', null)" class="rounded-lg px-3 py-2 text-sm">Annuler</button>
                         </div>
                     </form>
@@ -159,8 +163,8 @@
                 @forelse ($presentations as $p)
                     <article wire:key="p-{{ $p->id }}" class="space-y-2 rounded-lg bg-white p-4 shadow-sm">
                         <div class="flex flex-wrap items-baseline gap-3">
-                            <span class="font-mono text-sm font-semibold">{{ $p->sku }}</span>
-                            <span>{{ $p->label }}</span>
+                            <span class="font-semibold">{{ $p->label }}</span>
+                            <span class="font-mono text-xs text-slate-500">{{ $p->sku }}</span>
                             <span class="text-xs text-slate-500">{{ $p->units_per_pack }} {{ $p->base_unit }}(s)/boîte · stock {{ (int) $p->stock_balances_sum_quantity }}</span>
                             @if ($p->status !== 'active')
                                 <span class="rounded bg-amber-100 px-2 py-0.5 text-xs">{{ $statuses[$p->status] }}</span>
@@ -168,7 +172,7 @@
                             @if ($canManage)
                                 <button wire:click="editPresentation('{{ $p->id }}')" class="ms-auto text-sm text-emerald-800 hover:underline">Modifier</button>
                                 @if ($p->status === 'active')
-                                    <button wire:click="setStatus('archived', '{{ $p->id }}')" wire:confirm="Archiver cette présentation ? Elle ne sera plus vendable." class="text-sm text-slate-600 hover:underline">Archiver</button>
+                                    <button wire:click="setStatus('archived', '{{ $p->id }}')" wire:confirm="Archiver ce format ? Il ne sera plus vendable." class="text-sm text-slate-600 hover:underline">Archiver</button>
                                 @else
                                     <button wire:click="setStatus('active', '{{ $p->id }}')" class="text-sm text-slate-600 hover:underline">Réactiver</button>
                                 @endif
@@ -218,7 +222,7 @@
                         @endif
                     </article>
                 @empty
-                    <p class="text-sm text-slate-500">Aucune présentation : ajoutez-en une pour pouvoir vendre ce produit.</p>
+                    <p class="text-sm text-slate-500">Aucun format de vente (boîte, prix, code-barres) : ajoutez-en un pour pouvoir vendre ce produit.</p>
                 @endforelse
             </section>
         @endif

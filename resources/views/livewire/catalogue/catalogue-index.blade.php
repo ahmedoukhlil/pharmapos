@@ -93,7 +93,7 @@
                     <tr>
                         <th class="px-3 py-2 text-start">Produit</th>
                         <th class="px-3 py-2 text-start">Catégorie</th>
-                        <th class="px-3 py-2 text-start">Présentations</th>
+                        <th class="px-3 py-2 text-start">Formats</th>
                         <th class="px-3 py-2 text-start">Statut</th>
                     </tr>
                 </thead>

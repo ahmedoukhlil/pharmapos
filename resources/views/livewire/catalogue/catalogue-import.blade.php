@@ -28,7 +28,7 @@
                 <span>Erreurs : <strong>{{ $report['errors'] }}</strong></span>
                 @if ($preview && $preview['created'] > 0)
                     <button wire:click="import" wire:loading.attr="disabled"
-                            wire:confirm="Importer {{ $preview['created'] }} présentation(s) ? Les lignes en erreur ou en doublon seront ignorées."
+                            wire:confirm="Importer {{ $preview['created'] }} format(s) de vente ? Les lignes en erreur ou en doublon seront ignorées."
                             class="ms-auto rounded-lg bg-emerald-700 px-4 py-2 font-semibold text-white hover:bg-emerald-800">Importer les lignes valides</button>
                 @endif
                 @if ($result)

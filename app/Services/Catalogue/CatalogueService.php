@@ -254,7 +254,7 @@ class CatalogueService
             if ((int) $data['units_per_pack'] !== $presentation->units_per_pack
                 && StockBalance::where('presentation_id', $presentation->id)->where('quantity', '!=', 0)->exists()) {
                 throw ValidationException::withMessages([
-                    'units_per_pack' => 'Conditionnement non modifiable : du stock existe (créez une nouvelle présentation).',
+                    'units_per_pack' => 'Conditionnement non modifiable : du stock existe (ajoutez un autre format de vente).',
                 ]);
             }
 
