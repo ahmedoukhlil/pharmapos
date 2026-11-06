@@ -21,8 +21,9 @@ class DeliveryNoteReader
     public function __construct(private DeliveryNoteExtractor $extractor) {}
 
     /**
+     * Le fournisseur est toujours celui choisi sur la réception, jamais celui imprimé sur le bordereau.
      * @param  list<array{path: string, mime: string}>  $files
-     * @return array{number: string, date: string, supplier_name: string, total: float, computed_total: float, lines: list<array>}
+     * @return array{number: string, date: string, total: float, computed_total: float, lines: list<array>}
      */
     public function read(User $user, Supplier $supplier, array $files): array
     {
@@ -44,7 +45,6 @@ class DeliveryNoteReader
         return [
             'number' => trim((string) $data['delivery_note_number']),
             'date' => trim((string) $data['date']),
-            'supplier_name' => trim((string) $data['supplier_name']),
             'total' => (float) $data['total'],
             'computed_total' => round(array_sum(array_map(fn ($l) => $l['quantity'] * $l['unit_price'], $lines)), 2),
             'lines' => $lines,

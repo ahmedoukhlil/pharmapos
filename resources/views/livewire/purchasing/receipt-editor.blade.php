@@ -121,12 +121,8 @@
                     <span class="text-sm text-slate-600">
                         @if ($note['number']) N° {{ $note['number'] }} @endif
                         @if ($note['date']) · {{ $note['date'] }} @endif
-                        @if ($note['supplier_name']) · {{ $note['supplier_name'] }} @endif
                     </span>
                 </div>
-                @if ($note['supplier_name'] && ! str_contains(\Illuminate\Support\Str::lower($note['supplier_name']), \Illuminate\Support\Str::lower(\Illuminate\Support\Str::before($this->suppliers->firstWhere('id', $supplierId)?->name ?? '', ' '))))
-                    <p class="rounded bg-amber-50 px-3 py-1.5 text-sm text-amber-900">Le bordereau semble venir de « {{ $note['supplier_name'] }} » : vérifiez le fournisseur choisi.</p>
-                @endif
 
                 <div class="overflow-x-auto">
                     <table class="w-full min-w-[900px] text-sm">

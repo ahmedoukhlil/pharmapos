@@ -27,7 +27,7 @@ class ClaudeDeliveryNoteExtractor implements DeliveryNoteExtractor
         - "lot" et "expiry" : numéro de lot et date de péremption tels qu'imprimés (ex. 08/2027), sinon chaîne vide ;
         - "quantity" : quantité livrée (en boîtes / unités de vente du bordereau) ; "unit_price" : prix unitaire ; "line_total" : montant de la ligne ; 0 si absent ;
         - les montants sont en MRU ; convertis les nombres au format décimal avec un point (1 250,50 → 1250.5) ;
-        - "delivery_note_number", "supplier_name", "date" : en-tête du bordereau, chaîne vide si absent ; "total" : total général du bordereau, 0 si absent.
+        - "delivery_note_number", "date" : en-tête du bordereau, chaîne vide si absent (le fournisseur est déjà connu : ne le lis pas) ; "total" : total général du bordereau, 0 si absent.
         Si un champ est illisible, laisse-le vide plutôt que d'inventer.
         TXT;
 
@@ -137,7 +137,6 @@ class ClaudeDeliveryNoteExtractor implements DeliveryNoteExtractor
             'type' => 'object',
             'properties' => [
                 'delivery_note_number' => $str,
-                'supplier_name' => $str,
                 'date' => $str,
                 'total' => $num,
                 'lines' => [
@@ -153,7 +152,7 @@ class ClaudeDeliveryNoteExtractor implements DeliveryNoteExtractor
                     ],
                 ],
             ],
-            'required' => ['delivery_note_number', 'supplier_name', 'date', 'total', 'lines'],
+            'required' => ['delivery_note_number', 'date', 'total', 'lines'],
             'additionalProperties' => false,
         ];
     }

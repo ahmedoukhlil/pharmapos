@@ -37,7 +37,7 @@ class DeliveryNoteReaderTest extends TestCase
 
             public function extract(array $files): array
             {
-                return ['delivery_note_number' => 'BL-2026-0457', 'supplier_name' => 'Grossiste', 'date' => '03/11/2026', 'total' => $this->total,
+                return ['delivery_note_number' => 'BL-2026-0457', 'date' => '03/11/2026', 'total' => $this->total,
                     'lines' => $this->lines, 'usage' => ['input_tokens' => 3000, 'output_tokens' => 800, 'model' => 'test']];
             }
         });

@@ -102,7 +102,7 @@ class QuickProductTest extends TestCase
         {
             public function extract(array $files): array
             {
-                return ['delivery_note_number' => 'BLF-9', 'supplier_name' => '', 'date' => '', 'total' => 0, 'usage' => ['input_tokens' => 1, 'output_tokens' => 1, 'model' => 't'],
+                return ['delivery_note_number' => 'BLF-9', 'date' => '', 'total' => 0, 'usage' => ['input_tokens' => 1, 'output_tokens' => 1, 'model' => 't'],
                     'lines' => [['designation' => 'VITAMINE C 1000 MG B/20', 'code' => '', 'lot' => 'V1', 'expiry' => '', 'quantity' => 20, 'unit_price' => 70, 'line_total' => 1400]]];
             }
         });
