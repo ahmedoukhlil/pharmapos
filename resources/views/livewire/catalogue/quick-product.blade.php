@@ -25,6 +25,10 @@
                     @endif
                 </div>
 
+                @if ($created)
+                    <p class="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-800">{{ $created }}</p>
+                @endif
+
                 <div class="flex gap-2 text-sm">
                     @foreach (['medicine' => 'Médicament', 'parapharmacy' => 'Parapharmacie'] as $v => $l)
                         <label @class(['cursor-pointer rounded-full border px-3 py-1', 'border-emerald-700 bg-emerald-700 text-white' => $form['type'] === $v, 'border-slate-300' => $form['type'] !== $v])>
@@ -36,7 +40,7 @@
                 <div class="grid gap-3 sm:grid-cols-3">
                     <label class="block sm:col-span-2">
                         <span class="text-sm font-medium">Nom *</span>
-                        <input wire:model="form.brand_name" class="{{ $input }}" placeholder="ex. Doliprane" @if ($mode === 'page') autofocus @endif>
+                        <input wire:model="form.brand_name" class="{{ $input }}" placeholder="ex. Doliprane" @if ($mode === 'page') autofocus x-on:quick-product-next.window="$el.focus()" @endif>
                         @if ($err('brand_name')) <span class="text-xs text-red-700">{{ $err('brand_name') }}</span> @endif
                     </label>
                     <label class="block">
@@ -52,7 +56,7 @@
                     @endif
                     <label class="block">
                         <span class="text-sm font-medium">Forme</span>
-                        <input wire:model="form.dosage_form" list="qp-forms" class="{{ $input }}" placeholder="comprimé, sirop…">
+                        <input wire:model.blur="form.dosage_form" list="qp-forms" class="{{ $input }}" placeholder="comprimé, sirop…">
                         <datalist id="qp-forms">
                             @foreach (['comprimé', 'comprimé effervescent', 'gélule', 'sirop', 'suspension buvable', 'sachet', 'ampoule', 'solution injectable', 'crème', 'pommade', 'gel', 'collyre', 'suppositoire', 'solution'] as $f)
                                 <option value="{{ $f }}">
@@ -69,7 +73,7 @@
                     </label>
                     <label class="block">
                         <span class="text-sm font-medium">Unités par boîte *</span>
-                        <input wire:model="form.units_per_pack" type="number" min="1" class="{{ $input }}">
+                        <input wire:model.live.debounce.400ms="form.units_per_pack" type="number" min="1" class="{{ $input }}">
                         @if ($err('units_per_pack')) <span class="text-xs text-red-700">{{ $err('units_per_pack') }}</span> @endif
                     </label>
                     <label class="block">
@@ -83,14 +87,15 @@
 
                 <div class="grid gap-3 sm:grid-cols-3">
                     <label class="block">
-                        <span class="text-sm font-medium">Prix d'achat (boîte) *</span>
+                        <span class="text-sm font-medium">Dernier prix d'achat (boîte)</span>
                         <input wire:model.live.debounce.400ms="form.purchase_price" inputmode="decimal" class="{{ $input }} text-end">
+                        <span class="text-xs text-slate-500">Facultatif · mis à jour à chaque réception</span>
                         @if ($err('purchase_price')) <span class="text-xs text-red-700">{{ $err('purchase_price') }}</span> @endif
                     </label>
                     <label class="block">
                         <span class="text-sm font-medium">Prix de vente (boîte) *</span>
                         <input wire:model.live.debounce.400ms="form.sale_price" inputmode="decimal" class="{{ $input }} text-end">
-                        <span class="text-xs text-slate-500">{{ $salePriceTouched ? 'Saisi à la main' : 'Proposé : achat × '.number_format($margin, 2, ',', ' ') }}</span>
+                        <span class="text-xs text-slate-500">{{ $salePriceTouched ? 'Saisi à la main' : (is_numeric($form['purchase_price'] ?? null) ? 'Proposé : achat × '.number_format($margin, 2, ',', ' ') : 'À saisir, ou proposé dès le prix d’achat') }}</span>
                         @if ($err('sale_price')) <span class="block text-xs text-red-700">{{ $err('sale_price') }}</span> @endif
                     </label>
                     <label class="block">
@@ -103,13 +108,18 @@
                 <details class="rounded-lg bg-slate-50 p-3 text-sm">
                     <summary class="cursor-pointer font-medium">Plus d'options</summary>
                     <div class="mt-3 grid gap-3 sm:grid-cols-3">
-                        <label class="block">
-                            <span class="font-medium">Catégorie</span>
-                            <select wire:model="form.category_id" class="{{ $input }}">
-                                <option value="">—</option>
-                                @foreach ($categories as $c) <option value="{{ $c->id }}">{{ $c->name }}</option> @endforeach
-                            </select>
-                        </label>
+                        <div class="block">
+                            <label for="qp-cat" class="font-medium">Catégorie</label>
+                            <div class="flex gap-2">
+                                <select id="qp-cat" wire:model="form.category_id" class="{{ $input }} min-w-0">
+                                    <option value="">—</option>
+                                    @foreach ($categories as $c) <option value="{{ $c->id }}">{{ $c->name }}</option> @endforeach
+                                </select>
+                                <input wire:model="newCategory" wire:keydown.enter.prevent="addCategory" placeholder="Nouvelle" class="{{ $input }} max-w-28">
+                                <button type="button" wire:click="addCategory" class="mt-1 rounded-lg border border-slate-300 px-2 text-sm hover:bg-white" title="Ajouter la catégorie">+</button>
+                            </div>
+                            @error('newCategory') <span class="text-xs text-red-700">{{ $message }}</span> @enderror
+                        </div>
                         <label class="block">
                             <span class="font-medium">Fabricant</span>
                             <input wire:model="form.manufacturer" class="{{ $input }}">
@@ -130,6 +140,9 @@
                 <div class="flex justify-end gap-2">
                     @if ($mode === 'modal')
                         <button type="button" wire:click="close" class="rounded-lg px-4 py-2 text-sm text-slate-600 hover:bg-slate-100">Annuler</button>
+                    @endif
+                    @if ($mode === 'page')
+                        <button type="button" wire:click="save(true)" class="rounded-lg border border-emerald-700 px-4 py-2 text-sm font-semibold text-emerald-800 hover:bg-emerald-50">Créer et saisir le suivant</button>
                     @endif
                     <button class="rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-800">Créer le produit</button>
                 </div>

@@ -216,12 +216,16 @@ class CatalogueService
             'units_per_pack' => ['required', 'integer', 'min:1', 'max:10000'],
             'allow_split_sale' => ['boolean'],
             'unit_sale_price' => ['nullable', 'numeric', 'min:0', 'required_if:allow_split_sale,true'],
-            'purchase_price' => ['required', 'numeric', 'min:0'],
+            // Dernier prix d'achat connu : la réception le met à jour, il peut manquer à la création
+            'purchase_price' => ['nullable', 'numeric', 'min:0'],
             'sale_price' => ['required', 'numeric', 'min:0'],
             'reorder_threshold' => ['nullable', 'integer', 'min:0'],
             'reorder_quantity' => ['nullable', 'integer', 'min:0'],
         ], [], $this->labels())->validate();
 
+        if (! filled($data['purchase_price'] ?? null)) {
+            $data['purchase_price'] = $presentation?->purchase_price ?? 0;
+        }
         $data['sku'] = filled($data['sku'] ?? null) ? strtoupper(trim($data['sku']))
             : ($presentation?->sku ?? $this->generateSku($user, $medicine, (int) $data['units_per_pack']));
         $data['reorder_threshold'] = (int) ($data['reorder_threshold'] ?? 0);

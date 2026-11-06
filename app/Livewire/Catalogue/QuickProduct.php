@@ -29,6 +29,11 @@ class QuickProduct extends Component
 
     public string $source = '';
 
+    /** Confirmation du produit précédent quand on enchaîne les créations. */
+    public string $created = '';
+
+    public string $newCategory = '';
+
     public function mount(string $mode = 'page'): void
     {
         $this->mode = $mode;
@@ -80,6 +85,31 @@ class QuickProduct extends Component
         if ($field === 'form.type' && $this->form['type'] === 'parapharmacy' && $this->form['inn'] === $this->form['brand_name']) {
             $this->form['inn'] = '';
         }
+        // La forme donne l'unité (sirop → flacon…) ; le nombre d'unités complète « Boîte de N »
+        if ($field === 'form.dosage_form' && ($unit = self::unitFor($this->form['dosage_form']))) {
+            $this->form['base_unit'] = $unit;
+        }
+        if ($field === 'form.units_per_pack' && preg_match('/^Boîte( de \d+)?$/u', trim($this->form['label']))) {
+            $n = (int) $this->form['units_per_pack'];
+            $this->form['label'] = $n > 1 ? "Boîte de $n" : 'Boîte';
+        }
+    }
+
+    /** Unité de vente habituelle pour une forme galénique. */
+    public static function unitFor(string $form): ?string
+    {
+        $form = mb_strtolower(trim($form));
+        foreach ([
+            'gélule' => 'gélule', 'comprimé' => 'comprimé', 'sachet' => 'sachet', 'ampoule' => 'ampoule',
+            'injectable' => 'ampoule', 'suppositoire' => 'suppositoire', 'crème' => 'tube', 'pommade' => 'tube', 'gel' => 'tube',
+            'sirop' => 'flacon', 'suspension' => 'flacon', 'solution' => 'flacon', 'collyre' => 'flacon',
+        ] as $needle => $unit) {
+            if (str_contains($form, $needle)) {
+                return $unit;
+            }
+        }
+
+        return null;
     }
 
     private function suggestPrice(): void
@@ -90,12 +120,22 @@ class QuickProduct extends Component
         }
     }
 
-    public function save(CatalogueService $service)
+    /** @param bool $another page : enregistrer puis vider le formulaire pour saisir le produit suivant */
+    public function save(CatalogueService $service, bool $another = false)
     {
         try {
             $presentation = $service->quickCreate(auth()->user(), $this->form);
         } catch (ValidationException $e) {
             throw ValidationException::withMessages(collect($e->errors())->mapWithKeys(fn ($m, $k) => ["form.$k" => $m])->all());
+        }
+
+        if ($this->mode === 'page' && $another) {
+            $type = $this->form['type'];
+            $this->openWith(['type' => $type]);
+            $this->dispatch('quick-product-next');
+            $this->created = "Produit créé : {$presentation->medicine->brand_name} ({$presentation->sku}). Saisissez le suivant.";
+
+            return null;
         }
 
         if ($this->mode === 'page') {
@@ -108,6 +148,14 @@ class QuickProduct extends Component
         $this->dispatch('quick-product-created', presentationId: $presentation->id, ref: $this->ref);
 
         return null;
+    }
+
+    /** Nouvelle catégorie créée sur place et sélectionnée, comme sur la fiche produit. */
+    public function addCategory(CatalogueService $service): void
+    {
+        $this->validate(['newCategory' => 'required|string|max:100'], [], ['newCategory' => 'catégorie']);
+        $this->form['category_id'] = $service->saveCategory(auth()->user(), $this->newCategory)->id;
+        $this->newCategory = '';
     }
 
     public function close(): void

@@ -78,6 +78,24 @@ class QuickProductTest extends TestCase
             ->call('save')->assertHasErrors('form.brand_name');
     }
 
+    public function test_purchase_price_is_optional_and_products_can_be_chained(): void
+    {
+        $this->actingAs($this->owner());
+
+        Livewire::test(QuickProduct::class, ['mode' => 'page'])
+            ->set('form.brand_name', 'Amoxil')->set('form.inn', 'Amoxicilline')->set('form.strength', '250 mg/5 ml')
+            ->set('form.dosage_form', 'suspension buvable')->assertSet('form.base_unit', 'flacon')
+            ->set('form.units_per_pack', 12)->assertSet('form.label', 'Boîte de 12')
+            ->set('form.label', 'Flacon 60 ml')->set('form.units_per_pack', 1)->assertSet('form.label', 'Flacon 60 ml')
+            ->set('form.sale_price', '450')->set('newCategory', ' Antibiotiques ')->call('addCategory')->assertSet('newCategory', '')
+            ->call('save', true)->assertHasNoErrors()->assertNoRedirect()
+            ->assertSet('form.brand_name', '')->assertSee('Produit créé : Amoxil');
+
+        $p = Presentation::whereHas('medicine', fn ($q) => $q->where('brand_name', 'Amoxil'))->sole();
+        $this->assertSame(['0.00', '450.00', 'flacon'], [$p->purchase_price, $p->sale_price, $p->base_unit]);
+        $this->assertSame('Antibiotiques', $p->medicine->category->name);
+    }
+
     public function test_unknown_delivery_note_line_is_created_and_linked(): void
     {
         $this->app->instance(DeliveryNoteExtractor::class, new class implements DeliveryNoteExtractor
