@@ -3,7 +3,7 @@
     $t = $this->totals;
 @endphp
 
-<div class="flex h-screen flex-col"
+<div class="flex min-h-dvh flex-col lg:h-screen"
      x-data
      x-on:keydown.window.f2.prevent="$refs.search?.focus()"
      x-on:keydown.window.f9.prevent="$wire.checkout()"
@@ -45,7 +45,7 @@
             </form>
         </main>
     @else
-        <main class="grid flex-1 grid-cols-1 gap-3 overflow-hidden p-3 lg:grid-cols-[minmax(0,1fr)_22rem]">
+        <main class="grid flex-1 grid-cols-1 gap-3 p-3 lg:overflow-hidden lg:grid-cols-[minmax(0,1fr)_22rem]">
             {{-- Colonne gauche : recherche + panier --}}
             <section class="flex min-h-0 flex-col gap-3">
                 <div class="relative">

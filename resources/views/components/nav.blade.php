@@ -95,7 +95,6 @@
 
     <nav x-show="drawer" x-cloak x-transition.opacity.duration.100ms
          class="absolute inset-x-0 top-full z-50 max-h-[calc(100dvh-8rem-env(safe-area-inset-bottom))] lg:max-h-[calc(100dvh-3.5rem)] overflow-y-auto bg-white text-slate-800 shadow-lg lg:hidden">
-        <a href="{{ route('pos', $q) }}" @class(['block px-4 py-3 font-medium', 'bg-emerald-50 text-emerald-800' => request()->routeIs('pos')])>Caisse</a>
         @foreach ($groups as $label => $items)
             <p class="bg-slate-50 px-4 pb-1 pt-3 text-xs font-semibold uppercase tracking-wide text-slate-500">{{ $label }}</p>
             @foreach ($items as [$route, $params, $text, $pattern])
@@ -120,6 +119,7 @@
         ];
         if ($alertCount !== null) $tabs[] = ['alerts.index', [], 'Alertes', 'alerts.*', 'M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.94 1.94 0 0 0 3.4 0'];
     @endphp
+    <template x-teleport="body">
     <nav class="bottom-tabs fixed inset-x-0 bottom-0 z-40 flex border-t border-slate-200 bg-white text-slate-500 lg:hidden"
          style="padding-bottom: env(safe-area-inset-bottom)" aria-label="Navigation principale">
         @foreach ($tabs as [$route, $params, $text, $pattern, $icon])
@@ -137,5 +137,6 @@
             Menu
         </button>
     </nav>
+    </template>
 </header>
 @endif
