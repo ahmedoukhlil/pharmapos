@@ -28,12 +28,15 @@ document.addEventListener('alpine:init', () => {
         audio: null,
         lastCode: null,
         lastAt: 0,
+        /** Lecteur utilisé et état, affichés en petit : aide au diagnostic sur le téléphone. */
+        engine: '',
 
         async open() {
             this.active = true;
             this.message = '';
             this.history = [];
             this.count = 0;
+            this.engine = '';
             this.starting = true;
             document.documentElement.style.overflow = 'hidden';
             // Le son doit être débloqué pendant le geste de l'utilisateur (iPhone)
@@ -60,15 +63,26 @@ document.addEventListener('alpine:init', () => {
             this.tune();
             this.starting = false;
 
-            const detector = new window.BarcodeDetector({ formats: reader.formats });
+            let detector;
+            try {
+                detector = new window.BarcodeDetector({ formats: reader.formats });
+            } catch (e) {
+                return this.fail('Lecteur de codes-barres non chargé (' + (e?.message ?? e) + ') : saisissez le code ci-dessous.');
+            }
+            this.engine = reader.native ? 'lecteur natif' : 'lecteur ZXing';
+            let failures = 0;
             let busy = false;
             this.timer = setInterval(async () => {
                 if (busy || video.readyState < 2) return;
                 busy = true;
                 try {
                     const code = (await detector.detect(video))[0]?.rawValue;
+                    failures = 0;
                     if (code) this.found(code);
-                } catch {} finally { busy = false; }
+                } catch (e) {
+                    // Une erreur à chaque image : le décodeur ne fonctionne pas (fichier .wasm non servi…)
+                    if (++failures === 15) this.engine += ' — erreur : ' + (e?.message ?? e);
+                } finally { busy = false; }
             }, 200);
         },
 
