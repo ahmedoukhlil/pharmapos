@@ -1,12 +1,12 @@
 /**
- * Caisse ouverte directement sur un téléphone : bouton caméra à côté de la recherche.
- * Chaque code lu est envoyé à addFromSearch(), comme une douchette.
+ * Écran ouvert directement sur un téléphone (caisse, inventaire) : bouton caméra.
+ * Chaque code lu est envoyé à la méthode Livewire indiquée, comme une douchette.
  * Le lecteur (BarcodeDetector natif ou ZXing) vient de resources/js/barcode.js.
  */
 const DEBOUNCE_MS = 2000; // même code relu par la caméra ignoré pendant 2 s
 
 document.addEventListener('alpine:init', () => {
-    window.Alpine.data('cameraScan', ($wire) => ({
+    window.Alpine.data('cameraScan', ($wire, method = 'addFromSearch', once = false) => ({
         available: window.matchMedia('(pointer: coarse)').matches && !!navigator.mediaDevices,
         active: false,
         message: '',
@@ -58,7 +58,8 @@ document.addEventListener('alpine:init', () => {
             navigator.vibrate?.(60);
             this.flash = true;
             setTimeout(() => (this.flash = false), 400);
-            $wire.addFromSearch(code);
+            $wire.call(method, code);
+            if (once) { this.stop(); setTimeout(() => (this.active = false), 300); }
         },
 
         stop() {

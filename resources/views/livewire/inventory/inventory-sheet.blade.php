@@ -37,6 +37,8 @@
                        x-on:keydown.enter.prevent="$wire.scan($el.value); $el.value = ''"
                        placeholder="Scanner un produit pour afficher ses lots" autocomplete="off" aria-label="Scanner un produit"
                        class="min-w-64 flex-1 rounded-lg border border-slate-300 bg-white px-4 py-2 shadow-sm">
+                {{-- Feuille ouverte sur un téléphone : un scan affiche les lots du produit, puis on compte --}}
+                <x-camera-scan method="scan" once />
                 @if ($presentationFilter)
                     <button wire:click="clearFilter" class="rounded-lg border border-slate-300 px-3 py-2 text-sm hover:bg-white">Tout afficher</button>
                 @endif
