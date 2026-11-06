@@ -16,3 +16,26 @@
 @media (width < 64rem) {
     body:has(.bottom-tabs) { padding-bottom: calc(4rem + env(safe-area-inset-bottom)); }
 }
+
+/* Téléphone : chaque ligne de tableau devient une carte, « Colonne : valeur » (libellés par resources/js/table-cards.js) */
+@media (width < 40rem) {
+    main table:not(.no-cards) { display: block; width: 100%; }
+    main table:not(.no-cards) thead { display: none; }
+    main table:not(.no-cards) :is(tbody, tfoot) { display: block; }
+    main table:not(.no-cards) tr { display: block; padding: 0.75rem 1rem; border-bottom: 1px solid rgb(226 232 240); }
+    main table:not(.no-cards) tr:last-child { border-bottom: 0; }
+    main table:not(.no-cards) :is(td, th) {
+        display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;
+        padding: 0.2rem 0 !important; text-align: end; white-space: normal !important; max-width: none !important; min-width: 0;
+    }
+    main table:not(.no-cards) :is(td, th)[data-label]:not([data-label=''])::before {
+        content: attr(data-label); flex-shrink: 0; font-size: 0.75rem; font-weight: 400; color: rgb(100 116 139); text-align: start;
+    }
+    /* Première colonne : le titre de la carte, sans libellé */
+    main table:not(.no-cards) tr > :first-child { display: block; text-align: start; font-size: 0.95rem; padding-bottom: 0.35rem !important; }
+    main table:not(.no-cards) tr > :first-child::before { content: none !important; }
+    /* Cellules vides (boutons sans titre) : alignées à droite */
+    main table:not(.no-cards) :is(td, th):is([data-label=''], :not([data-label])) { justify-content: flex-end; }
+    main table:not(.no-cards) :is(td, th):empty { display: none; }
+    main table:not(.no-cards) td[colspan] { display: block; text-align: center; }
+}

@@ -85,7 +85,7 @@
 
                     @if ($editing === $p->id && $mode === 'users')
                         <div class="mt-3 rounded-lg bg-slate-50 p-3 text-sm">
-                            <table class="w-full">
+                            <table class="no-cards w-full">
                                 <thead class="hidden text-xs uppercase text-slate-500 sm:table-header-group"><tr><th class="py-1 text-start">Nom</th><th class="text-start">Identifiant</th><th class="text-start">Rôle</th><th class="text-start">Statut</th><th></th></tr></thead>
                                 <tbody class="divide-y divide-slate-200">
                                     @foreach ($this->editingUsers as $u)
