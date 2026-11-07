@@ -238,7 +238,7 @@
                     @else
                     {{-- Préparateur sans droit d'encaisser : le panier part à la caisse --}}
                     <button wire:click="hold" @disabled(! $this->lines)
-                            class="flex-1 rounded-lg bg-sky-700 px-4 py-3 text-lg font-semibold text-white hover:bg-sky-800 disabled:opacity-40" data-tour-order="50" data-tour-title="Envoyer à la caisse" data-tour="Envoie le panier au caissier : il apparaît chez lui avec votre prénom et un bip, il n'a plus qu'à encaisser.">Envoyer à la caisse</button>
+                            class="flex-1 rounded-lg bg-emerald-700 px-4 py-3 text-lg font-semibold text-white hover:bg-emerald-800 disabled:opacity-40" data-tour-order="50" data-tour-title="Envoyer à la caisse" data-tour="Envoie le panier au caissier : il apparaît chez lui avec votre prénom et un bip, il n'a plus qu'à encaisser.">Envoyer à la caisse</button>
                     @endif
                     @if ($this->can['sell'])
                     <button data-tour-order="60" data-tour-title="Encaisser" data-tour="Valide la vente, sort le stock et imprime le ticket. Raccourci : F9." wire:click="checkout" wire:loading.attr="disabled" @disabled(! $this->lines || ! $this->can['sell'])
