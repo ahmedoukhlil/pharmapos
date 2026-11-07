@@ -39,3 +39,11 @@
     main table:not(.no-cards) :is(td, th):empty { display: none; }
     main table:not(.no-cards) td[colspan] { display: block; text-align: center; }
 }
+
+/* Jamais de glissement horizontal de la page sur téléphone */
+html, body { overflow-x: clip; max-width: 100%; }
+
+/* iPhone : Safari zoome sur un champ dont le texte fait moins de 16 px, et la page glisse ensuite */
+@media (width < 64rem) and (pointer: coarse) {
+    input, select, textarea { font-size: 16px !important; }
+}

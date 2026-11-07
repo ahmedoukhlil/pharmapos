@@ -6,7 +6,7 @@
 <div>
 <x-admin-nav />
 <main class="flex justify-center p-4">
-    <div class="w-full max-w-2xl space-y-5">
+    <div class="w-full min-w-0 max-w-2xl space-y-5">
         <div class="flex flex-wrap items-center gap-3">
             <a href="{{ route('admin.pharmacies') }}" class="text-sm text-emerald-800 hover:underline">← Pharmacies</a>
             <h1 class="text-xl font-semibold">Nouvelle pharmacie</h1>
