@@ -94,21 +94,55 @@
         </div>
     </div>
 
+    {{-- Menu du téléphone : tuiles avec icône, 3 par ligne --}}
+    @php
+        $icons = [
+            'pos' => 'M3 7h18M5 7l1 13h12l1-13M9 7V5a3 3 0 0 1 6 0v2',
+            'returns' => 'M9 14 4 9l5-5M4 9h11a5 5 0 0 1 0 10h-3',
+            'pos.close' => 'M5 11h14v10H5zM8 11V7a4 4 0 0 1 8 0v4',
+            'sessions.index' => 'M12 7v5l3 2M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0',
+            'orders.index' => 'M9 5h6M9 3h6v4H9zM5 5h2v16h10V5h2M9 12h6M9 16h4',
+            'receipts.index' => 'M3 8l9-5 9 5v8l-9 5-9-5zM3 8l9 5 9-5M12 13v8',
+            'invoices.index' => 'M6 3h9l3 3v15H6zM9 9h6M9 13h6M9 17h4',
+            'suppliers.index' => 'M3 7h11v9H3zM14 10h4l3 3v3h-7M7 19a2 2 0 1 0 0-.01M17 19a2 2 0 1 0 0-.01',
+            'catalogue.index' => 'M4 6h16M4 12h16M4 18h10',
+            'inventories.index' => 'M9 11l2 2 4-4M5 4h14v16H5z',
+            'transfers' => 'M7 4 3 8l4 4M3 8h14M17 20l4-4-4-4M21 16H7',
+            'reports.index' => 'M4 20V10M10 20V4M16 20v-7M22 20H2',
+            'users.index' => 'M16 19v-1a4 4 0 0 0-8 0v1M12 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6M20 19v-1a3 3 0 0 0-2-2.8M4 19v-1a3 3 0 0 1 2-2.8',
+            'store-layout.index' => 'M3 21h18M5 21V8l7-5 7 5v13M9 21v-6h6v6',
+            'payment-methods.index' => 'M2 6h20v12H2zM2 10h20M6 15h4',
+            'backups.index' => 'M12 3v12M7 10l5 5 5-5M4 19h16',
+        ];
+        $short = ['Transferts Rayon ↔ Réserve' => 'Transferts', 'Caisses et emplacements' => 'Emplacements', 'Modes de paiement' => 'Paiements'];
+    @endphp
     <nav x-show="drawer" x-cloak x-transition.opacity.duration.100ms
-         class="absolute inset-x-0 top-full z-50 max-h-[calc(100dvh-8rem-env(safe-area-inset-bottom))] lg:max-h-[calc(100dvh-3.5rem)] overflow-y-auto bg-white text-slate-800 shadow-lg lg:hidden">
-        @foreach ($groups as $label => $items)
-            <p class="bg-slate-50 px-4 pb-1 pt-3 text-xs font-semibold uppercase tracking-wide text-slate-500">{{ $label }}</p>
-            @foreach ($items as [$route, $params, $text, $pattern])
-                <a href="{{ route($route, $params) }}" @class(['block px-4 py-3', 'bg-emerald-50 font-semibold text-emerald-800' => request()->routeIs($pattern)])>{{ $text }}</a>
-            @endforeach
-        @endforeach
-        <div class="flex items-center gap-2 border-t border-slate-200 px-4 py-3">
-            <a href="{{ route('password.edit') }}" class="min-w-0 flex-1 truncate text-sm text-slate-600">{{ $user->name }} · mot de passe</a>
+         class="absolute inset-x-0 top-full z-50 h-[calc(100dvh-7.5rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] overflow-y-auto bg-slate-50 px-3 pb-4 text-slate-800 shadow-lg lg:hidden">
+        <div class="mt-3 flex items-center gap-3 rounded-xl bg-white p-3 shadow-sm ring-1 ring-slate-900/5">
+            <span class="flex size-10 shrink-0 items-center justify-center rounded-full bg-emerald-100 font-semibold text-emerald-800">{{ mb_strtoupper(mb_substr($user->name, 0, 1)) }}</span>
+            <a href="{{ route('password.edit') }}" class="min-w-0 flex-1">
+                <span class="block truncate font-medium">{{ $user->name }}</span>
+                <span class="block text-xs text-slate-500">Changer mon mot de passe</span>
+            </a>
             <form method="POST" action="{{ route('logout') }}">
                 @csrf
-                <button class="rounded-lg bg-slate-100 px-3 py-2 text-sm">Déconnexion</button>
+                <button class="rounded-lg border border-slate-300 px-3 py-2 text-sm text-red-700">Déconnexion</button>
             </form>
         </div>
+        @foreach ($groups as $label => $items)
+            <p class="px-1 pb-2 pt-4 text-xs font-semibold uppercase tracking-wide text-slate-500">{{ $label }}</p>
+            <div class="grid grid-cols-3 gap-2">
+                @foreach ($items as [$route, $params, $text, $pattern])
+                    <a href="{{ route($route, $params) }}"
+                       @class(['flex flex-col items-center justify-center gap-1.5 rounded-xl bg-white px-1 py-3 text-center text-xs shadow-sm ring-1',
+                               'ring-emerald-500 font-semibold text-emerald-800' => request()->routeIs($pattern),
+                               'ring-slate-900/5' => ! request()->routeIs($pattern)])>
+                        <svg class="size-6 text-emerald-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ $icons[$route] ?? 'M4 12h16' }}"/></svg>
+                        <span class="leading-tight">{{ $short[$text] ?? $text }}</span>
+                    </a>
+                @endforeach
+            </div>
+        @endforeach
     </nav>
 
     {{-- Téléphone : onglets du bas, à portée de pouce --}}

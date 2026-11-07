@@ -16,4 +16,12 @@ php artisan optimize:clear
 php artisan optimize
 php artisan queue:restart || true
 
+# Vide la mémoire de PHP (OPcache) : sinon PHP peut servir les anciennes routes et vues
+for svc in php8.3-fpm php8.4-fpm php-fpm; do
+    if systemctl list-units --type=service --all 2>/dev/null | grep -q "$svc"; then
+        sudo -n systemctl reload "$svc" 2>/dev/null || systemctl reload "$svc" 2>/dev/null || echo "Rechargez $svc à la main"
+        break
+    fi
+done
+
 echo "Déployé : $(git log --oneline -1)"
