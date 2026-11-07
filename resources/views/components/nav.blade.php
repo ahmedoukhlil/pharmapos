@@ -23,6 +23,7 @@
         'Stock' => [
             ['catalogue.index', [], 'Catalogue', 'catalogue.*', true],
             ['inventories.index', [], 'Inventaires', 'inventories.*', true],
+            ['transfers', [], 'Transferts Rayon ↔ Réserve', 'transfers', $user->hasPermission('stock.transfer')],
         ],
         'Gestion' => [
             ['reports.index', [], 'Rapports', 'reports.*', $user->hasPermission('report.view')],
