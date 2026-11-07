@@ -7,22 +7,24 @@
     $user = auth()->user();
     $q = $register ? ['caisse' => $register] : [];
     // Menus regroupés : [libellé => [[route, paramètres, libellé, motif actif, visible]]]
+    $can = fn (string ...$p) => collect($p)->contains(fn ($x) => $user->hasPermission($x));
+    $canPos = $can('sale.create', 'cash.open_close');
     $groups = [
         'Ventes' => [
-            ['pos', $q, 'Caisse', 'pos', true],
-            ['returns', $q, 'Retours', 'returns', true],
-            ['pos.close', $q, 'Clôture', 'pos.close', true],
-            ['sessions.index', [], 'Sessions', 'sessions.*', true],
+            ['pos', $q, 'Caisse', 'pos', $canPos],
+            ['returns', $q, 'Retours', 'returns', $can('sale.refund')],
+            ['pos.close', $q, 'Clôture', 'pos.close', $can('cash.open_close')],
+            ['sessions.index', [], 'Sessions', 'sessions.*', $can('cash.open_close', 'cash.validate', 'report.view')],
         ],
         'Achats' => [
-            ['orders.index', [], 'Commandes', 'orders.*', true],
-            ['receipts.index', [], 'Réceptions', 'receipts.*', true],
+            ['orders.index', [], 'Commandes', 'orders.*', $can('purchase.manage')],
+            ['receipts.index', [], 'Réceptions', 'receipts.*', $can('purchase.manage')],
             ['invoices.index', [], 'Factures', 'invoices.*', $user->hasPermission('purchase.invoice')],
-            ['suppliers.index', [], 'Fournisseurs', 'suppliers.*', true],
+            ['suppliers.index', [], 'Fournisseurs', 'suppliers.*', $can('purchase.manage')],
         ],
         'Stock' => [
-            ['catalogue.index', [], 'Catalogue', 'catalogue.*', true],
-            ['inventories.index', [], 'Inventaires', 'inventories.*', true],
+            ['catalogue.index', [], 'Catalogue', 'catalogue.*', $can('catalogue.view')],
+            ['inventories.index', [], 'Inventaires', 'inventories.*', $can('inventory.count')],
             ['transfers', [], 'Transferts Rayon ↔ Réserve', 'transfers', $user->hasPermission('stock.transfer')],
         ],
         'Gestion' => [
@@ -52,7 +54,9 @@
         </a>
 
         <nav class="hidden gap-1 whitespace-nowrap text-sm lg:flex">
+            @if ($canPos)
             <a href="{{ route('pos', $q) }}" @class(['rounded px-2 py-1 hover:bg-emerald-700', 'bg-emerald-900' => request()->routeIs('pos')])>Caisse</a>
+            @endif
             @foreach ($groups as $label => $items)
                 <div class="relative">
                     <button type="button" @click="open = open === '{{ $label }}' ? null : '{{ $label }}'" :aria-expanded="open === '{{ $label }}'"
@@ -147,11 +151,11 @@
 
     {{-- Téléphone : onglets du bas, à portée de pouce --}}
     @php
-        $tabs = [
-            ['pos', $q, 'Caisse', 'pos', 'M3 7h18M5 7l1 13h12l1-13M9 7V5a3 3 0 0 1 6 0v2'],
-            ['returns', $q, 'Retours', 'returns', 'M9 14 4 9l5-5M4 9h11a5 5 0 0 1 0 10h-3'],
-            ['catalogue.index', [], 'Catalogue', 'catalogue.*', 'M4 6h16M4 12h16M4 18h10'],
-        ];
+        $tabs = array_values(array_filter([
+            $canPos ? ['pos', $q, 'Caisse', 'pos', 'M3 7h18M5 7l1 13h12l1-13M9 7V5a3 3 0 0 1 6 0v2'] : null,
+            $can('sale.refund') ? ['returns', $q, 'Retours', 'returns', 'M9 14 4 9l5-5M4 9h11a5 5 0 0 1 0 10h-3'] : null,
+            $can('catalogue.view') ? ['catalogue.index', [], 'Catalogue', 'catalogue.*', 'M4 6h16M4 12h16M4 18h10'] : null,
+        ]));
         if ($alertCount !== null) $tabs[] = ['alerts.index', [], 'Alertes', 'alerts.*', 'M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.94 1.94 0 0 0 3.4 0'];
     @endphp
     <template x-teleport="body">

@@ -86,4 +86,13 @@ class UserPermissionTest extends TestCase
             $this->assertStringContainsString('Gérer les paramètres', $e->errors()['permissions'][0]);
         }
     }
+
+    public function test_menu_shows_only_allowed_screens(): void
+    {
+        $this->actingAs($this->user('cashier'))->get(route('pos'))->assertOk()
+            ->assertDontSee(route('orders.index'))->assertDontSee(route('inventories.index'))
+            ->assertDontSee(route('returns'))->assertSee(route('catalogue.index'));
+        $this->actingAs($this->user('owner'))->get(route('pos'))->assertOk()
+            ->assertSee(route('orders.index'))->assertSee(route('inventories.index'));
+    }
 }
