@@ -1,7 +1,7 @@
 /**
  * Visite guidée : chaque écran balise ses éléments avec
  *   data-tour="Texte de l'étape" data-tour-title="Titre" data-tour-order="10"
- * La visite démarre seule à la première ouverture de l'écran (mémorisé par utilisateur),
+ * La visite démarre seule une seule fois, à la première connexion de l'utilisateur,
  * et se relance avec le bouton « ? » du menu (événement start-tour).
  * Sans bibliothèque : fonctionne hors connexion.
  */
@@ -14,7 +14,8 @@ function steps() {
 }
 
 function storageKey() {
-    return `tour:${document.body.dataset.user ?? ''}:${location.pathname}`;
+    // Une seule visite automatique par utilisateur (la toute première fois) ; ensuite, bouton « ? »
+    return `tour:${document.body.dataset.user ?? ''}:seen`;
 }
 
 let ui = null;
@@ -103,9 +104,15 @@ export function startTour() {
 
 window.addEventListener('start-tour', startTour);
 
-// Première visite de l'écran : démarrage automatique
+// Toute première visite : démarrage automatique, une seule fois
 function autoStart() {
-    if (!document.body.dataset.user || localStorage.getItem(storageKey())) return;
+    const user = document.body.dataset.user;
+    if (!user || localStorage.getItem(storageKey())) return;
+    // Visite déjà vue avec l'ancienne version (une clé par écran) : ne plus la lancer seule
+    if (Object.keys(localStorage).some((k) => k.startsWith(`tour:${user}:/`))) {
+        localStorage.setItem(storageKey(), '1');
+        return;
+    }
     setTimeout(() => { if (!ui && steps().length) startTour(); }, 600);
 }
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', autoStart); else autoStart();
