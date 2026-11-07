@@ -10,7 +10,7 @@
     <x-nav />
 
     <main class="mx-auto max-w-6xl space-y-4 p-4">
-        <h1 class="text-xl font-semibold">Alertes</h1>
+        <h1 data-tour-order="5" data-tour-title="Alertes" data-tour="Ruptures, stock bas et péremptions proches : traitez-les ici pour ne jamais manquer un produit." class="text-xl font-semibold">Alertes</h1>
 
         @if ($backupIssue)
             <p class="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800">

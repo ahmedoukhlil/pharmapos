@@ -15,7 +15,7 @@
     <title>{{ $title ?? 'PharmaPOS' }}</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="min-h-dvh bg-slate-100 text-slate-900 antialiased">
+<body class="min-h-dvh bg-slate-100 text-slate-900 antialiased" @auth data-user="{{ auth()->id() }}" @endauth>
     {{ $slot }}
 
     {{-- Fenêtre de confirmation qui remplace confirm() pour wire:confirm (resources/js/confirm-dialog.js) --}}

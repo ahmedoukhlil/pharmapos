@@ -53,7 +53,7 @@
             <span class="hidden sm:inline">PharmaPOS</span>
         </a>
 
-        <nav class="hidden gap-1 whitespace-nowrap text-sm lg:flex">
+        <nav class="hidden gap-1 whitespace-nowrap text-sm lg:flex" data-tour-order="1" data-tour-title="Le menu" data-tour="Toutes les fonctions sont rangées ici : Ventes, Achats, Stock et Gestion. Vous ne voyez que les écrans autorisés pour votre compte.">
             @if ($canPos)
             <a href="{{ route('pos', $q) }}" @class(['rounded px-2 py-1 hover:bg-emerald-700', 'bg-emerald-900' => request()->routeIs('pos')])>Caisse</a>
             @endif
@@ -75,7 +75,7 @@
         </nav>
 
         @if ($alertCount !== null)
-            <a href="{{ route('alerts.index') }}" title="Alertes" @class(['hidden shrink-0 lg:flex items-center rounded px-2 py-1 text-sm hover:bg-emerald-700', 'bg-emerald-900' => request()->routeIs('alerts.*')])>
+            <a href="{{ route('alerts.index') }}" title="Alertes" data-tour-order="2" data-tour-title="Alertes" data-tour="Ruptures, produits bientôt périmés et lots à retirer. Le chiffre rouge indique le nombre d'alertes." @class(['hidden shrink-0 lg:flex items-center rounded px-2 py-1 text-sm hover:bg-emerald-700', 'bg-emerald-900' => request()->routeIs('alerts.*')])>
                 <svg class="size-5 lg:hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
                 <span class="hidden lg:inline">Alertes</span>
                 @if ($alertCount) <span class="ms-1 rounded-full bg-red-600 px-2 text-xs font-semibold">{{ $alertCount }}</span> @endif
@@ -84,7 +84,9 @@
 
         <div class="ms-auto flex min-w-0 items-center gap-2 lg:gap-3">
             {{ $slot }}
-            <a href="{{ route('password.edit') }}" class="hidden whitespace-nowrap rounded px-2 py-1 text-sm hover:bg-emerald-700 lg:block" title="Mon mot de passe">{{ $user->name }}</a>
+            <button type="button" onclick="window.dispatchEvent(new Event('start-tour'))" title="Visite guidée de cet écran" aria-label="Visite guidée"
+                    class="flex size-8 shrink-0 items-center justify-center rounded-full border border-emerald-300/60 text-sm font-bold hover:bg-emerald-700" data-tour-order="95" data-tour-title="Visite guidée" data-tour="Chaque écran a sa visite. Touchez ce ? pour la revoir quand vous voulez.">?</button>
+            <a href="{{ route('password.edit') }}" class="hidden whitespace-nowrap rounded px-2 py-1 text-sm hover:bg-emerald-700 lg:block" title="Mon mot de passe" data-tour-order="90" data-tour-title="Votre compte" data-tour="Touchez votre nom pour changer votre mot de passe.">{{ $user->name }}</a>
             <form method="POST" action="{{ route('logout') }}" class="hidden lg:block">
                 @csrf
                 <button class="rounded px-2 py-1 text-sm hover:bg-emerald-700">Déconnexion</button>
@@ -159,7 +161,7 @@
         if ($alertCount !== null) $tabs[] = ['alerts.index', [], 'Alertes', 'alerts.*', 'M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.94 1.94 0 0 0 3.4 0'];
     @endphp
     <template x-teleport="body">
-    <nav class="bottom-tabs fixed inset-x-0 bottom-0 z-40 flex border-t border-slate-200 bg-white text-slate-500 lg:hidden"
+    <nav data-tour-order="3" data-tour-title="Raccourcis" data-tour="Sur téléphone, les écrans les plus utilisés sont en bas ; Menu ouvre toutes les autres fonctions." class="bottom-tabs fixed inset-x-0 bottom-0 z-40 flex border-t border-slate-200 bg-white text-slate-500 lg:hidden"
          style="padding-bottom: env(safe-area-inset-bottom)" aria-label="Navigation principale">
         @foreach ($tabs as [$route, $params, $text, $pattern, $icon])
             <a href="{{ route($route, $params) }}" @class(['relative flex flex-1 flex-col items-center gap-0.5 py-2 text-[11px]', 'font-semibold text-emerald-700' => request()->routeIs($pattern)])>

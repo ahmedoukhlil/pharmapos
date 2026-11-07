@@ -4,3 +4,4 @@ import './charts';
 import './camera-scan';
 import './pwa';
 import './table-cards';
+import './tour';

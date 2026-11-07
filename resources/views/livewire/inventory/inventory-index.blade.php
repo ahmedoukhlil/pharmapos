@@ -7,7 +7,7 @@
     <x-nav />
 
     <main class="mx-auto max-w-5xl space-y-4 p-4">
-        <h1 class="text-xl font-semibold">Inventaires</h1>
+        <h1 data-tour-order="5" data-tour-title="Inventaires" data-tour="Ouvrez un inventaire, comptez les produits (au téléphone si besoin), puis faites valider les écarts." class="text-xl font-semibold">Inventaires</h1>
 
         @if ($canCount)
             <form wire:submit="open" class="flex flex-wrap items-end gap-3 rounded-lg bg-white p-4 shadow-sm">

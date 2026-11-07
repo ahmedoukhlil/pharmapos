@@ -5,7 +5,7 @@
 
     <main class="mx-auto max-w-5xl space-y-4 p-4">
         <div class="flex flex-wrap items-center gap-3">
-            <h1 class="text-xl font-semibold">Réceptions fournisseurs</h1>
+            <h1 data-tour-order="5" data-tour-title="Réceptions" data-tour="Enregistrez chaque livraison fournisseur : lots, péremptions et quantités entrent dans le stock. Le bordereau peut être lu depuis une photo." class="text-xl font-semibold">Réceptions fournisseurs</h1>
             <select wire:model.live="status" class="ms-auto rounded-lg border border-slate-300 px-2 py-1 text-sm" aria-label="Filtrer par statut">
                 <option value="all">Toutes</option>
                 <option value="draft">Brouillons</option>

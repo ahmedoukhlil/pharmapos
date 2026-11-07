@@ -10,7 +10,7 @@
     <x-nav />
 
     <main class="mx-auto max-w-3xl space-y-4 p-4">
-        <h1 class="text-xl font-semibold">Transfert de stock</h1>
+        <h1 data-tour-order="5" data-tour-title="Transfert de stock" data-tour="Déplacez des boîtes entre la Réserve et le Rayon : scannez le produit, choisissez le sens puis la quantité par lot." class="text-xl font-semibold">Transfert de stock</h1>
 
         {{-- Sens du transfert --}}
         <section class="rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-900/5">

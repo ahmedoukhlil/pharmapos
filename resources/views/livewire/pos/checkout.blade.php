@@ -14,7 +14,7 @@
     <x-nav :register="$registerCode">
         <label class="flex items-center gap-2 text-sm">
             <span class="sr-only">Caisse</span>
-            <select wire:model.live="registerCode" class="w-24 rounded bg-emerald-900 px-2 py-1 text-sm sm:w-auto">
+            <select data-tour-order="10" data-tour-title="Caisse" data-tour="Choisissez la caisse sur laquelle vous travaillez. Un préparateur choisit la caisse du caissier à qui il envoie les ventes." wire:model.live="registerCode" class="w-24 rounded bg-emerald-900 px-2 py-1 text-sm sm:w-auto">
                 @foreach ($this->registers as $r)
                     <option value="{{ $r->code }}">{{ $r->name }}</option>
                 @endforeach
@@ -51,7 +51,7 @@
                 <div class="relative">
                     <label for="search" class="sr-only">Rechercher ou scanner</label>
                     <div class="flex gap-2">
-                    <input id="search" x-ref="search" wire:model.live.debounce.200ms="search" x-on:keydown.enter.prevent="$wire.addFromSearch($el.value); $el.value = ''"
+                    <input data-tour-order="20" data-tour-title="Rechercher ou scanner" data-tour="Scannez le code-barres avec la douchette ou tapez la DCI, le nom ou le code. Raccourci : F2." id="search" x-ref="search" wire:model.live.debounce.200ms="search" x-on:keydown.enter.prevent="$wire.addFromSearch($el.value); $el.value = ''"
                            x-init="$nextTick(() => $el.focus())" autocomplete="off" placeholder="Scanner ou rechercher (DCI, nom, code, SKU) - F2"
                            class="min-w-0 flex-1 rounded-lg border border-slate-300 bg-white px-4 py-3 text-lg shadow-sm focus:border-emerald-600 focus:ring-2 focus:ring-emerald-200 focus:outline-none">
 
@@ -188,7 +188,7 @@
 
             {{-- Colonne droite : totaux et paiements --}}
             <aside class="flex min-h-0 flex-col gap-3 rounded-lg bg-white p-4 shadow-sm">
-                <div class="text-center">
+                <div class="text-center" data-tour-order="30" data-tour-title="Total" data-tour="Le montant à encaisser, arrondi selon les règles de l'officine.">
                     <p class="text-sm text-slate-500">Total à payer</p>
                     <p class="text-4xl font-bold tabular-nums text-emerald-800">{{ $fmt($t['total']) }} <span class="text-lg font-medium">MRU</span></p>
                     @if ($t['total'] !== $t['raw'])
@@ -196,7 +196,7 @@
                     @endif
                 </div>
 
-                <div class="grid grid-cols-2 gap-2">
+                <div class="grid grid-cols-2 gap-2" data-tour-order="40" data-tour-title="Paiement" data-tour="Touchez le mode de paiement du client : espèces, Bankily, Masrvi… Vous pouvez en combiner plusieurs.">
                     @foreach ($this->paymentMethods as $m)
                         <button wire:click="addPayment('{{ $m->id }}')" @disabled(! $this->lines)
                                 class="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium hover:border-emerald-600 hover:bg-emerald-50 disabled:opacity-40">
@@ -234,14 +234,14 @@
                             class="rounded-lg border border-slate-300 px-3 py-3 text-sm hover:bg-slate-50 disabled:opacity-40">Vider</button>
                     @if ($this->can['sell'])
                     <button wire:click="hold" @disabled(! $this->lines)
-                            class="rounded-lg border border-amber-400 px-3 py-3 text-sm text-amber-900 hover:bg-amber-50 disabled:opacity-40">Attente</button>
+                            class="rounded-lg border border-amber-400 px-3 py-3 text-sm text-amber-900 hover:bg-amber-50 disabled:opacity-40" data-tour-order="50" data-tour-title="Mettre en attente" data-tour="Met le panier de côté pour servir un autre client ; il apparaît en haut, dans En attente, pour être repris.">Attente</button>
                     @else
                     {{-- Préparateur sans droit d'encaisser : le panier part à la caisse --}}
                     <button wire:click="hold" @disabled(! $this->lines)
-                            class="flex-1 rounded-lg bg-sky-700 px-4 py-3 text-lg font-semibold text-white hover:bg-sky-800 disabled:opacity-40">Envoyer à la caisse</button>
+                            class="flex-1 rounded-lg bg-sky-700 px-4 py-3 text-lg font-semibold text-white hover:bg-sky-800 disabled:opacity-40" data-tour-order="50" data-tour-title="Envoyer à la caisse" data-tour="Envoie le panier au caissier : il apparaît chez lui avec votre prénom et un bip, il n'a plus qu'à encaisser.">Envoyer à la caisse</button>
                     @endif
                     @if ($this->can['sell'])
-                    <button wire:click="checkout" wire:loading.attr="disabled" @disabled(! $this->lines || ! $this->can['sell'])
+                    <button data-tour-order="60" data-tour-title="Encaisser" data-tour="Valide la vente, sort le stock et imprime le ticket. Raccourci : F9." wire:click="checkout" wire:loading.attr="disabled" @disabled(! $this->lines || ! $this->can['sell'])
                             class="flex-1 rounded-lg bg-emerald-700 px-4 py-3 text-lg font-semibold text-white hover:bg-emerald-800 disabled:opacity-40">
                         <span wire:loading.remove wire:target="checkout">Encaisser - F9</span>
                         <span wire:loading wire:target="checkout">Validation…</span>

@@ -7,7 +7,7 @@
 
     <main class="mx-auto max-w-5xl space-y-4 p-4">
         <div class="flex flex-wrap items-center gap-3">
-            <h1 class="text-xl font-semibold">Commandes fournisseurs</h1>
+            <h1 data-tour-order="5" data-tour-title="Commandes" data-tour="Préparez les commandes fournisseurs ; elles servent de base aux réceptions." class="text-xl font-semibold">Commandes fournisseurs</h1>
             <select wire:model.live="status" class="rounded-lg border border-slate-300 px-3 py-1.5 text-sm">
                 <option value="">Tous statuts</option>
                 @foreach ($statuses as $k => $v)

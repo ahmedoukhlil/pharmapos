@@ -14,7 +14,7 @@
 
     <main class="mx-auto max-w-7xl space-y-4 p-4">
         <div class="flex flex-wrap items-center gap-3">
-            <h1 class="text-xl font-semibold">Rapports</h1>
+            <h1 data-tour-order="5" data-tour-title="Rapports" data-tour="Chiffre d'affaires, ventes par produit, marges, stock : choisissez la période, puis imprimez ou exportez." class="text-xl font-semibold">Rapports</h1>
             <nav class="-mx-1 flex max-w-full gap-1 overflow-x-auto px-1 text-sm whitespace-nowrap print:hidden">
                 @foreach ($reports as $k => $label)
                     <button wire:click="$set('report', '{{ $k }}')" @class(['rounded-full px-3 py-1', 'bg-emerald-700 text-white' => $report === $k, 'bg-white shadow-sm' => $report !== $k])>{{ $label }}</button>

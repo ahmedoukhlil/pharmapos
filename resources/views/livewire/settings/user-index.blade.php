@@ -5,7 +5,7 @@
 
     <main class="mx-auto max-w-6xl space-y-4 p-4">
         <div class="flex flex-wrap items-center gap-3">
-            <h1 class="text-xl font-semibold">Utilisateurs</h1>
+            <h1 data-tour-order="5" data-tour-title="Utilisateurs" data-tour="Créez les comptes de l'équipe, choisissez leur rôle et ajustez leurs droits case par case dans Modifier." class="text-xl font-semibold">Utilisateurs</h1>
             <input wire:model.live.debounce.300ms="search" placeholder="Rechercher un nom ou un identifiant" class="ms-auto w-64 rounded-lg border border-slate-300 px-3 py-2 text-sm">
             <label class="flex items-center gap-2 text-sm"><input type="checkbox" wire:model.live="showInactive"> Afficher les inactifs</label>
             @if ($editing === null)
@@ -53,7 +53,7 @@
                     $byGroup = collect($permissionLabels)->groupBy(fn ($l, $slug) => $groups[strstr($slug, '.', true)] ?? 'Autres', true);
                     $locked = ($editing && $editing === auth()->id()) || ($form['role'] ?? '') === 'owner';
                 @endphp
-                <fieldset class="sm:col-span-2" @disabled($locked)>
+                <fieldset data-tour-order="20" data-tour-title="Droits" data-tour="Cochés selon le rôle. Ajoutez ou retirez un droit pour cette personne : le menu s'adapte tout seul." class="sm:col-span-2" @disabled($locked)>
                     <div class="flex flex-wrap items-baseline gap-x-3">
                         <span class="text-sm font-medium">Droits</span>
                         <span class="text-xs text-slate-500">

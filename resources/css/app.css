@@ -47,3 +47,16 @@ html, body { overflow-x: clip; max-width: 100%; }
 @media (width < 64rem) and (pointer: coarse) {
     input, select, textarea { font-size: 16px !important; }
 }
+
+/* Visite guidée (resources/js/tour.js) */
+.tour-root { position: fixed; inset: 0; z-index: 100; }
+.tour-spot { position: fixed; border-radius: 0.6rem; box-shadow: 0 0 0 9999px rgb(15 23 42 / 0.6); outline: 3px solid #34d399; pointer-events: none; }
+.tour-box { position: fixed; width: min(22rem, calc(100vw - 1rem)); background: #fff; color: #0f172a; border-radius: 0.75rem; padding: 1rem; box-shadow: 0 10px 30px rgb(0 0 0 / .3); font-size: 0.9rem; }
+.tour-title { font-weight: 600; margin-bottom: 0.25rem; color: #065f46; }
+.tour-actions { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.75rem; }
+.tour-count { margin-inline-end: auto; font-size: 0.75rem; color: #64748b; }
+.tour-actions button { border-radius: 0.5rem; padding: 0.35rem 0.75rem; font-size: 0.85rem; }
+.tour-skip { color: #64748b; }
+.tour-prev { border: 1px solid #cbd5e1; }
+.tour-prev:disabled { opacity: .4; }
+.tour-next { background: #047857; color: #fff; font-weight: 600; }
