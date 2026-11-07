@@ -165,7 +165,7 @@ class HeldSaleTest extends TestCase
             ->call('addFromSearch', 'IBU400-20')
             ->call('hold')
             ->assertSet('cart', [])
-            ->assertSee('En attente');
+            ->assertSee('Vente mise en attente.');
 
         $held = Sale::where('status', 'on_hold')->firstOrFail();
 
@@ -181,5 +181,33 @@ class HeldSaleTest extends TestCase
 
         $this->assertSame('finalized', $held->fresh()->status);
         $this->assertSame(1, Sale::count());
+    }
+
+    public function test_preparer_sends_sale_to_cashier(): void
+    {
+        $preparer = User::where('username', 'technician')->firstOrFail();
+        // Préparateur sans droit d'encaisser : il ne peut qu'envoyer à la caisse
+        \Illuminate\Support\Facades\DB::table('permission_user')->insert(['user_id' => $preparer->id, 'pharmacy_id' => $preparer->pharmacy_id,
+            'permission_id' => \App\Models\Permission::firstWhere('slug', 'sale.create')->id, 'granted' => false]);
+
+        $this->actingAs($preparer);
+        Livewire::test(Checkout::class)
+            ->assertSee('Envoyer à la caisse')
+            ->call('addFromSearch', 'IBU400-20')
+            ->call('hold')
+            ->assertSet('cart', [])
+            ->assertSee('Vente envoyée à la caisse');
+
+        $held = Sale::where('status', 'on_hold')->firstOrFail();
+        $this->assertTrue($held->user->is($preparer));
+
+        // Côté caissier : la vente apparaît avec le prénom du préparateur, puis s'encaisse
+        $this->actingAs($this->cashier);
+        Livewire::test(\App\Livewire\Pos\HeldSales::class, ['sessionId' => $this->session->id])
+            ->assertSee(Str::of($preparer->name)->before(' '));
+        Livewire::test(Checkout::class)
+            ->call('resume', $held->id)->assertSet('heldSaleId', $held->id)
+            ->call('checkout')->assertDispatched('sale-finalized');
+        $this->assertSame('finalized', $held->fresh()->status);
     }
 }

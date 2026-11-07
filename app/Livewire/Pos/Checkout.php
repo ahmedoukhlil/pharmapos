@@ -55,6 +55,9 @@ class Checkout extends Component
 
     public ?string $error = null;
 
+    /** Message après une mise en attente (« Envoyée à Caisse 1 »). */
+    public ?string $notice = null;
+
     public function mount(): void
     {
         $registers = $this->registers;
@@ -370,6 +373,7 @@ class Checkout extends Component
     public function hold(SaleService $service): void
     {
         $this->error = null;
+        $this->notice = null;
         if (! $this->session || ! $this->cart) {
             return;
         }
@@ -391,6 +395,7 @@ class Checkout extends Component
             return;
         }
         $this->clear();
+        $this->notice = $this->can['sell'] ? 'Vente mise en attente.' : 'Vente envoyée à la caisse « '.$this->register->name.' ».';
     }
 
     public function resume(string $saleId, SaleService $service): void
@@ -407,6 +412,7 @@ class Checkout extends Component
 
             return;
         }
+        $this->notice = null;
         $this->cart = $service->heldItems($sale);
         $this->heldSaleId = $sale->id;
         $this->lastSaleId = null;
@@ -455,6 +461,7 @@ class Checkout extends Component
         $this->idempotencyKey = (string) Str::uuid();
         // Les propriétés calculées sont mémorisées pour la requête : les invalider après avoir vidé le panier
         unset($this->heldSales, $this->lines, $this->totals);
+        $this->dispatch('held-changed');
     }
 
     #[Computed]
