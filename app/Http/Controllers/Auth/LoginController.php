@@ -63,7 +63,9 @@ class LoginController extends Controller
             Cookie::queue(Cookie::forever(self::COOKIE, $user->pharmacy->code));
         }
 
-        return redirect()->intended($user->is_super_admin ? route('admin.pharmacies') : route('pos'));
+        // Toujours la caisse après connexion, jamais la dernière page demandée
+        $request->session()->forget('url.intended');
+        return redirect()->to($user->is_super_admin ? route('admin.pharmacies') : route('pos'));
     }
 
     public function destroy(Request $request): RedirectResponse

@@ -45,7 +45,7 @@ class PasswordController extends Controller
             'auditable_type' => 'user', 'auditable_id' => $user->id, 'ip_address' => $request->ip()]);
 
         return $forced
-            ? redirect()->intended(route('pos'))->with('status', 'Mot de passe enregistré. Bienvenue !')
+            ? redirect()->route('pos')->with('status', 'Mot de passe enregistré. Bienvenue !')
             : back()->with('status', 'Mot de passe modifié.');
     }
 }
