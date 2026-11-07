@@ -96,6 +96,12 @@ class User extends Authenticatable
     /** @return array<string, bool> slug => ajoutée (true) ou retirée (false) */
     public function permissionOverrides(?string $pharmacyId = null): array
     {
+        // Code mis à jour avant « php artisan migrate » : on s'en tient aux droits du rôle
+        static $ready = null;
+        if (! ($ready ??= \Illuminate\Support\Facades\Schema::hasTable('permission_user'))) {
+            return [];
+        }
+
         return \Illuminate\Support\Facades\DB::table('permission_user')
             ->join('permissions', 'permissions.id', '=', 'permission_user.permission_id')
             ->where('user_id', $this->id)->where('pharmacy_id', $pharmacyId ?? $this->pharmacy_id)
