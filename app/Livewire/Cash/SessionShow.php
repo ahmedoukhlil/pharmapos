@@ -14,7 +14,7 @@ use Livewire\Component;
  * Rapport de session (imprimable) et validation par un responsable.
  */
 #[Layout('components.layouts.app')]
-#[Title('Rapport de session — PharmaPOS')]
+#[Title('Rapport de session - PharmaPOS')]
 class SessionShow extends Component
 {
     use RequiresReauth;

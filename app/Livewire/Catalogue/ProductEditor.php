@@ -13,7 +13,7 @@ use Livewire\Attributes\Title;
 use Livewire\Component;
 
 #[Layout('components.layouts.app')]
-#[Title('Fiche produit — PharmaPOS')]
+#[Title('Fiche produit - PharmaPOS')]
 class ProductEditor extends Component
 {
     use RequiresReauth;

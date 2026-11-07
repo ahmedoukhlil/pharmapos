@@ -5,7 +5,7 @@
     <x-nav :register="$registerCode" />
 
     <main class="mx-auto max-w-4xl space-y-4 p-4">
-        <h1 class="text-xl font-semibold">Retour client — {{ $this->register?->name }}</h1>
+        <h1 class="text-xl font-semibold">Retour client - {{ $this->register?->name }}</h1>
 
         @if (! $canRefund)
             <p class="rounded-lg bg-amber-50 px-4 py-2 text-sm text-amber-900">Vous n'avez pas le droit d'effectuer des retours. Faites appel à un pharmacien.</p>
@@ -33,7 +33,7 @@
 
         @if ($this->lastReturn)
             <p class="rounded-lg bg-emerald-50 px-4 py-2 text-sm text-emerald-800" role="status">
-                Avoir {{ $this->lastReturn->credit_note_number }} enregistré — remboursé {{ number_format($this->lastReturn->total, 2, ',', ' ') }} MRU ·
+                Avoir {{ $this->lastReturn->credit_note_number }} enregistré - remboursé {{ number_format($this->lastReturn->total, 2, ',', ' ') }} MRU ·
                 <a href="{{ route('returns.show', $this->lastReturn) }}" target="ticket" class="underline">imprimer l'avoir</a>
             </p>
         @endif

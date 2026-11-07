@@ -11,7 +11,7 @@
         <div class="flex flex-wrap items-center gap-3">
             <a href="{{ route('invoices.index') }}" class="text-sm text-emerald-800 hover:underline">← Factures</a>
             @if ($invoice)
-                <h1 class="text-xl font-semibold">Facture {{ $invoice->supplier_invoice_number }} — {{ $invoice->supplier->name }}</h1>
+                <h1 class="text-xl font-semibold">Facture {{ $invoice->supplier_invoice_number }} - {{ $invoice->supplier->name }}</h1>
                 <span class="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium">{{ $statuses[$invoice->status] }}</span>
                 @if ($invoice->status === 'open' && (float) $invoice->paid_amount == 0)
                     <button wire:click="cancel" wire:confirm="Annuler cette facture ?" class="ms-auto rounded-lg px-3 py-2 text-sm text-red-700 hover:bg-red-50">Annuler la facture</button>
@@ -115,7 +115,7 @@
                                 <tr @class(['bg-amber-50/50' => $l->anomalies])>
                                     <td class="px-3 py-2 font-mono text-xs">{{ $l->receipt }} @if ($l->order) <div class="text-slate-500">{{ $l->order }}</div> @endif</td>
                                     <td class="px-3 py-2">{{ $l->product }} <span class="font-mono text-xs text-slate-500">{{ $l->sku }}</span></td>
-                                    <td class="px-3 py-2 text-end">{{ $l->ordered ?? '—' }}</td>
+                                    <td class="px-3 py-2 text-end">{{ $l->ordered ?? '-' }}</td>
                                     <td class="px-3 py-2 text-end">{{ $l->received }}</td>
                                     <td class="px-3 py-2 text-end">{{ $l->invoiceable }}</td>
                                     <td class="px-3 py-2 text-end">{{ $money($l->unit_price) }}</td>

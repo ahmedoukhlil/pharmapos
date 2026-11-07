@@ -28,7 +28,7 @@ use Livewire\Component;
  * Les montants affichés sont indicatifs ; SaleService recalcule et contrôle tout côté serveur.
  */
 #[Layout('components.layouts.app')]
-#[Title('Caisse — PharmaPOS')]
+#[Title('Caisse - PharmaPOS')]
 class Checkout extends Component
 {
     use RequiresReauth;

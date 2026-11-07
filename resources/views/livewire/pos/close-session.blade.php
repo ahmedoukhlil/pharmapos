@@ -1,10 +1,10 @@
-@php $fmt = fn (?int $c) => $c === null ? '—' : number_format($c / 100, 2, ',', ' '); @endphp
+@php $fmt = fn (?int $c) => $c === null ? '-' : number_format($c / 100, 2, ',', ' '); @endphp
 
 <div class="min-h-screen">
     <x-nav :register="$registerCode" />
 
     <main class="mx-auto max-w-4xl space-y-4 p-4">
-        <h1 class="text-xl font-semibold">Clôture — {{ $this->register?->name ?? 'caisse inconnue' }}</h1>
+        <h1 class="text-xl font-semibold">Clôture - {{ $this->register?->name ?? 'caisse inconnue' }}</h1>
 
         @if ($error)
             <p class="rounded-lg bg-red-50 px-4 py-2 text-sm text-red-800" role="alert">{{ $error }}</p>

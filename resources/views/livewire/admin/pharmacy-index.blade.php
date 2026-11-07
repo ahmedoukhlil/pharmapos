@@ -33,7 +33,7 @@
             @php [$pName, $pCode, $login, $password] = $credentials; @endphp
             <section class="rounded-xl bg-emerald-50 p-4 text-sm ring-1 ring-emerald-200">
                 <div class="flex items-start gap-2">
-                    <p class="font-semibold text-emerald-900">Nouveau mot de passe provisoire — {{ $pName }}</p>
+                    <p class="font-semibold text-emerald-900">Nouveau mot de passe provisoire - {{ $pName }}</p>
                     <button wire:click="$set('credentials', null)" class="ms-auto text-slate-500 hover:text-slate-800" title="Fermer">✕</button>
                 </div>
                 <p class="mt-1">Code <span class="font-mono font-semibold">{{ $pCode }}</span> · identifiant <span class="font-mono font-semibold">{{ $login }}</span>
@@ -68,7 +68,7 @@
                                 <span class="rounded-full px-2 py-0.5 text-xs font-medium {{ $state[1] }}">{{ $state[0] }}</span>
                             </div>
                             <p class="text-sm text-slate-500">
-                                {{ $p->city ?: '—' }}{{ $p->phone ? ' · '.$p->phone : '' }}
+                                {{ $p->city ?: '-' }}{{ $p->phone ? ' · '.$p->phone : '' }}
                                 · {{ $p->plan ?: 'Sans formule' }}
                                 · {{ $p->subscription_ends_at ? 'échéance '.$p->subscription_ends_at->format('d/m/Y') : 'sans échéance' }}
                             </p>
@@ -79,7 +79,7 @@
                         <dl class="grid grid-cols-3 gap-3 rounded-lg bg-slate-50 p-2 text-sm sm:shrink-0 sm:gap-4 sm:bg-transparent sm:p-0">
                             <div><dt class="text-xs text-slate-500">Utilisateurs</dt><dd class="font-semibold tabular-nums">{{ $p->users_count }}</dd></div>
                             <div><dt class="text-xs text-slate-500">Ventes 30 j</dt><dd class="font-semibold tabular-nums">{{ $p->sales_30d }} <span class="block font-normal text-slate-500 sm:inline">{{ $money($p->revenue_30d) }} MRU</span></dd></div>
-                            <div><dt class="text-xs text-slate-500">Dernière vente</dt><dd class="font-semibold">{{ $p->last_sale_at ? \Illuminate\Support\Carbon::parse($p->last_sale_at)->diffForHumans() : '—' }}</dd></div>
+                            <div><dt class="text-xs text-slate-500">Dernière vente</dt><dd class="font-semibold">{{ $p->last_sale_at ? \Illuminate\Support\Carbon::parse($p->last_sale_at)->diffForHumans() : '-' }}</dd></div>
                         </dl>
                     </div>
 
@@ -92,7 +92,7 @@
                                         <tr wire:key="u-{{ $u->id }}" class="flex flex-wrap items-center gap-x-2 py-2 sm:table-row">
                                             <td class="font-medium sm:py-1.5 sm:font-normal">{{ $u->name }}</td>
                                             <td class="font-mono">{{ $u->username }}</td>
-                                            <td class="w-full text-slate-600 sm:w-auto">{{ $u->roles->pluck('name')->implode(', ') ?: '—' }}</td>
+                                            <td class="w-full text-slate-600 sm:w-auto">{{ $u->roles->pluck('name')->implode(', ') ?: '-' }}</td>
                                             <td class="text-slate-600">{{ $u->is_active ? 'Actif' : 'Désactivé' }}{{ $u->must_change_password ? ' · mot de passe provisoire' : '' }}</td>
                                             <td class="ms-auto text-end">
                                                 <button wire:click="resetUser('{{ $u->id }}')" wire:confirm="Générer un mot de passe provisoire pour {{ $u->name }} ({{ $u->username }}) ?"

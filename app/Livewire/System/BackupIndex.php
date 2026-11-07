@@ -10,7 +10,7 @@ use Livewire\Component;
 use Livewire\WithPagination;
 
 #[Layout('components.layouts.app')]
-#[Title('Sauvegardes — PharmaPOS')]
+#[Title('Sauvegardes - PharmaPOS')]
 class BackupIndex extends Component
 {
     use WithPagination;

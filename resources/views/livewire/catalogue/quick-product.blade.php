@@ -15,7 +15,7 @@
                     <div>
                         <h2 class="text-lg font-semibold">Nouveau produit</h2>
                         @if ($source)
-                            <p class="text-sm text-slate-500">Pré-rempli depuis « {{ $source }} » — vérifiez avant d'enregistrer.</p>
+                            <p class="text-sm text-slate-500">Pré-rempli depuis « {{ $source }} » - vérifiez avant d'enregistrer.</p>
                         @else
                             <p class="text-sm text-slate-500">L'essentiel pour vendre ; le reste est dans « Plus d'options » ou sur la fiche ensuite.</p>
                         @endif
@@ -112,7 +112,7 @@
                             <label for="qp-cat" class="font-medium">Catégorie</label>
                             <div class="flex gap-2">
                                 <select id="qp-cat" wire:model="form.category_id" class="{{ $input }} min-w-0">
-                                    <option value="">—</option>
+                                    <option value="">-</option>
                                     @foreach ($categories as $c) <option value="{{ $c->id }}">{{ $c->name }}</option> @endforeach
                                 </select>
                                 <input wire:model="newCategory" wire:keydown.enter.prevent="addCategory" placeholder="Nouvelle" class="{{ $input }} max-w-28">

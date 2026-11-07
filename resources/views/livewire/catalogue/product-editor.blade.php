@@ -2,7 +2,7 @@
     $statuses = ['active' => 'Actif', 'suspended' => 'Suspendu', 'withdrawn' => 'Retiré', 'archived' => 'Archivé'];
     $priceTypes = ['purchase' => 'Achat', 'sale' => 'Vente', 'unit_sale' => 'Unité'];
     $input = 'mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2 text-sm disabled:bg-slate-100';
-    $money = fn ($v) => $v === null ? '—' : number_format((float) $v, 2, ',', ' ');
+    $money = fn ($v) => $v === null ? '-' : number_format((float) $v, 2, ',', ' ');
 @endphp
 
 <div class="min-h-screen">
@@ -73,7 +73,7 @@
                     <label for="cat" class="text-sm font-medium">Catégorie</label>
                     <div class="flex gap-2">
                         <select id="cat" wire:model="form.category_id" class="{{ $input }}">
-                            <option value="">—</option>
+                            <option value="">-</option>
                             @foreach ($categories as $c)
                                 <option value="{{ $c->id }}">{{ $c->name }}</option>
                             @endforeach
@@ -215,7 +215,7 @@
                                 <summary class="cursor-pointer">Historique des prix</summary>
                                 <ul class="mt-1 space-y-0.5">
                                     @foreach ($p->priceHistory as $h)
-                                        <li>{{ \Illuminate\Support\Carbon::parse($h->effective_at)->format('d/m/Y H:i') }} — {{ $priceTypes[$h->price_type] }} : {{ $money($h->old_price) }} → {{ $money($h->new_price) }} ({{ $h->reason }})</li>
+                                        <li>{{ \Illuminate\Support\Carbon::parse($h->effective_at)->format('d/m/Y H:i') }} - {{ $priceTypes[$h->price_type] }} : {{ $money($h->old_price) }} → {{ $money($h->new_price) }} ({{ $h->reason }})</li>
                                     @endforeach
                                 </ul>
                             </details>

@@ -26,7 +26,7 @@ use Livewire\WithFileUploads;
  * Le brouillon est enregistré en base pour ne pas perdre une longue saisie.
  */
 #[Layout('components.layouts.app')]
-#[Title('Réception — PharmaPOS')]
+#[Title('Réception - PharmaPOS')]
 class ReceiptEditor extends Component
 {
     use WithFileUploads;

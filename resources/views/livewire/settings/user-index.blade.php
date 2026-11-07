@@ -41,7 +41,7 @@
                     <span class="text-sm font-medium">Rôle *</span>
                     <select wire:model="form.role" class="{{ $input }}">
                         @foreach ($roles as $r)
-                            <option value="{{ $r->slug }}">{{ $r->name }}{{ $r->max_discount_percent > 0 ? ' — remise jusqu\'à '.(float) $r->max_discount_percent.' %' : '' }}</option>
+                            <option value="{{ $r->slug }}">{{ $r->name }}{{ $r->max_discount_percent > 0 ? ' - remise jusqu\'à '.(float) $r->max_discount_percent.' %' : '' }}</option>
                         @endforeach
                     </select>
                     @error('role') <span class="text-xs text-red-700">{{ $message }}</span> @enderror
@@ -77,7 +77,7 @@
                                 @if ($u->must_change_password && $u->is_active) <span class="ms-1 rounded-full bg-amber-100 px-2 text-xs text-amber-800">mot de passe provisoire</span> @endif
                             </td>
                             <td class="px-3 py-2 font-mono text-xs">{{ $u->username }}</td>
-                            <td class="px-3 py-2">{{ $u->roleAssignments->first()?->role->name ?? '—' }}</td>
+                            <td class="px-3 py-2">{{ $u->roleAssignments->first()?->role->name ?? '-' }}</td>
                             <td class="px-3 py-2 text-slate-500">{{ $u->last_login_at?->format('d/m/Y H:i') ?? 'Jamais' }}</td>
                             <td class="space-x-3 whitespace-nowrap px-3 py-2 text-end">
                                 <button wire:click="edit('{{ $u->id }}')" class="text-emerald-800 hover:underline">Modifier</button>

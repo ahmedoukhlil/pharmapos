@@ -34,7 +34,7 @@
                         <tr wire:key="{{ $o->id }}" class="hover:bg-slate-50">
                             <td class="px-3 py-2 font-mono"><a href="{{ route('orders.edit', $o) }}" class="text-emerald-800 hover:underline">{{ $o->number }}</a></td>
                             <td class="px-3 py-2">{{ $o->supplier->name }}</td>
-                            <td class="px-3 py-2">{{ $o->ordered_at?->format('d/m/Y') ?? '—' }}</td>
+                            <td class="px-3 py-2">{{ $o->ordered_at?->format('d/m/Y') ?? '-' }}</td>
                             <td class="px-3 py-2 text-end">{{ $o->lines_count }}</td>
                             <td class="px-3 py-2 text-end">{{ number_format((float) $o->total_amount, 2, ',', ' ') }}</td>
                             <td class="px-3 py-2">{{ $statuses[$o->status] }}</td>

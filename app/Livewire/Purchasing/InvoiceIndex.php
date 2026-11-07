@@ -15,7 +15,7 @@ use Livewire\Component;
 use Livewire\WithPagination;
 
 #[Layout('components.layouts.app')]
-#[Title('Factures fournisseurs — PharmaPOS')]
+#[Title('Factures fournisseurs - PharmaPOS')]
 class InvoiceIndex extends Component
 {
     use WithPagination;

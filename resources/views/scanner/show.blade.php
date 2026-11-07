@@ -8,7 +8,7 @@
     <link rel="manifest" href="/manifest.webmanifest">
     <link rel="icon" type="image/png" href="/images/icon-64.png">
     <link rel="apple-touch-icon" href="/images/icon-192.png">
-    <title>Scanner — PharmaPOS</title>
+    <title>Scanner - PharmaPOS</title>
     @vite(['resources/css/app.css', 'resources/js/barcode.js'])
 </head>
 <body class="min-h-screen bg-slate-900 text-white antialiased">
@@ -185,8 +185,8 @@
         const ok = ack.status === 'received';
         const li = document.createElement('li');
         li.className = `rounded px-2 py-1 ${ok ? 'bg-emerald-900/60' : 'bg-red-900/60'}`;
-        const detail = ack.payload ? ` — ${ack.payload.lot_number ? `lot ${ack.payload.lot_number}, ${ack.payload.quantity_packs} bte(s)` : `compté ${ack.payload.quantity}`}` : '';
-        li.textContent = ok ? `✓ ${ack.product ?? code}${detail}` :`✗ ${code} — ${ack.status === 'unknown_product' ? 'produit inconnu' : (ack.message ?? 'refusé')}`;
+        const detail = ack.payload ? ` - ${ack.payload.lot_number ? `lot ${ack.payload.lot_number}, ${ack.payload.quantity_packs} bte(s)` : `compté ${ack.payload.quantity}`}` : '';
+        li.textContent = ok ? `✓ ${ack.product ?? code}${detail}` :`✗ ${code} - ${ack.status === 'unknown_product' ? 'produit inconnu' : (ack.message ?? 'refusé')}`;
         $('log').prepend(li);
         while ($('log').children.length > 15) $('log').lastChild.remove();
         feedback(ok);
@@ -249,8 +249,8 @@
             const box = $('entry-lines');
             box.replaceChildren();
             const choices = [
-                ...p.lines.map((l) => ({ key: `line:${l.line_id}`, text: `Lot ${l.lot} · ${l.expiry} · ${l.location}${l.counted !== null ? ` — compté : ${l.counted}` : ''}` })),
-                ...p.other_batches.map((b) => ({ key: `batch:${b.batch_id}`, text: `Lot ${b.lot} · ${b.expiry} — trouvé hors liste` })),
+                ...p.lines.map((l) => ({ key: `line:${l.line_id}`, text: `Lot ${l.lot} · ${l.expiry} · ${l.location}${l.counted !== null ? ` - compté : ${l.counted}` : ''}` })),
+                ...p.other_batches.map((b) => ({ key: `batch:${b.batch_id}`, text: `Lot ${b.lot} · ${b.expiry} - trouvé hors liste` })),
             ];
             if (!choices.length) {
                 entry = null;

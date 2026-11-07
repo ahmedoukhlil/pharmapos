@@ -24,8 +24,8 @@
                 </label>
                 <fieldset class="space-y-1 text-sm">
                     <legend class="font-medium">Type</legend>
-                    <label class="flex items-center gap-2"><input type="radio" wire:model.live="form.is_cash" value="1" @checked($form['is_cash'])> Espèces — rendu monnaie autorisé, compté au fond de caisse</label>
-                    <label class="flex items-center gap-2"><input type="radio" wire:model.live="form.is_cash" value="0" @checked(! $form['is_cash'])> Électronique (mobile money, carte, virement) — montant exact, pas de rendu</label>
+                    <label class="flex items-center gap-2"><input type="radio" wire:model.live="form.is_cash" value="1" @checked($form['is_cash'])> Espèces - rendu monnaie autorisé, compté au fond de caisse</label>
+                    <label class="flex items-center gap-2"><input type="radio" wire:model.live="form.is_cash" value="0" @checked(! $form['is_cash'])> Électronique (mobile money, carte, virement) - montant exact, pas de rendu</label>
                     @error('is_cash') <span class="text-xs text-red-700">{{ $message }}</span> @enderror
                 </fieldset>
                 @unless ($form['is_cash'])

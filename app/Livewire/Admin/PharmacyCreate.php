@@ -14,7 +14,7 @@ use Livewire\Component;
  * provisoire, affiché une seule fois, qu'il devra changer à sa première connexion.
  */
 #[Layout('components.layouts.app')]
-#[Title('Nouvelle pharmacie — PharmaPOS Admin')]
+#[Title('Nouvelle pharmacie - PharmaPOS Admin')]
 class PharmacyCreate extends Component
 {
     public const STEPS = [1 => 'Officine', 2 => 'Propriétaire', 3 => 'Caisses et paiements', 4 => 'Vérification'];

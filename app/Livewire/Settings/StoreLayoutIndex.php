@@ -12,7 +12,7 @@ use Livewire\Attributes\Title;
 use Livewire\Component;
 
 #[Layout('components.layouts.app')]
-#[Title('Caisses et emplacements — PharmaPOS')]
+#[Title('Caisses et emplacements - PharmaPOS')]
 class StoreLayoutIndex extends Component
 {
     /** Formulaire ouvert : ['register'|'location', id|''] ou null. */

@@ -50,12 +50,12 @@ php artisan test
 - [x] Scanner smartphone : modes inventaire et réception
 - [ ] Scanner smartphone : mode consultation (prix, stock)
 - [x] Rapports essentiels : ventes, stock, péremptions et pertes, caisse ; export CSV ; tableau de bord (indicateurs comparés, graphiques)
-- [x] Sauvegardes locales chiffrées (AES-256-GCM) toutes les 15 min, copie sur support distinct, rétention, test de restauration quotidien, alerte d'échec — configurer `BACKUP_KEY` (`php artisan pharmapos:backup --generate-key`), `BACKUP_SECONDARY_PATH` et lancer `php artisan schedule:work`
+- [x] Sauvegardes locales chiffrées (AES-256-GCM) toutes les 15 min, copie sur support distinct, rétention, test de restauration quotidien, alerte d'échec - configurer `BACKUP_KEY` (`php artisan pharmapos:backup --generate-key`), `BACKUP_SECONDARY_PATH` et lancer `php artisan schedule:work`
 - [x] Paramétrage des modes de paiement (ajout, ordre, activation, suppression si jamais utilisé)
 - [x] Assistant de premier démarrage (/installation) et gestion des utilisateurs (mot de passe provisoire, changement obligatoire, désactivation, garde-fous propriétaire)
 - [x] Paramétrage des caisses et des emplacements de stock (code auto, imprimante 58/80 mm, garde-fous stock et sessions)
-- [x] SaaS : console super-administrateur (/admin) — création des pharmacies, abonnement et échéance, suspension, réinitialisation du propriétaire ; connexion par code pharmacie + identifiant ; premier démarrage = compte super-administrateur (ou `php artisan pharmapos:super-admin <identifiant>`)
-- [x] Lecture des bordereaux de livraison (photos / PDF multi-pages) par l'API Claude : tableau à contrôler (reconnu / à vérifier / inconnu, alertes prix et péremption, total), ajout aux lignes de réception, mémorisation des désignations par fournisseur — clé API et modèle dans la console admin → Paramètres (chiffrés ; `.env` en secours)
+- [x] SaaS : console super-administrateur (/admin) - création des pharmacies, abonnement et échéance, suspension, réinitialisation du propriétaire ; connexion par code pharmacie + identifiant ; premier démarrage = compte super-administrateur (ou `php artisan pharmapos:super-admin <identifiant>`)
+- [x] Lecture des bordereaux de livraison (photos / PDF multi-pages) par l'API Claude : tableau à contrôler (reconnu / à vérifier / inconnu, alertes prix et péremption, total), ajout aux lignes de réception, mémorisation des désignations par fournisseur - clé API et modèle dans la console admin → Paramètres (chiffrés ; `.env` en secours)
 - [x] Création rapide de produit en un écran (produit + présentation + prix + code-barres, options repliées), depuis le catalogue ou depuis une ligne inconnue d'un bordereau (pré-remplie : nom, dosage, forme, conditionnement, prix) ; coefficient de marge par défaut (médicaments / parapharmacie) pour proposer le prix de vente
 - [x] Marge par tranches de prix d'achat (jusqu'à 6, distinctes pour médicaments et parapharmacie) pour le prix de vente proposé
 - [ ] Synchronisation cloud

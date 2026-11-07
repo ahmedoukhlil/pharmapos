@@ -17,7 +17,7 @@ use Livewire\Component;
  * Clôture de la session ouverte d'une caisse : mouvements d'espèces, comptage, écart (POS-10).
  */
 #[Layout('components.layouts.app')]
-#[Title('Clôture de caisse — PharmaPOS')]
+#[Title('Clôture de caisse - PharmaPOS')]
 class CloseSession extends Component
 {
     use RequiresReauth;

@@ -10,7 +10,7 @@ use Livewire\Component;
 use Livewire\WithFileUploads;
 
 #[Layout('components.layouts.app')]
-#[Title('Import catalogue — PharmaPOS')]
+#[Title('Import catalogue - PharmaPOS')]
 class CatalogueImport extends Component
 {
     use WithFileUploads;

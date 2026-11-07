@@ -12,7 +12,7 @@ use Livewire\Attributes\Url;
 use Livewire\Component;
 
 #[Layout('components.layouts.app')]
-#[Title('Utilisateurs — PharmaPOS')]
+#[Title('Utilisateurs - PharmaPOS')]
 class UserIndex extends Component
 {
     use RequiresReauth;

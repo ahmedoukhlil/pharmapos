@@ -4,7 +4,7 @@
     $fmt = fn ($v) => match (true) {
         is_int($v) => number_format($v, 0, ',', ' '),
         is_float($v) => number_format($v, 2, ',', ' '),
-        default => $v ?? '—',
+        default => $v ?? '-',
     };
     $select = 'rounded-lg border border-slate-300 px-3 py-1.5 text-sm';
 @endphp
@@ -67,7 +67,7 @@
             @endif
         </div>
 
-        <p class="hidden text-sm print:block">{{ $reports[$report] }} — {{ $periodic ? \Illuminate\Support\Carbon::parse($from)->format('d/m/Y').' au '.\Illuminate\Support\Carbon::parse($to)->format('d/m/Y') : 'au '.now()->format('d/m/Y H:i') }}</p>
+        <p class="hidden text-sm print:block">{{ $reports[$report] }} - {{ $periodic ? \Illuminate\Support\Carbon::parse($from)->format('d/m/Y').' au '.\Illuminate\Support\Carbon::parse($to)->format('d/m/Y') : 'au '.now()->format('d/m/Y H:i') }}</p>
 
         @if ($dashboard)
             @include('livewire.reports.dashboard', ['d' => $dashboard])

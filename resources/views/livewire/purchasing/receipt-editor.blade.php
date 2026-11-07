@@ -117,7 +117,7 @@
             @endphp
             <section class="space-y-3 rounded-lg border-2 border-emerald-600 bg-white p-4 shadow-sm">
                 <div class="flex flex-wrap items-baseline gap-x-4 gap-y-1">
-                    <h2 class="text-lg font-semibold">Bordereau lu — à contrôler</h2>
+                    <h2 class="text-lg font-semibold">Bordereau lu - à contrôler</h2>
                     <span class="text-sm text-slate-600">
                         @if ($note['number']) N° {{ $note['number'] }} @endif
                         @if ($note['date']) · {{ $note['date'] }} @endif
@@ -148,7 +148,7 @@
                                     </td>
                                     <td class="px-2 py-2 align-top">
                                         <select wire:model.live="note.lines.{{ $i }}.presentation_id" class="w-64 rounded border border-slate-300 px-2 py-1">
-                                            <option value="">— Choisir le produit —</option>
+                                            <option value="">- Choisir le produit -</option>
                                             @if ($l['candidates'])
                                                 <optgroup label="Suggestions">
                                                     @foreach ($l['candidates'] as $c) <option value="{{ $c['id'] }}">{{ $c['label'] }}</option> @endforeach
@@ -156,7 +156,7 @@
                                             @endif
                                             <optgroup label="Catalogue">
                                                 @foreach ($this->catalogue as $p)
-                                                    <option value="{{ $p->id }}">{{ $p->medicine->brand_name }} {{ $p->medicine->strength }} — {{ $p->label }}</option>
+                                                    <option value="{{ $p->id }}">{{ $p->medicine->brand_name }} {{ $p->medicine->strength }} - {{ $p->label }}</option>
                                                 @endforeach
                                             </optgroup>
                                         </select>
@@ -181,7 +181,7 @@
                 <div class="flex flex-wrap items-center gap-3 text-sm">
                     <span>Total lu : <strong class="tabular-nums">{{ number_format($readTotal, 2, ',', ' ') }}</strong> MRU</span>
                     @if ($note['total'] > 0)
-                        <span @class(['text-red-700 font-semibold' => $diff])>Total imprimé : {{ number_format($note['total'], 2, ',', ' ') }} MRU {{ $diff ? '— écart, vérifiez les lignes' : '✓' }}</span>
+                        <span @class(['text-red-700 font-semibold' => $diff])>Total imprimé : {{ number_format($note['total'], 2, ',', ' ') }} MRU {{ $diff ? '- écart, vérifiez les lignes' : '✓' }}</span>
                     @endif
                     <button wire:click="discardNote" wire:confirm="Abandonner la lecture de ce bordereau ?" class="ms-auto rounded-lg border border-slate-300 px-3 py-2">Abandonner</button>
                     <button wire:click="applyNote" class="rounded-lg bg-emerald-700 px-4 py-2 font-semibold text-white hover:bg-emerald-800">Ajouter à la réception</button>

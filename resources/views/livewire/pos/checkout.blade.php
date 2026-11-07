@@ -52,7 +52,7 @@
                     <label for="search" class="sr-only">Rechercher ou scanner</label>
                     <div class="flex gap-2">
                     <input id="search" x-ref="search" wire:model.live.debounce.200ms="search" x-on:keydown.enter.prevent="$wire.addFromSearch($el.value); $el.value = ''"
-                           x-init="$nextTick(() => $el.focus())" autocomplete="off" placeholder="Scanner ou rechercher (DCI, nom, code, SKU) — F2"
+                           x-init="$nextTick(() => $el.focus())" autocomplete="off" placeholder="Scanner ou rechercher (DCI, nom, code, SKU) - F2"
                            class="min-w-0 flex-1 rounded-lg border border-slate-300 bg-white px-4 py-3 text-lg shadow-sm focus:border-emerald-600 focus:ring-2 focus:ring-emerald-200 focus:outline-none">
 
                     {{-- Caisse ouverte sur un téléphone : scanner avec la caméra de ce même téléphone --}}
@@ -114,7 +114,7 @@
                             <p>Panier vide. Scannez un produit pour commencer.</p>
                             @if ($this->lastSale)
                                 <p class="text-sm text-emerald-700">
-                                    Vente {{ $this->lastSale->ticket_number }} enregistrée —
+                                    Vente {{ $this->lastSale->ticket_number }} enregistrée -
                                     rendu {{ number_format($this->lastSale->change_given, 2, ',', ' ') }} MRU ·
                                     <a href="{{ route('tickets.show', $this->lastSale) }}" target="ticket" class="underline">ticket</a>
                                 </p>
@@ -245,7 +245,7 @@
                             class="rounded-lg border border-amber-400 px-3 py-3 text-sm text-amber-900 hover:bg-amber-50 disabled:opacity-40">Attente</button>
                     <button wire:click="checkout" wire:loading.attr="disabled" @disabled(! $this->lines || ! $this->can['sell'])
                             class="flex-1 rounded-lg bg-emerald-700 px-4 py-3 text-lg font-semibold text-white hover:bg-emerald-800 disabled:opacity-40">
-                        <span wire:loading.remove wire:target="checkout">Encaisser — F9</span>
+                        <span wire:loading.remove wire:target="checkout">Encaisser - F9</span>
                         <span wire:loading wire:target="checkout">Validation…</span>
                     </button>
                 </div>

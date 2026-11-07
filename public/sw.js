@@ -1,5 +1,5 @@
 /*
- * PharmaPOS — service worker.
+ * PharmaPOS - service worker.
  * Les pages et Livewire passent toujours par le réseau (données de caisse à jour, jamais servies en cache).
  * Seuls les fichiers compilés (/build/, noms versionnés) et les icônes sont gardés : démarrage rapide.
  * Hors connexion, une page explique qu'il faut retrouver le réseau.

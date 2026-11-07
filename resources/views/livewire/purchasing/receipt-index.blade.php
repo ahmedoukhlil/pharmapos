@@ -34,7 +34,7 @@
                         <tr wire:key="{{ $r->id }}" class="hover:bg-slate-50">
                             <td class="px-3 py-2 font-mono"><a href="{{ route('receipts.edit', $r) }}" class="text-emerald-800 hover:underline">{{ $r->number }}</a></td>
                             <td class="px-3 py-2">{{ $r->supplier->name }}</td>
-                            <td class="px-3 py-2">{{ $r->delivery_note_ref ?? '—' }}</td>
+                            <td class="px-3 py-2">{{ $r->delivery_note_ref ?? '-' }}</td>
                             <td class="px-3 py-2">{{ $r->received_at->format('d/m/Y H:i') }} · {{ $r->receiver->name }}</td>
                             <td class="px-3 py-2 text-end">{{ $r->lines_count }}</td>
                             <td class="px-3 py-2">{{ $labels[$r->status] }}</td>

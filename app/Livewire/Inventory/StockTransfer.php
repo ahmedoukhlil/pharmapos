@@ -18,7 +18,7 @@ use Livewire\Component;
  * (Réserve → Rayon…), puis la quantité par lot, le plus proche de la péremption en premier.
  */
 #[Layout('components.layouts.app')]
-#[Title('Transfert de stock — PharmaPOS')]
+#[Title('Transfert de stock - PharmaPOS')]
 class StockTransfer extends Component
 {
     public string $search = '';

@@ -92,15 +92,15 @@
                                         <span class="block text-xs text-slate-500">{{ $perPack }} / boîte</span>
                                     @endif
                                 @else
-                                    <span class="tabular-nums">{{ $final ?? '—' }}</span>
+                                    <span class="tabular-nums">{{ $final ?? '-' }}</span>
                                     @if ($line->recount_quantity !== null)
                                         <span class="block text-xs text-slate-500">recompté (1er : {{ $line->counted_quantity }})</span>
                                     @endif
                                 @endif
                             </td>
                             @if ($showTheoretical)
-                                <td class="px-3 py-2 text-end font-medium tabular-nums">{{ $line->variance > 0 ? '+' : '' }}{{ $line->variance ?? '—' }}</td>
-                                <td class="px-3 py-2 text-end tabular-nums">{{ $line->variance_value !== null ? $money($line->variance_value) : '—' }}</td>
+                                <td class="px-3 py-2 text-end font-medium tabular-nums">{{ $line->variance > 0 ? '+' : '' }}{{ $line->variance ?? '-' }}</td>
+                                <td class="px-3 py-2 text-end tabular-nums">{{ $line->variance_value !== null ? $money($line->variance_value) : '-' }}</td>
                             @endif
                         </tr>
                     @empty

@@ -5,7 +5,7 @@
 <main class="flex min-h-screen items-start justify-center p-4 sm:items-center">
     <div class="w-full max-w-md space-y-5">
         <div class="text-center">
-            <img src="/images/logo.png" alt="PharmaPOS — Gestion de Pharmacie" class="mx-auto h-28 w-28">
+            <img src="/images/logo.png" alt="PharmaPOS - Gestion de Pharmacie" class="mx-auto h-28 w-28">
             <h1 class="mt-2 text-xl font-semibold">Bienvenue sur PharmaPOS</h1>
             <p class="text-sm text-slate-500">Créez le compte super-administrateur. Il gère les pharmacies clientes et leurs abonnements.</p>
         </div>

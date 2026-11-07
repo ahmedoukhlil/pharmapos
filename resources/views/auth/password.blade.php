@@ -1,4 +1,4 @@
-<x-layouts.app title="Mot de passe — PharmaPOS">
+<x-layouts.app title="Mot de passe - PharmaPOS">
     @unless ($forced) <x-nav /> @endunless
 
     @php $field = 'mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 focus:border-emerald-600 focus:ring-2 focus:ring-emerald-200 focus:outline-none'; @endphp

@@ -24,7 +24,7 @@ use Livewire\WithPagination;
  * Les quantités sont saisies dans l'unité de vente du ticket (boîte ou unité).
  */
 #[Layout('components.layouts.app')]
-#[Title('Retours — PharmaPOS')]
+#[Title('Retours - PharmaPOS')]
 class Returns extends Component
 {
     use RequiresReauth;

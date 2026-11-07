@@ -35,7 +35,7 @@
                     </div>
                 </div>
                 <p x-show="starting && !message" class="absolute inset-x-0 bottom-3 text-center text-sm text-slate-300">Ouverture de la caméra…</p>
-                <p x-show="!starting && !message" class="absolute inset-x-0 bottom-3 text-center text-sm text-white/90">Placez le code-barres dans le cadre, à 15–20 cm</p>
+                <p x-show="!starting && !message" class="absolute inset-x-0 bottom-3 text-center text-sm text-white/90">Placez le code-barres dans le cadre, à 15-20 cm</p>
                 <p x-show="engine" x-text="engine" class="absolute end-2 top-2 rounded bg-black/50 px-1.5 text-[10px] text-white/70"></p>
                 <p x-show="message" x-text="message" class="absolute inset-x-3 top-3 rounded-lg bg-red-600 px-3 py-2 text-sm"></p>
             </div>

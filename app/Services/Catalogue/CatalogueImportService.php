@@ -105,7 +105,7 @@ class CatalogueImportService
         $result = ['created' => 0, 'skipped' => 0, 'errors' => 0, 'lines' => []];
 
         foreach ($rows as ['line' => $line, 'data' => $d]) {
-            $label = trim(($d['brand_name'] ?? '').' '.($d['strength'] ?? '')).' — '.($d['sku'] ?? '?');
+            $label = trim(($d['brand_name'] ?? '').' '.($d['strength'] ?? '')).' - '.($d['sku'] ?? '?');
             $sku = strtoupper(trim((string) ($d['sku'] ?? '')));
 
             if ($sku !== '' && Presentation::where('pharmacy_id', $user->pharmacy_id)->where('sku', $sku)->exists()) {

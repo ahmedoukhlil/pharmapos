@@ -15,7 +15,7 @@ use Livewire\Component;
  * Console SaaS : pharmacies clientes, activité, abonnement, suspension et dépannage du propriétaire.
  */
 #[Layout('components.layouts.app')]
-#[Title('Pharmacies — PharmaPOS Admin')]
+#[Title('Pharmacies - PharmaPOS Admin')]
 class PharmacyIndex extends Component
 {
     public string $search = '';

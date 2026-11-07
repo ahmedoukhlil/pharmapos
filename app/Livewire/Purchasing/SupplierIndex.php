@@ -9,7 +9,7 @@ use Livewire\Attributes\Title;
 use Livewire\Component;
 
 #[Layout('components.layouts.app')]
-#[Title('Fournisseurs — PharmaPOS')]
+#[Title('Fournisseurs - PharmaPOS')]
 class SupplierIndex extends Component
 {
     /** null = formulaire fermé, '' = nouveau fournisseur, sinon son id. */

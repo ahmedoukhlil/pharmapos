@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="icon" type="image/png" href="/images/icon-64.png">
     <link rel="apple-touch-icon" href="/images/icon-192.png">
-    <title>Scanner — PharmaPOS</title>
+    <title>Scanner - PharmaPOS</title>
     @vite(['resources/css/app.css'])
 </head>
 <body class="flex min-h-screen items-center justify-center bg-slate-900 p-4 text-white">

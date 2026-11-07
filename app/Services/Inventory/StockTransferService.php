@@ -68,7 +68,7 @@ class StockTransferService
                     "Stock insuffisant dans {$allowed[$fromId]->name} pour le lot {$batch->lot_number} : $available unités disponibles.");
             }
 
-            $label = "Transfert {$allowed[$fromId]->name} → {$allowed[$toId]->name}".($reason ? " — $reason" : '');
+            $label = "Transfert {$allowed[$fromId]->name} → {$allowed[$toId]->name}".($reason ? " - $reason" : '');
             foreach ([[$from, -$units, 'transfer_out'], [$balances[$toId], $units, 'transfer_in']] as [$balance, $qty, $type]) {
                 $balance->quantity += $qty;
                 $balance->version++;

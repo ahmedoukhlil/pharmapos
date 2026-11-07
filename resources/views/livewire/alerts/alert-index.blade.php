@@ -31,7 +31,7 @@
             @forelse ($expiring->sortKeys() as $bucket => $rows)
                 <section wire:key="b-{{ $bucket }}" class="overflow-x-auto rounded-lg bg-white shadow-sm">
                     <h2 @class(['px-3 py-2 text-sm font-semibold', 'bg-red-50 text-red-800' => $bucket == 0, 'bg-amber-50 text-amber-800' => $bucket > 0 && $bucket <= 30, 'bg-slate-50' => $bucket > 30])>
-                        {{ $bucket == 0 ? 'Périmés — à retirer de la vente' : "Péremption sous {$bucket} jours" }}
+                        {{ $bucket == 0 ? 'Périmés - à retirer de la vente' : "Péremption sous {$bucket} jours" }}
                         · valeur {{ $money($rows->sum('value')) }} MRU
                     </h2>
                     <table class="w-full text-sm">
@@ -78,7 +78,7 @@
                                 <td class="px-3 py-2"><a href="{{ route('catalogue.edit', $p->medicine_id) }}" class="text-emerald-800 hover:underline">{{ $p->medicine->brand_name }}</a> <span class="font-mono text-xs text-slate-500">{{ $p->sku }}</span></td>
                                 <td class="px-3 py-2 text-end">{{ (int) $p->sellable_quantity <= 0 ? 'Rupture' : (int) $p->sellable_quantity }}</td>
                                 <td class="px-3 py-2 text-end">{{ $p->reorder_threshold }}</td>
-                                <td class="px-3 py-2 text-end">{{ $p->reorder_quantity ? intdiv($p->reorder_quantity, $p->units_per_pack).' boîte(s)' : '—' }}</td>
+                                <td class="px-3 py-2 text-end">{{ $p->reorder_quantity ? intdiv($p->reorder_quantity, $p->units_per_pack).' boîte(s)' : '-' }}</td>
                             </tr>
                         @empty
                             <tr><td colspan="4" class="px-3 py-6 text-center text-slate-500">Aucun produit sous son seuil.</td></tr>

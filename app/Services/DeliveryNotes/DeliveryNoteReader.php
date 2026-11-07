@@ -141,7 +141,7 @@ class DeliveryNoteReader
                     $score++;
                 }
 
-                return ['id' => $p->id, 'label' => trim("{$p->medicine->brand_name} {$p->medicine->strength} — {$p->label}"), 'score' => $score];
+                return ['id' => $p->id, 'label' => trim("{$p->medicine->brand_name} {$p->medicine->strength} - {$p->label}"), 'score' => $score];
             })
             ->sortByDesc('score')->values()->take(5)->all();
     }

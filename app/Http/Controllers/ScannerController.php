@@ -20,7 +20,7 @@ class ScannerController extends Controller
 
     /**
      * Point d'entrée de l'application installée (start_url) : reprend la session active du téléphone,
-     * sinon lit le QR d'appairage avec la caméra — le QR ouvert par l'appareil photo partirait dans le navigateur.
+     * sinon lit le QR d'appairage avec la caméra - le QR ouvert par l'appareil photo partirait dans le navigateur.
      */
     public function home(Request $request)
     {

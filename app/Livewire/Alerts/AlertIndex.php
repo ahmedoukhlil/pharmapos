@@ -9,7 +9,7 @@ use Livewire\Attributes\Url;
 use Livewire\Component;
 
 #[Layout('components.layouts.app')]
-#[Title('Alertes — PharmaPOS')]
+#[Title('Alertes - PharmaPOS')]
 class AlertIndex extends Component
 {
     #[Url]

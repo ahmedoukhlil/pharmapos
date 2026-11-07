@@ -13,7 +13,7 @@
 
         <form wire:submit="save" class="space-y-4 rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-900/5">
             <div>
-                <h2 class="font-semibold">Lecture des bordereaux — API Claude</h2>
+                <h2 class="font-semibold">Lecture des bordereaux - API Claude</h2>
                 <p class="text-sm text-slate-500">Une seule clé pour toutes les pharmacies. Elle est chiffrée en base et n'est jamais réaffichée.</p>
             </div>
 
@@ -27,7 +27,7 @@
                                 class="ms-2 text-red-700 hover:underline">Supprimer</button>
                     @endif
                 @else
-                    <span class="font-semibold text-amber-700">aucune — la lecture des bordereaux est désactivée</span>
+                    <span class="font-semibold text-amber-700">aucune - la lecture des bordereaux est désactivée</span>
                 @endif
             </div>
 
@@ -58,7 +58,7 @@
         </form>
 
         <section class="rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-900/5">
-            <h2 class="font-semibold">Consommation — 30 derniers jours</h2>
+            <h2 class="font-semibold">Consommation - 30 derniers jours</h2>
             <dl class="mt-2 grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
                 <div><dt class="text-xs text-slate-500">Bordereaux lus</dt><dd class="text-xl font-semibold">{{ $usage['reads'] }}</dd></div>
                 <div><dt class="text-xs text-slate-500">Pages</dt><dd class="text-xl font-semibold">{{ $usage['pages'] }}</dd></div>

@@ -67,7 +67,7 @@
             <div>
                 <h1>{{ $p->legal_name ?: $p->name }}</h1>
                 <div class="muted">
-                    {{ $p->address }}@if ($p->city) — {{ $p->city }}@endif<br>
+                    {{ $p->address }}@if ($p->city) - {{ $p->city }}@endif<br>
                     @if ($p->phone)Tél. {{ $p->phone }}@endif @if ($p->nif) · NIF {{ $p->nif }}@endif
                 </div>
             </div>
@@ -81,7 +81,7 @@
 
     {{ $slot }}
 
-    <div class="foot">{{ $p->name }} — {{ $footer ?? $title.($number ? ' '.$number : '') }} — édité le {{ now()->timezone($p->timezone)->format('d/m/Y H:i') }}</div>
+    <div class="foot">{{ $p->name }} - {{ $footer ?? $title.($number ? ' '.$number : '') }} - édité le {{ now()->timezone($p->timezone)->format('d/m/Y H:i') }}</div>
 </div>
 </body>
 </html>

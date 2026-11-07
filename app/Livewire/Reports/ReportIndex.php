@@ -14,7 +14,7 @@ use Livewire\Attributes\Url;
 use Livewire\Component;
 
 #[Layout('components.layouts.app')]
-#[Title('Rapports — PharmaPOS')]
+#[Title('Rapports - PharmaPOS')]
 class ReportIndex extends Component
 {
     #[Url]

@@ -1,4 +1,4 @@
-# PharmaPOS Mauritanie — Product Requirements Document (PRD)
+# PharmaPOS Mauritanie - Product Requirements Document (PRD)
 
 **Version :** 1.1  
 **Date :** 31 octobre 2026  
@@ -41,11 +41,11 @@ Le logiciel soutient les professionnels de pharmacie et ne remplace ni leur juge
 
 ## 3. Périmètre et priorisation
 
-**P0 — Première version pilote :** utilisateurs et permissions ; catalogue médicaments et parapharmacie ; conditionnements ; codes-barres ; caisse ; paiement espèces et mobile déclaratif ; tickets ; sessions de caisse ; achats ; fournisseurs ; réceptions ; lots ; péremptions ; quarantaines ; stocks ; inventaires ; scanner smartphone ; serveur local ; synchronisation cloud ; audit ; sauvegardes ; rapports essentiels.
+**P0 - Première version pilote :** utilisateurs et permissions ; catalogue médicaments et parapharmacie ; conditionnements ; codes-barres ; caisse ; paiement espèces et mobile déclaratif ; tickets ; sessions de caisse ; achats ; fournisseurs ; réceptions ; lots ; péremptions ; quarantaines ; stocks ; inventaires ; scanner smartphone ; serveur local ; synchronisation cloud ; audit ; sauvegardes ; rapports essentiels.
 
-**P1 — Après validation pilote :** gestion avancée des retours fournisseurs ; transferts entre emplacements ; rapports analytiques avancés ; promotions compatibles avec les règles de prix ; gestion avancée des alertes ; tableaux de bord mobiles ; rapprochement manuel des moyens de paiement à partir de données saisies ; export comptable.
+**P1 - Après validation pilote :** gestion avancée des retours fournisseurs ; transferts entre emplacements ; rapports analytiques avancés ; promotions compatibles avec les règles de prix ; gestion avancée des alertes ; tableaux de bord mobiles ; rapprochement manuel des moyens de paiement à partir de données saisies ; export comptable.
 
-**P2 — Évolutions éventuelles :** multi-officines, référentiel central validé, intégrations de matériels spécialisés, lecture assistée de factures fournisseurs uniquement si décidée dans un projet séparé.
+**P2 - Évolutions éventuelles :** multi-officines, référentiel central validé, intégrations de matériels spécialisés, lecture assistée de factures fournisseurs uniquement si décidée dans un projet séparé.
 
 **Hors périmètre :** OCR de captures Bankily ; reconnaissance de justificatifs de paiement ; assurance ; CNAM ; tiers payant ; ordonnances numérisées dans le MVP ; comptabilité générale complète ; diagnostic médical automatisé ; vente en ligne de médicaments ; confirmation bancaire automatique.
 
@@ -134,10 +134,10 @@ Les remises et tarifs doivent respecter les dispositions applicables. Une vente 
 ## 8. Smartphone comme scanner de codes-barres
 
 ### Modes
-**A — Scanner déporté de caisse :** le smartphone est appairé à une session PC et transmet les scans en temps réel via le réseau local.  
-**B — Inventaire :** scan, identification du lot, comptage, stockage local temporaire et soumission.  
-**C — Réception :** scan, saisie/confirmation du lot, péremption et quantité reçue.  
-**D — Consultation :** recherche prix, stock, emplacement et statut.
+**A - Scanner déporté de caisse :** le smartphone est appairé à une session PC et transmet les scans en temps réel via le réseau local.  
+**B - Inventaire :** scan, identification du lot, comptage, stockage local temporaire et soumission.  
+**C - Réception :** scan, saisie/confirmation du lot, péremption et quantité reçue.  
+**D - Consultation :** recherche prix, stock, emplacement et statut.
 
 ### Appairage
 1. Le PC génère un QR d'appairage temporaire à usage unique.
@@ -232,7 +232,7 @@ Le **serveur local est l'autorité** pour les ventes, lots, mouvements de stock 
 ### 13.2 Dimensionnement indicatif pilote
 | Composant | Proposition |
 |---|---|
-| Mini-PC serveur local | 4 cœurs CPU, 8–16 Go RAM |
+| Mini-PC serveur local | 4 cœurs CPU, 8-16 Go RAM |
 | Stockage local | SSD 256 Go minimum |
 | Réseau | Routeur LAN/Wi-Fi stable |
 | Électricité | Onduleur recommandé |
@@ -333,7 +333,7 @@ Points à valider : catégories de médicaments, prescription, habilitations de 
 - Utilisation simple sur écran 1366×768, tactile et clavier ; français/arabe et RTL.
 - Pagination serveur, indexation et recherche performante.
 - Journaux techniques, métriques et alertes de synchronisation/sauvegarde.
-- Support d'une pharmacie avec 1–5 caisses, plusieurs mobiles et au moins 30 000 présentations testées.
+- Support d'une pharmacie avec 1-5 caisses, plusieurs mobiles et au moins 30 000 présentations testées.
 - Accessibilité de base : contrastes, focus clavier, messages d'erreur explicites.
 - Migrations versionnées, déploiement reproductible, rollback planifié.
 - Test de compatibilité sur imprimantes thermiques et navigateurs Android/iOS réels.
@@ -367,14 +367,14 @@ Points à valider : catégories de médicaments, prescription, habilitations de 
 
 | Phase | Livrables | Durée estimée |
 |---|---|---|
-| 0 — Cadrage | Entretiens et conformité | 2–3 semaines |
-| 1 — Catalogue/stocks | Produits, lots, péremptions | 4–5 semaines |
-| 2 — Caisse | Ventes, paiements, clôtures | 4–5 semaines |
-| 3 — Mobile | Scanner PC, réception, inventaire | 3–4 semaines |
-| 4 — Hybride | Serveur local, cloud, synchronisation, reprise | 4–6 semaines |
-| 5 — Pilote | Tests terrain, formation, corrections | 4–6 semaines |
+| 0 - Cadrage | Entretiens et conformité | 2-3 semaines |
+| 1 - Catalogue/stocks | Produits, lots, péremptions | 4-5 semaines |
+| 2 - Caisse | Ventes, paiements, clôtures | 4-5 semaines |
+| 3 - Mobile | Scanner PC, réception, inventaire | 3-4 semaines |
+| 4 - Hybride | Serveur local, cloud, synchronisation, reprise | 4-6 semaines |
+| 5 - Pilote | Tests terrain, formation, corrections | 4-6 semaines |
 
-**Total indicatif : 21–29 semaines** pour une petite équipe expérimentée, selon réutilisation de composants et validation métier. Ce n'est pas un devis.
+**Total indicatif : 21-29 semaines** pour une petite équipe expérimentée, selon réutilisation de composants et validation métier. Ce n'est pas un devis.
 
 ## 21. Livrables du projet
 
@@ -406,7 +406,7 @@ Points à valider : catégories de médicaments, prescription, habilitations de 
 
 ## 23. Stratégie pilote et lancement
 
-1. Entretiens avec 10–15 petites pharmacies indépendantes.
+1. Entretiens avec 10-15 petites pharmacies indépendantes.
 2. Démonstration sur données fictives et validation des parcours réels.
 3. Installation pilote dans une pharmacie volontaire, avec plan de retour arrière.
 4. Formation du pharmacien, caissier et magasinier.

@@ -17,7 +17,7 @@ use Livewire\Attributes\Title;
 use Livewire\Component;
 
 #[Layout('components.layouts.app')]
-#[Title('Commande fournisseur — PharmaPOS')]
+#[Title('Commande fournisseur - PharmaPOS')]
 class OrderEditor extends Component
 {
     public ?string $orderId = null;

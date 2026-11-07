@@ -1,6 +1,6 @@
 @php
     $labels = ['open' => 'Ouverte', 'closed' => 'À valider', 'validated' => 'Validée'];
-    $money = fn ($v) => $v === null ? '—' : number_format((float) $v, 2, ',', ' ');
+    $money = fn ($v) => $v === null ? '-' : number_format((float) $v, 2, ',', ' ');
 @endphp
 
 <div class="min-h-screen">
@@ -35,7 +35,7 @@
                         <tr wire:key="{{ $s->id }}" class="hover:bg-slate-50">
                             <td class="px-3 py-2"><a href="{{ route('sessions.show', $s) }}" class="font-medium text-emerald-800 underline-offset-2 hover:underline">{{ $s->register->name }}</a></td>
                             <td class="px-3 py-2">{{ $s->opened_at->format('d/m H:i') }} · {{ $s->opener->name }}</td>
-                            <td class="px-3 py-2">{{ $s->closed_at?->format('d/m H:i') ?? '—' }} {{ $s->closer ? '· '.$s->closer->name : '' }}</td>
+                            <td class="px-3 py-2">{{ $s->closed_at?->format('d/m H:i') ?? '-' }} {{ $s->closer ? '· '.$s->closer->name : '' }}</td>
                             <td class="px-3 py-2 text-end tabular-nums">{{ $money($s->expected_cash) }}</td>
                             <td class="px-3 py-2 text-end tabular-nums">{{ $money($s->counted_cash) }}</td>
                             <td @class(['px-3 py-2 text-end tabular-nums font-medium', 'text-red-700' => (float) $s->difference < 0, 'text-amber-700' => (float) $s->difference > 0])>{{ $money($s->difference) }}</td>

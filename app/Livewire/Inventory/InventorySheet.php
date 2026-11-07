@@ -20,7 +20,7 @@ use Livewire\Component;
  * Comptage « à l'aveugle » : le stock théorique n'est montré qu'aux personnes habilitées à approuver.
  */
 #[Layout('components.layouts.app')]
-#[Title('Inventaire — PharmaPOS')]
+#[Title('Inventaire - PharmaPOS')]
 class InventorySheet extends Component
 {
     use RequiresReauth;

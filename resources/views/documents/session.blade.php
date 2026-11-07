@@ -1,15 +1,15 @@
 @php
     $fmt = fn (int $c) => number_format($c / 100, 2, ',', ' ');
-    $money = fn ($v) => $v === null ? '—' : number_format((float) $v, 2, ',', ' ');
-    $labels = ['open' => 'Ouverte', 'closed' => 'Clôturée — à valider', 'validated' => 'Validée'];
+    $money = fn ($v) => $v === null ? '-' : number_format((float) $v, 2, ',', ' ');
+    $labels = ['open' => 'Ouverte', 'closed' => 'Clôturée - à valider', 'validated' => 'Validée'];
     $methods = $s->totals_by_method ?? array_map(fn ($m) => ['name' => $m['name'], 'amount' => $m['amount'] / 100], $summary['by_method']);
 @endphp
 <x-document :pharmacy="$s->pharmacy" title="Session de caisse" :number="$s->register->name"
             :date="$s->opened_at->format('d/m/Y').' · '.$labels[$s->status]">
     <div class="meta">
         <div><span>Ouverture</span>{{ $s->opened_at->format('d/m/Y H:i') }} · {{ $s->opener->name }}</div>
-        <div><span>Clôture</span>{{ $s->closed_at?->format('d/m/Y H:i') ?? '—' }}{{ $s->closer ? ' · '.$s->closer->name : '' }}</div>
-        <div><span>Validation</span>{{ $s->validated_at?->format('d/m/Y H:i') ?? '—' }}{{ $s->validator ? ' · '.$s->validator->name : '' }}</div>
+        <div><span>Clôture</span>{{ $s->closed_at?->format('d/m/Y H:i') ?? '-' }}{{ $s->closer ? ' · '.$s->closer->name : '' }}</div>
+        <div><span>Validation</span>{{ $s->validated_at?->format('d/m/Y H:i') ?? '-' }}{{ $s->validator ? ' · '.$s->validator->name : '' }}</div>
         <div><span>Ventes</span>{{ $summary['sales_count'] }} · {{ $fmt($summary['sales_total']) }} MRU</div>
     </div>
 

@@ -10,7 +10,7 @@ use Livewire\Attributes\Title;
 use Livewire\Component;
 
 #[Layout('components.layouts.app')]
-#[Title('Modes de paiement — PharmaPOS')]
+#[Title('Modes de paiement - PharmaPOS')]
 class PaymentMethodIndex extends Component
 {
     /** null = formulaire fermé, '' = nouveau mode, sinon son id. */

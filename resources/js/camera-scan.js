@@ -81,7 +81,7 @@ document.addEventListener('alpine:init', () => {
                     if (code) this.found(code);
                 } catch (e) {
                     // Une erreur à chaque image : le décodeur ne fonctionne pas (fichier .wasm non servi…)
-                    if (++failures === 15) this.engine += ' — erreur : ' + (e?.message ?? e);
+                    if (++failures === 15) this.engine += ' - erreur : ' + (e?.message ?? e);
                 } finally { busy = false; }
             }, 200);
         },

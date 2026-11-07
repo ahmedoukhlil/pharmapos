@@ -15,7 +15,7 @@ use Livewire\Component;
  * les pharmacies clientes depuis la console. Accessible uniquement tant qu'il n'existe pas.
  */
 #[Layout('components.layouts.app')]
-#[Title('Installation — PharmaPOS')]
+#[Title('Installation - PharmaPOS')]
 class SetupWizard extends Component
 {
     public array $admin = ['name' => '', 'username' => '', 'password' => '', 'password_confirmation' => ''];

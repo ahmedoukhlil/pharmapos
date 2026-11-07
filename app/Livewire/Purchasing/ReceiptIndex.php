@@ -10,7 +10,7 @@ use Livewire\Component;
 use Livewire\WithPagination;
 
 #[Layout('components.layouts.app')]
-#[Title('Réceptions — PharmaPOS')]
+#[Title('Réceptions - PharmaPOS')]
 class ReceiptIndex extends Component
 {
     use WithPagination;

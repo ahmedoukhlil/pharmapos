@@ -110,7 +110,7 @@
                 <h2 class="font-semibold">Vérification</h2>
                 <dl class="divide-y divide-slate-100 text-sm">
                     <div class="flex justify-between gap-4 py-2"><dt class="text-slate-500">Officine</dt><dd class="text-end font-medium">{{ $pharmacy['name'] }}{{ $pharmacy['city'] ? ', '.$pharmacy['city'] : '' }}</dd></div>
-                    <div class="flex justify-between gap-4 py-2"><dt class="text-slate-500">Abonnement</dt><dd class="text-end font-medium">{{ $pharmacy['plan'] ?: '—' }} · {{ $pharmacy['subscription_ends_at'] ? 'jusqu’au '.\Illuminate\Support\Carbon::parse($pharmacy['subscription_ends_at'])->format('d/m/Y') : 'sans échéance' }}</dd></div>
+                    <div class="flex justify-between gap-4 py-2"><dt class="text-slate-500">Abonnement</dt><dd class="text-end font-medium">{{ $pharmacy['plan'] ?: '-' }} · {{ $pharmacy['subscription_ends_at'] ? 'jusqu’au '.\Illuminate\Support\Carbon::parse($pharmacy['subscription_ends_at'])->format('d/m/Y') : 'sans échéance' }}</dd></div>
                     <div class="flex justify-between gap-4 py-2"><dt class="text-slate-500">Propriétaire</dt><dd class="text-end font-medium">{{ $owner['name'] }} <span class="font-mono text-xs text-slate-500">({{ $owner['username'] }})</span></dd></div>
                     <div class="flex justify-between gap-4 py-2"><dt class="text-slate-500">Caisses</dt><dd class="text-end font-medium">{{ implode(', ', $registers) }}</dd></div>
                     <div class="flex justify-between gap-4 py-2"><dt class="text-slate-500">Paiements</dt><dd class="text-end font-medium">{{ $methodLabels->filter(fn ($l, $c) => $c === 'CASH' || ($methods[$c] ?? false))->implode(', ') }}</dd></div>

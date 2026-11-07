@@ -2,7 +2,7 @@
     $fmt = fn ($v) => match (true) {
         is_int($v) => number_format($v, 0, ',', ' '),
         is_float($v) => number_format($v, 2, ',', ' '),
-        default => $v ?? '—',
+        default => $v ?? '-',
     };
     $wide = collect($tables)->max(fn ($t) => count($t['columns'])) > 6;
 @endphp

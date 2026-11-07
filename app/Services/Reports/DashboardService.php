@@ -40,7 +40,7 @@ class DashboardService
                 'previous' => $before[$key],
                 'change' => $before[$key] ? round(($value - $before[$key]) / abs($before[$key]) * 100, 1) : null,
             ])->all(),
-            'previousLabel' => $previous['from']->format('d/m').' – '.$previous['to']->format('d/m/Y'),
+            'previousLabel' => $previous['from']->format('d/m').' - '.$previous['to']->format('d/m/Y'),
             'trend' => $this->trend($byPeriod['rows'], $f, $monthly),
             'hours' => $this->hours($pharmacyId, $f),
             'topProducts' => collect($byProduct['rows'])->take(6)->map(fn ($r) => ['label' => $r['product'], 'value' => $r['revenue'], 'margin' => $r['margin']])->values()->all(),

@@ -1,10 +1,10 @@
-<x-layouts.app title="Connexion — PharmaPOS">
+<x-layouts.app title="Connexion - PharmaPOS">
     @php $field = 'mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 focus:border-emerald-600 focus:ring-2 focus:ring-emerald-200 focus:outline-none'; @endphp
     <main class="flex min-h-screen items-center justify-center p-4">
         <form method="POST" action="{{ route('login') }}" class="w-full max-w-sm space-y-4 rounded-xl bg-white p-6 shadow">
             @csrf
             <div>
-                <h1><img src="/images/logo.png" alt="PharmaPOS — Gestion de Pharmacie" class="mx-auto h-40 w-40"></h1>
+                <h1><img src="/images/logo.png" alt="PharmaPOS - Gestion de Pharmacie" class="mx-auto h-40 w-40"></h1>
                 <p class="text-center text-sm text-slate-500">Connectez-vous pour ouvrir la caisse.</p>
             </div>
 

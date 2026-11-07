@@ -261,7 +261,7 @@ class PurchaseInvoiceService
         $payments = SupplierPayment::with('invoice')->where('supplier_id', $supplier->id)->get()
             ->map(fn ($p) => ['date' => $p->paid_on, 'due' => null, 'debit' => 0, 'credit' => $this->cents($p->amount),
                 'label' => ($p->purchase_invoice_id ? 'Règlement facture '.$p->invoice->supplier_invoice_number : 'Acompte')
-                    .' — '.self::PAYMENT_METHODS[$p->method].($p->reference ? ' '.$p->reference : '')]);
+                    .' - '.self::PAYMENT_METHODS[$p->method].($p->reference ? ' '.$p->reference : '')]);
 
         $all = $invoices->concat($payments)->sortBy(fn ($e) => $e['date']->format('Ymd').($e['debit'] ? '0' : '1'))->values();
         $opening = $all->filter(fn ($e) => $from && $e['date']->lt($from))->sum(fn ($e) => $e['debit'] - $e['credit']);

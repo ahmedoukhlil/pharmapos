@@ -17,14 +17,14 @@ use Livewire\Component;
  * avec la consommation des 30 derniers jours. La clé n'est jamais réaffichée en clair.
  */
 #[Layout('components.layouts.app')]
-#[Title('Paramètres — PharmaPOS Admin')]
+#[Title('Paramètres - PharmaPOS Admin')]
 class PlatformSettings extends Component
 {
     /** Modèle => [libellé, prix entrée $/M tokens, prix sortie $/M tokens] */
     public const MODELS = [
-        'claude-opus-5-5' => ['Claude Opus 5.5 — le plus fiable (recommandé)', 4.0, 20.0],
-        'claude-sonnet-5-5' => ['Claude Sonnet 5.5 — bon compromis', 2.0, 10.0],
-        'claude-haiku-5-5' => ['Claude Haiku 5.5 — le moins cher', 0.10, 0.50],
+        'claude-opus-5-5' => ['Claude Opus 5.5 - le plus fiable (recommandé)', 4.0, 20.0],
+        'claude-sonnet-5-5' => ['Claude Sonnet 5.5 - bon compromis', 2.0, 10.0],
+        'claude-haiku-5-5' => ['Claude Haiku 5.5 - le moins cher', 0.10, 0.50],
     ];
 
     public string $apiKey = '';

@@ -16,7 +16,7 @@ use Livewire\Component;
  * Saisie d'une facture (création) puis consultation : rapprochement et règlements.
  */
 #[Layout('components.layouts.app')]
-#[Title('Facture fournisseur — PharmaPOS')]
+#[Title('Facture fournisseur - PharmaPOS')]
 class InvoiceEditor extends Component
 {
     public ?PurchaseInvoice $invoice = null;

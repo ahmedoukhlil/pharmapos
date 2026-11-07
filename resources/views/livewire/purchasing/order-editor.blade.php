@@ -149,7 +149,7 @@
                 <h2 class="mb-2 font-semibold">Réceptions</h2>
                 <ul class="space-y-1">
                     @foreach ($this->receipts as $r)
-                        <li><a href="{{ route('receipts.edit', $r) }}" class="font-mono text-emerald-800 hover:underline">{{ $r->number }}</a> — {{ $receiptLabels[$r->status] }} — {{ $r->received_at->format('d/m/Y') }}</li>
+                        <li><a href="{{ route('receipts.edit', $r) }}" class="font-mono text-emerald-800 hover:underline">{{ $r->number }}</a> - {{ $receiptLabels[$r->status] }} - {{ $r->received_at->format('d/m/Y') }}</li>
                     @endforeach
                 </ul>
             </section>

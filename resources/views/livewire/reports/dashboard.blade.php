@@ -46,7 +46,7 @@
     <section class="{{ $panel }}">
         <div class="mb-4 flex flex-wrap items-baseline gap-x-3">
             <h2 class="font-semibold text-slate-900">Évolution des ventes</h2>
-            <p class="text-sm text-slate-500">Chiffre d'affaires et nombre de reçus — comparaison avec le {{ $d['previousLabel'] }}</p>
+            <p class="text-sm text-slate-500">Chiffre d'affaires et nombre de reçus - comparaison avec le {{ $d['previousLabel'] }}</p>
         </div>
         <div class="h-72" {!! $chart('trend', $d['trend']) !!}><canvas x-ref="canvas"></canvas></div>
     </section>

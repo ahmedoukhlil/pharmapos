@@ -11,7 +11,7 @@ use Livewire\Component;
 use Livewire\WithPagination;
 
 #[Layout('components.layouts.app')]
-#[Title('Catalogue — PharmaPOS')]
+#[Title('Catalogue - PharmaPOS')]
 class CatalogueIndex extends Component
 {
     use WithPagination;

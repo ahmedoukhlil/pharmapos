@@ -1,7 +1,7 @@
 @php
     $fmt = fn (int $c) => number_format($c / 100, 2, ',', ' ');
-    $money = fn ($v) => $v === null ? '—' : number_format((float) $v, 2, ',', ' ');
-    $labels = ['open' => 'Ouverte', 'closed' => 'Clôturée — à valider', 'validated' => 'Validée'];
+    $money = fn ($v) => $v === null ? '-' : number_format((float) $v, 2, ',', ' ');
+    $labels = ['open' => 'Ouverte', 'closed' => 'Clôturée - à valider', 'validated' => 'Validée'];
     $s = $session;
 @endphp
 
@@ -10,7 +10,7 @@
 
     <main class="mx-auto max-w-3xl space-y-4 p-4 print:p-0">
         <div class="flex flex-wrap items-center gap-3">
-            <h1 class="text-xl font-semibold">Session {{ $s->register->name }} — {{ $s->opened_at->format('d/m/Y') }}</h1>
+            <h1 class="text-xl font-semibold">Session {{ $s->register->name }} - {{ $s->opened_at->format('d/m/Y') }}</h1>
             <span @class([
                 'rounded-full px-2 py-0.5 text-xs font-medium',
                 'bg-sky-100 text-sky-800' => $s->status === 'open',
@@ -27,8 +27,8 @@
         <section class="grid gap-4 rounded-lg bg-white p-4 shadow-sm sm:grid-cols-2 print:shadow-none">
             <dl class="space-y-1 text-sm">
                 <div class="flex justify-between"><dt>Ouverture</dt><dd>{{ $s->opened_at->format('d/m H:i') }} · {{ $s->opener->name }}</dd></div>
-                <div class="flex justify-between"><dt>Clôture</dt><dd>{{ $s->closed_at?->format('d/m H:i') ?? '—' }} {{ $s->closer ? '· '.$s->closer->name : '' }}</dd></div>
-                <div class="flex justify-between"><dt>Validation</dt><dd>{{ $s->validated_at?->format('d/m H:i') ?? '—' }} {{ $s->validator ? '· '.$s->validator->name : '' }}</dd></div>
+                <div class="flex justify-between"><dt>Clôture</dt><dd>{{ $s->closed_at?->format('d/m H:i') ?? '-' }} {{ $s->closer ? '· '.$s->closer->name : '' }}</dd></div>
+                <div class="flex justify-between"><dt>Validation</dt><dd>{{ $s->validated_at?->format('d/m H:i') ?? '-' }} {{ $s->validator ? '· '.$s->validator->name : '' }}</dd></div>
                 <div class="flex justify-between"><dt>Ventes</dt><dd>{{ $summary['sales_count'] }} · {{ $fmt($summary['sales_total']) }} MRU</dd></div>
             </dl>
             <dl class="space-y-1 text-sm">

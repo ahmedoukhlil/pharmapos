@@ -7,7 +7,7 @@
     <link rel="manifest" href="/manifest.webmanifest">
     <link rel="icon" type="image/png" href="/images/icon-64.png">
     <link rel="apple-touch-icon" href="/images/icon-192.png">
-    <title>Scanner — PharmaPOS</title>
+    <title>Scanner - PharmaPOS</title>
     @vite(['resources/css/app.css', 'resources/js/barcode.js'])
 </head>
 <body class="min-h-screen bg-slate-900 text-white antialiased">

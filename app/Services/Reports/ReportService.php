@@ -78,7 +78,7 @@ class ReportService
                 'qty' => self::packs((int) $r->qty, (int) $r->units_per_pack, $r->base_unit),
                 'revenue' => round((float) $r->revenue, 2),
                 'margin' => round($r->revenue - $r->cost, 2),
-                'margin_rate' => $r->revenue > 0 ? number_format(($r->revenue - $r->cost) / $r->revenue * 100, 1, ',', ' ').' %' : '—',
+                'margin_rate' => $r->revenue > 0 ? number_format(($r->revenue - $r->cost) / $r->revenue * 100, 1, ',', ' ').' %' : '-',
             ]);
 
         $byCategory = $items()->join('presentations', 'presentations.id', '=', 'sale_items.presentation_id')
@@ -282,8 +282,8 @@ class ReportService
         $sessionRows = $sessions->map(fn ($s) => [
             'register' => $s->code,
             'opened' => Carbon::parse($s->opened_at)->format('d/m/Y H:i'),
-            'closed' => $s->closed_at ? Carbon::parse($s->closed_at)->format('d/m/Y H:i') : '—',
-            'closer' => $s->closer_name ?? '—',
+            'closed' => $s->closed_at ? Carbon::parse($s->closed_at)->format('d/m/Y H:i') : '-',
+            'closer' => $s->closer_name ?? '-',
             'expected' => $s->expected_cash !== null ? round((float) $s->expected_cash, 2) : null,
             'counted' => $s->counted_cash !== null ? round((float) $s->counted_cash, 2) : null,
             'difference' => $s->difference !== null ? round((float) $s->difference, 2) : null,

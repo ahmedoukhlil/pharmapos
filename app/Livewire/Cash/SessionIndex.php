@@ -13,7 +13,7 @@ use Livewire\WithPagination;
  * Liste des sessions de caisse ; par défaut celles qui attendent une validation.
  */
 #[Layout('components.layouts.app')]
-#[Title('Sessions de caisse — PharmaPOS')]
+#[Title('Sessions de caisse - PharmaPOS')]
 class SessionIndex extends Component
 {
     use WithPagination;
