@@ -41,6 +41,8 @@ class PharmacyCreate extends Component
 
     public function next(): void
     {
+        // Téléphone : espaces ajoutés par le clavier ou l'autocorrection, minuscules
+        $this->pharmacy['code'] = strtoupper(preg_replace('/[\s\-_.]+/u', '', (string) $this->pharmacy['code']));
         $this->validateStep($this->step);
         $this->step = min(4, $this->step + 1);
     }

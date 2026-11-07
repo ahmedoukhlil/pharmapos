@@ -47,7 +47,7 @@
                     @foreach (['name' => "Nom de l'officine *", 'code' => 'Code pharmacie (connexion)', 'legal_name' => 'Raison sociale', 'nif' => 'NIF', 'phone' => 'Téléphone', 'address' => 'Adresse', 'city' => 'Ville'] as $f => $l)
                         <label class="block">
                             <span class="text-sm font-medium">{{ $l }}</span>
-                            <input wire:model="pharmacy.{{ $f }}" class="{{ $input }}" @if ($f === 'name') autofocus placeholder="ex. Pharmacie Ennour" @endif @if ($f === 'code') placeholder="Généré depuis le nom si vide" class="uppercase" @endif>
+                            <input wire:model="pharmacy.{{ $f }}" class="{{ $input }} {{ $f === 'code' ? 'font-mono uppercase' : '' }}" @if ($f === 'name') autofocus placeholder="ex. Pharmacie Ennour" @endif @if ($f === 'code') placeholder="Généré depuis le nom si vide" autocapitalize="characters" autocorrect="off" autocomplete="off" spellcheck="false" @endif>
                             @error("pharmacy.$f") <span class="text-xs text-red-700">{{ $message }}</span> @enderror
                         </label>
                     @endforeach

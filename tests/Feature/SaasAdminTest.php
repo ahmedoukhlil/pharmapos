@@ -48,7 +48,7 @@ class SaasAdminTest extends TestCase
 
         Livewire::test(PharmacyCreate::class)
             ->set('pharmacy.name', 'Pharmacie Ennour')->set('pharmacy.code', 'demo01')->call('next')->assertHasErrors('pharmacy.code')
-            ->set('pharmacy.code', 'ennour')->call('next')->assertSet('step', 2)
+            ->set('pharmacy.code', ' ennour ')->call('next')->assertSet('step', 2)->assertSet('pharmacy.code', 'ENNOUR')   // espaces du clavier du téléphone
             ->set('owner.name', 'Dr Sidi')->set('owner.username', 'owner')->call('next')->assertSet('step', 3)
             ->call('addRegister')->call('next')->assertSet('step', 4)
             ->call('create')->assertSee('ENNOUR')->assertSee('Mot de passe provisoire');
