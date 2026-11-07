@@ -17,6 +17,12 @@ use Livewire\Component;
 #[Title('Rapport de session - PharmaPOS')]
 class SessionShow extends Component
 {
+    public function boot(): void
+    {
+        $u = auth()->user();
+        abort_unless($u->hasPermission('cash.open_close') || $u->hasPermission('cash.validate') || $u->hasPermission('report.view'), 403);
+    }
+
     use RequiresReauth;
 
     public CashSession $session;

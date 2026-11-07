@@ -50,6 +50,28 @@ class UserIndex extends Component
             'email' => $u?->email ?? '',
             'role' => $u ? app(UserService::class)->currentRole($u)?->slug : 'cashier',
         ];
+        $this->form['permissions'] = $this->checkboxes($u ? $u->permissionSlugs() : null);
+    }
+
+    /** Changer de rôle recoche les droits de ce rôle. */
+    public function updatedFormRole(): void
+    {
+        $this->form['permissions'] = $this->checkboxes(null);
+    }
+
+    /** Remet les cases aux droits du rôle choisi. */
+    public function resetPermissions(): void
+    {
+        $this->updatedFormRole();
+    }
+
+    private function checkboxes(?array $granted): array
+    {
+        $service = app(UserService::class);
+        $granted ??= $service->rolePermissions(\App\Models\Role::firstWhere('slug', $this->form['role'] ?? null));
+
+        // Clés sans point : Livewire lirait « sale.create » comme un chemin
+        return collect($service->editablePermissions())->mapWithKeys(fn ($l, $slug) => [str_replace('.', '__', $slug) => isset($granted[$slug])])->all();
     }
 
     public function save(UserService $service): void
@@ -57,10 +79,12 @@ class UserIndex extends Component
         if (! $this->reauthenticated('user.manage', 'save')) {
             return;
         }
+        $data = $this->form;
+        $data['permissions'] = collect($data['permissions'] ?? [])->mapWithKeys(fn ($v, $k) => [str_replace('__', '.', $k) => (bool) $v])->all();
         if ($this->editing) {
-            $service->update(auth()->user(), $this->user($this->editing), $this->form);
+            $service->update(auth()->user(), $this->user($this->editing), $data);
         } else {
-            [$user, $password] = $service->create(auth()->user(), $this->form);
+            [$user, $password] = $service->create(auth()->user(), $data);
             $this->credentials = [$user->name, $user->username, $password];
         }
         $this->editing = null;
@@ -111,6 +135,9 @@ class UserIndex extends Component
         return view('livewire.settings.user-index', [
             'users' => $users,
             'roles' => $service->assignableRoles(auth()->user()),
+            'customized' => \Illuminate\Support\Facades\DB::table('permission_user')->where('pharmacy_id', auth()->user()->pharmacy_id)->distinct()->pluck('user_id')->flip(),
+            'permissionLabels' => $service->editablePermissions(),
+            'roleDefaults' => $this->editing !== null ? $service->rolePermissions(\App\Models\Role::firstWhere('slug', $this->form['role'] ?? null)) : [],
         ]);
     }
 }

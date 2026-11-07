@@ -64,11 +64,46 @@ class User extends Authenticatable
         return $this->hasMany(RoleAssignment::class);
     }
 
+    /** Permissions effectives, mémorisées pour la requête : pharmacy_id => [slug => true] */
+    private array $permissionCache = [];
+
     public function hasPermission(string $slug, ?string $pharmacyId = null): bool
     {
-        return $this->roleAssignments()
-            ->where('pharmacy_id', $pharmacyId ?? $this->pharmacy_id)
-            ->whereHas('role.permissions', fn ($q) => $q->where('slug', $slug))
-            ->exists();
+        return isset($this->permissionSlugs($pharmacyId)[$slug]);
+    }
+
+    /** Permissions du rôle, plus celles ajoutées et moins celles retirées pour cet utilisateur. */
+    public function permissionSlugs(?string $pharmacyId = null): array
+    {
+        $pharmacyId ??= $this->pharmacy_id;
+
+        return $this->permissionCache[$pharmacyId] ??= (function () use ($pharmacyId) {
+            $slugs = Permission::whereHas('roles', fn ($q) => $q->whereIn('roles.id',
+                $this->roleAssignments()->where('pharmacy_id', $pharmacyId)->select('role_id')))
+                ->pluck('slug')->flip()->map(fn () => true)->all();
+            foreach ($this->permissionOverrides($pharmacyId) as $slug => $granted) {
+                if ($granted) {
+                    $slugs[$slug] = true;
+                } else {
+                    unset($slugs[$slug]);
+                }
+            }
+
+            return $slugs;
+        })();
+    }
+
+    /** @return array<string, bool> slug => ajoutée (true) ou retirée (false) */
+    public function permissionOverrides(?string $pharmacyId = null): array
+    {
+        return \Illuminate\Support\Facades\DB::table('permission_user')
+            ->join('permissions', 'permissions.id', '=', 'permission_user.permission_id')
+            ->where('user_id', $this->id)->where('pharmacy_id', $pharmacyId ?? $this->pharmacy_id)
+            ->pluck('granted', 'permissions.slug')->map(fn ($g) => (bool) $g)->all();
+    }
+
+    public function forgetPermissions(): void
+    {
+        $this->permissionCache = [];
     }
 }

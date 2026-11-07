@@ -46,6 +46,49 @@
                     </select>
                     @error('role') <span class="text-xs text-red-700">{{ $message }}</span> @enderror
                 </label>
+                @php
+                    $groups = ['catalogue' => 'Catalogue et prix', 'price' => 'Catalogue et prix', 'sale' => 'Ventes', 'cash' => 'Caisse',
+                        'purchase' => 'Achats', 'batch' => 'Stock', 'stock' => 'Stock', 'inventory' => 'Stock', 'scanner' => 'Stock',
+                        'report' => 'Rapports', 'audit' => 'Rapports', 'user' => 'Administration', 'settings' => 'Administration', 'device' => 'Administration'];
+                    $byGroup = collect($permissionLabels)->groupBy(fn ($l, $slug) => $groups[strstr($slug, '.', true)] ?? 'Autres', true);
+                    $locked = ($editing && $editing === auth()->id()) || ($form['role'] ?? '') === 'owner';
+                @endphp
+                <fieldset class="sm:col-span-2" @disabled($locked)>
+                    <div class="flex flex-wrap items-baseline gap-x-3">
+                        <span class="text-sm font-medium">Droits</span>
+                        <span class="text-xs text-slate-500">
+                            @if (($form['role'] ?? '') === 'owner') Le propriétaire a tous les droits.
+                            @elseif ($locked) Vous ne pouvez pas modifier vos propres droits.
+                            @else Cochés selon le rôle ; ajoutez ou retirez des droits pour cette personne. @endif
+                        </span>
+                        @unless ($locked)
+                            <button type="button" wire:click="resetPermissions" class="ms-auto text-xs text-emerald-800 hover:underline">Revenir aux droits du rôle</button>
+                        @endunless
+                    </div>
+                    @error('permissions') <p class="mt-1 text-xs text-red-700">{{ $message }}</p> @enderror
+                    <div class="mt-2 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                        @foreach ($byGroup as $group => $items)
+                            <div class="rounded-lg border border-slate-200 p-3">
+                                <p class="mb-1 text-xs font-semibold uppercase text-slate-500">{{ $group }}</p>
+                                @foreach ($items as $slug => $label)
+                                    @php
+                                        $key = str_replace('.', '__', $slug);
+                                        $on = (bool) ($form['permissions'][$key] ?? false);
+                                        $diff = $on !== isset($roleDefaults[$slug]);
+                                    @endphp
+                                    <label class="flex items-start gap-2 py-0.5 text-sm" wire:key="perm-{{ $key }}">
+                                        <input type="checkbox" wire:model.live="form.permissions.{{ $key }}" class="mt-0.5">
+                                        <span>{{ $label }}
+                                            @if ($diff && ! $locked)
+                                                <span class="ms-1 rounded-full px-1.5 text-xs {{ $on ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800' }}">{{ $on ? 'ajouté' : 'retiré' }}</span>
+                                            @endif
+                                        </span>
+                                    </label>
+                                @endforeach
+                            </div>
+                        @endforeach
+                    </div>
+                </fieldset>
                 @unless ($editing)
                     <p class="text-sm text-slate-500 sm:col-span-2">Un mot de passe provisoire sera généré et affiché après l'enregistrement.</p>
                 @endunless
@@ -77,7 +120,7 @@
                                 @if ($u->must_change_password && $u->is_active) <span class="ms-1 rounded-full bg-amber-100 px-2 text-xs text-amber-800">mot de passe provisoire</span> @endif
                             </td>
                             <td class="px-3 py-2 font-mono text-xs">{{ $u->username }}</td>
-                            <td class="px-3 py-2">{{ $u->roleAssignments->first()?->role->name ?? '-' }}</td>
+                            <td class="px-3 py-2">{{ $u->roleAssignments->first()?->role->name ?? '-' }}@if (isset($customized[$u->id])) <span class="ms-1 rounded-full bg-sky-100 px-2 text-xs text-sky-800">droits personnalisés</span>@endif</td>
                             <td class="px-3 py-2 text-slate-500">{{ $u->last_login_at?->format('d/m/Y H:i') ?? 'Jamais' }}</td>
                             <td class="space-x-3 whitespace-nowrap px-3 py-2 text-end">
                                 <button wire:click="edit('{{ $u->id }}')" class="text-emerald-800 hover:underline">Modifier</button>

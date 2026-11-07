@@ -38,7 +38,8 @@ class UserService
                 'is_active' => true,
             ]);
             $user->roleAssignments()->create(['role_id' => $role->id, 'pharmacy_id' => $actor->pharmacy_id]);
-            $this->audit($actor, 'user.created', $user, $values + ['role' => $role->slug]);
+            $overrides = $this->syncPermissions($actor, $user, $role, $data['permissions'] ?? null);
+            $this->audit($actor, 'user.created', $user, $values + ['role' => $role->slug, 'permissions' => $overrides]);
 
             return $user;
         });
@@ -62,15 +63,26 @@ class UserService
             }
         }
 
-        return DB::transaction(function () use ($actor, $user, $values, $role, $current) {
-            $old = $user->only(array_keys($values)) + ['role' => $current?->slug];
+        if ($actor->is($user) && isset($data['permissions'])) {
+            $mine = $user->permissionSlugs();
+            foreach ($this->editablePermissions() as $slug => $label) {
+                if ((bool) ($data['permissions'][$slug] ?? false) !== isset($mine[$slug])) {
+                    throw ValidationException::withMessages(['permissions' => 'Vous ne pouvez pas modifier vos propres droits.']);
+                }
+            }
+            unset($data['permissions']);
+        }
+
+        return DB::transaction(function () use ($actor, $user, $values, $role, $current, $data) {
+            $old = $user->only(array_keys($values)) + ['role' => $current?->slug, 'permissions' => $user->permissionOverrides()];
             $user->update($values);
             if ($current?->id !== $role->id) {
                 $user->roleAssignments()->where('pharmacy_id', $actor->pharmacy_id)->delete();
                 $user->roleAssignments()->create(['role_id' => $role->id, 'pharmacy_id' => $actor->pharmacy_id]);
                 $this->ensureOwner($actor->pharmacy_id);
             }
-            $this->audit($actor, 'user.updated', $user, $values + ['role' => $role->slug], $old);
+            $overrides = array_key_exists('permissions', $data) ? $this->syncPermissions($actor, $user, $role, $data['permissions']) : $old['permissions'];
+            $this->audit($actor, 'user.updated', $user, $values + ['role' => $role->slug, 'permissions' => $overrides], $old);
 
             return $user;
         });
@@ -152,6 +164,52 @@ class UserService
 
         return Role::orderByDesc('max_discount_percent')->orderBy('name')->get()
             ->reject(fn ($r) => $r->slug === self::OWNER && ! $isOwner)->values();
+    }
+
+    /** Permissions réglables utilisateur par utilisateur : slug => libellé. */
+    public function editablePermissions(): array
+    {
+        return collect(\Database\Seeders\RolePermissionSeeder::PERMISSIONS)
+            ->except(['system.maintain'])->map(fn ($p) => $p[0])->all();
+    }
+
+    /** Permissions du rôle seul : slug => true */
+    public function rolePermissions(?Role $role): array
+    {
+        return $role ? $role->permissions()->pluck('slug')->flip()->map(fn () => true)->all() : [];
+    }
+
+    /**
+     * Enregistre les écarts entre les cases cochées et le rôle. On ne peut donner que les droits
+     * que l'on a soi-même ; un propriétaire garde tous ses droits.
+     *
+     * @return array<string, bool> les écarts enregistrés
+     */
+    private function syncPermissions(User $actor, User $user, Role $role, ?array $checked): array
+    {
+        $fromRole = $this->rolePermissions($role);
+        $overrides = [];
+        if ($checked !== null && $role->slug !== self::OWNER) {
+            foreach ($this->editablePermissions() as $slug => $label) {
+                $want = (bool) ($checked[$slug] ?? false);
+                if ($want !== isset($fromRole[$slug])) {
+                    if ($want && ! $actor->hasPermission($slug)) {
+                        throw ValidationException::withMessages(['permissions' => "Vous ne pouvez pas donner un droit que vous n'avez pas : « $label »."]);
+                    }
+                    $overrides[$slug] = $want;
+                }
+            }
+        }
+
+        $ids = \App\Models\Permission::whereIn('slug', array_keys($overrides))->pluck('id', 'slug');
+        DB::table('permission_user')->where('user_id', $user->id)->where('pharmacy_id', $actor->pharmacy_id)->delete();
+        DB::table('permission_user')->insert(collect($overrides)->map(fn ($granted, $slug) => [
+            'user_id' => $user->id, 'permission_id' => $ids[$slug], 'pharmacy_id' => $actor->pharmacy_id,
+            'granted' => $granted, 'created_at' => now(), 'updated_at' => now(),
+        ])->values()->all());
+        $user->forgetPermissions();
+
+        return $overrides;
     }
 
     public function currentRole(User $user): ?Role
