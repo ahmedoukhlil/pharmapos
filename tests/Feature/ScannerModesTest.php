@@ -161,4 +161,28 @@ class ScannerModesTest extends TestCase
         $this->expectException(ScannerException::class);
         $this->service->createPairing($this->user(), 'inventory', $inventory->id);
     }
+    public function test_phone_adds_barcode_to_product_sheet(): void
+    {
+        $owner = $this->user('owner');
+        $p = Presentation::where('sku', 'PARA500-16')->firstOrFail();
+        [$session, $token] = $this->service->createPairing($owner, 'lookup', $p->medicine_id);
+        $this->service->claim($owner, $token, 'Android');
+        $session = $this->service->confirm($owner, $session->fresh());
+
+        // Code encore inconnu : accepté, c'est justement le but
+        $ack = $this->service->ingest($owner, $session->fresh(), ['id' => (string) Str::uuid(), 'sequence' => 1, 'barcode' => '6111111111111']);
+        $this->assertSame('received', $ack['status']);
+
+        $this->actingAs($owner);
+        Livewire::test(\App\Livewire\Catalogue\ProductEditor::class, ['medicine' => $p->medicine])
+            ->call('remoteBarcode', barcode: '6111111111111')->assertSet('scanError', null);
+        $this->assertTrue($p->barcodes()->where('barcode', '6111111111111')->where('is_active', true)->exists());
+
+        Livewire::test(ScannerPanel::class, ['mode' => 'lookup', 'contextId' => $p->medicine_id])
+            ->call('poll')->assertDispatched('remote-barcode', barcode: '6111111111111');
+
+        // Pas de droit catalogue : pas d'appairage
+        $this->expectException(ScannerException::class);
+        $this->service->createPairing($this->user('cashier'), 'lookup', $p->medicine_id);
+    }
 }

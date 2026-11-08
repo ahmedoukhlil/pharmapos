@@ -9,6 +9,7 @@ use App\Models\Presentation;
 use App\Models\ProductBarcode;
 use App\Services\Catalogue\CatalogueService;
 use Livewire\Attributes\Layout;
+use Livewire\Attributes\On;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
@@ -30,6 +31,11 @@ class ProductEditor extends Component
     public string $newCategory = '';
 
     public ?string $flash = null;
+
+    /** Format qui reçoit les codes lus par le téléphone (vide : le premier format actif). */
+    public string $scanTarget = '';
+
+    public ?string $scanError = null;
 
     public function mount(?Medicine $medicine = null): void
     {
@@ -136,6 +142,38 @@ class ProductEditor extends Component
         } catch (\Illuminate\Validation\ValidationException $e) {
             throw \Illuminate\Validation\ValidationException::withMessages(["barcode.$presentationId" => $e->errors()['barcode']]);
         }
+    }
+
+    /** Code lu par le smartphone appairé à cette fiche : ajouté au format choisi. */
+    #[On('remote-barcode')]
+    public function remoteBarcode(CatalogueService $service, string $barcode): void
+    {
+        $this->scanError = null;
+        if (! $this->medicine || ! auth()->user()->hasPermission('catalogue.manage')) {
+            return;
+        }
+        $target = $this->medicine->presentations()->where('status', '!=', 'archived')
+            ->when($this->scanTarget !== '', fn ($q) => $q->whereKey($this->scanTarget))->orderBy('sku')->first();
+        if (! $target) {
+            $this->scanError = "Code « $barcode » reçu, mais aucun format de vente pour l'accueillir : créez d'abord le format.";
+
+            return;
+        }
+        try {
+            $service->addBarcode(auth()->user(), $target, $barcode);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            $this->scanError = "Code « $barcode » : ".collect($e->errors())->flatten()->first();
+
+            return;
+        }
+        $this->flash = "Code-barres « $barcode » ajouté au format {$target->label}.";
+    }
+
+    #[On('remote-scan-unknown')]
+    #[On('scanner-error')]
+    public function scannerProblem(?string $message = null, ?string $barcode = null): void
+    {
+        $this->scanError = $message ?? "Code « $barcode » non reçu.";
     }
 
     public function deactivateBarcode(CatalogueService $service, string $barcodeId): void

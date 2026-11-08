@@ -23,7 +23,7 @@ use Livewire\Component;
  */
 class ScannerPanel extends Component
 {
-    /** pos | inventory | receipt */
+    /** pos | inventory | receipt | lookup (code-barres pour la fiche produit) */
     #[Locked]
     public string $mode;
 
@@ -115,6 +115,7 @@ class ScannerPanel extends Component
             } else {
                 foreach ($service->pull($this->scanner) as $event) {
                     match (true) {
+                        $this->mode === 'lookup' => $this->dispatch('remote-barcode', barcode: $event->barcode),
                         ! $event->presentation_id => $this->dispatch('remote-scan-unknown', barcode: $event->barcode),
                         $this->mode === 'receipt' => $this->dispatch('remote-receipt-line', presentationId: $event->presentation_id, line: $event->payload),
                         default => $this->dispatch('remote-scan', presentationId: $event->presentation_id),

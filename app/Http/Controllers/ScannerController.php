@@ -49,6 +49,7 @@ class ScannerController extends Controller
         $title = match ($session->mode) {
             'inventory' => 'Inventaire '.InventorySession::find($session->context_id)?->number,
             'receipt' => 'Réception '.GoodsReceipt::find($session->context_id)?->number,
+            'lookup' => 'Code-barres · '.\App\Models\Medicine::find($session->context_id)?->brand_name,
             default => 'Scanner · caisse '.$session->register?->code,
         };
 

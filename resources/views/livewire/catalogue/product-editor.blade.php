@@ -15,6 +15,7 @@
             @if ($medicine)
                 <span class="rounded bg-slate-100 px-2 py-0.5 text-xs">{{ $statuses[$medicine->status] }}</span>
                 @if ($canManage)
+                    <livewire:scanner.scanner-panel mode="lookup" :context-id="$medicine->id" :key="'scanner-'.$medicine->id" />
                     <select x-on:change="$wire.setStatus($el.value); $el.value=''" class="ms-auto rounded-lg border border-slate-300 px-2 py-1 text-sm">
                         <option value="">Changer le statut…</option>
                         @foreach ($statuses as $k => $v)
@@ -25,6 +26,20 @@
                 @endif
             @endif
         </div>
+
+        @if ($scanError)
+            <p class="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800" role="alert">{{ $scanError }}</p>
+        @endif
+        @if ($medicine && $canManage && $presentations->where('status', '!=', 'archived')->count() > 1)
+            <label class="flex flex-wrap items-center gap-2 text-sm">
+                <span class="text-slate-600">Codes lus par le téléphone ajoutés au format :</span>
+                <select wire:model="scanTarget" class="rounded-lg border border-slate-300 px-2 py-1 text-sm">
+                    @foreach ($presentations->where('status', '!=', 'archived') as $p)
+                        <option value="{{ $loop->first ? '' : $p->id }}">{{ $p->sku }} · {{ $p->label }}</option>
+                    @endforeach
+                </select>
+            </label>
+        @endif
 
         @if ($flash)
             <p class="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-800" role="status">{{ $flash }}</p>

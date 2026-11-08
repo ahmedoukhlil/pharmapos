@@ -34,7 +34,7 @@ class ScannerService
     public const SESSION_TTL_HOURS = 12;
 
     /** Permission requise, sur le PC comme sur le téléphone, selon le mode. */
-    public const MODE_PERMISSIONS = ['pos' => 'sale.create', 'inventory' => 'inventory.count', 'receipt' => 'purchase.manage'];
+    public const MODE_PERMISSIONS = ['pos' => 'sale.create', 'inventory' => 'inventory.count', 'receipt' => 'purchase.manage', 'lookup' => 'catalogue.manage'];
 
     /**
      * QR d'appairage pour une caisse (pos), un inventaire en comptage (inventory) ou une réception en brouillon (receipt).
@@ -69,6 +69,8 @@ class ScannerService
             'pos' => Register::where('pharmacy_id', $pharmacyId)->whereKey($contextId)->exists(),
             'inventory' => InventorySession::where('pharmacy_id', $pharmacyId)->whereKey($contextId)->where('status', 'counting')->exists(),
             'receipt' => GoodsReceipt::where('pharmacy_id', $pharmacyId)->whereKey($contextId)->where('status', 'draft')->exists(),
+            // Fiche produit : le téléphone sert seulement à lire un code-barres à associer
+            'lookup' => \App\Models\Medicine::where('pharmacy_id', $pharmacyId)->whereKey($contextId)->exists(),
         };
         if (! $ok) {
             throw new ScannerException('invalid_context', $mode === 'pos' ? 'Caisse invalide.' : 'Document clos : le scanner ne peut plus y être associé.');
@@ -192,7 +194,7 @@ class ScannerService
                 ->orWhereHas('barcodes', fn ($b) => $b->where('barcode', $barcode)->where('is_active', true)))
             ->first();
 
-        if ($session->mode !== 'pos' && ! $presentation) {
+        if (! in_array($session->mode, ['pos', 'lookup'], true) && ! $presentation) {
             throw new ScannerException('unknown_product', "Produit inconnu « $barcode ».");
         }
 
@@ -213,6 +215,7 @@ class ScannerService
                     'presentation_id' => $presentation?->id,
                     'payload' => $payload,
                     'status' => match (true) {
+                        $session->mode === 'lookup' => 'received',
                         ! $presentation => 'unknown_product',
                         $session->mode === 'inventory' => 'applied',
                         default => 'received',
@@ -261,7 +264,7 @@ class ScannerService
      */
     public function lookup(User $user, ScannerSession $session, string $barcode): array
     {
-        if ($session->user_id !== $user->id || self::state($session) !== 'active' || $session->mode === 'pos') {
+        if ($session->user_id !== $user->id || self::state($session) !== 'active' || in_array($session->mode, ['pos', 'lookup'], true)) {
             throw new ScannerException('session_inactive', 'Scanner déconnecté : réappairez le téléphone.');
         }
 
