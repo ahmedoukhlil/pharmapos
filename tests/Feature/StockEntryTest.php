@@ -48,6 +48,7 @@ class StockEntryTest extends TestCase
         $batch = Batch::where('lot_number', 'INI01')->firstOrFail();
         $this->assertTrue($batch->is_initial_import);
         $this->assertSame(48, (int) StockBalance::where('batch_id', $batch->id)->where('location_id', $ray)->value('quantity'));
+// Sans n° de lot, date tapée sans « / » (clavier numérique du téléphone)        app(StockEntryService::class)->add($this->owner(), $p->id, '', '012029', 4, $ray);        $this->assertSame('2029-01', Batch::where('lot_number', 'SANS-LOT-2029-01')->firstOrFail()->expiry_date->format('Y-m'));
 
         // Le code est désormais reconnu : le produit est choisi directement
         Livewire::test(StockEntry::class)->call('scan', '6111111111111')->assertSet('presentationId', $p->id);
@@ -60,7 +61,7 @@ class StockEntryTest extends TestCase
         $ray = Location::where('code', 'RAY')->value('id');
         foreach ([
             ['forbidden', User::where('username', 'cashier')->first(), 'L1', '06/2029', 1],
-            ['lot_required', $this->owner(), ' ', '06/2029', 1],
+
             ['invalid_expiry', $this->owner(), 'L1', 'xx', 1],
             ['invalid_quantity', $this->owner(), 'L1', '06/2029', 0],
         ] as [$reason, $user, $lot, $exp, $qty]) {

@@ -73,7 +73,7 @@
                 <p id="entry-total" class="text-sm text-slate-300"></p>
             @else
                 <p id="entry-expected" class="text-xs text-amber-300"></p>
-                <label class="text-sm">N° de lot
+                <label class="text-sm">N° de lot @if ($session->mode === 'stock') <span class="text-slate-400">(facultatif)</span> @endif
                     <input id="entry-lot" autocomplete="off" autocapitalize="characters" class="mt-1 w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-3 font-mono text-lg uppercase">
                 </label>
                 <div class="grid grid-cols-2 gap-2">
@@ -380,6 +380,12 @@
         openEntry(code);
     }
 
+    // Clavier numérique sans « / » : 012029 devient 01/2029 pendant la saisie
+    $('entry-expiry')?.addEventListener('input', (e) => {
+        const d = e.target.value.replace(/\D/g, '').slice(0, 6);
+        e.target.value = d.length > 2 ? `${d.slice(0, 2)}/${d.slice(2)}` : d;
+    });
+
     function units() {
         const per = entry?.product?.units_per_pack ?? 1;
         return (Number($('entry-packs').value) || 0) * per + (Number($('entry-units').value) || 0);
@@ -413,7 +419,7 @@
         } else {
             payload = { lot_number: $('entry-lot').value.trim(), expiry: $('entry-expiry').value.trim(), quantity_packs: Number($('entry-qty').value) };
             if (mode === 'stock') Object.assign(payload, { location_id: $('entry-location').value, pack_cost: $('entry-cost').value });
-            if (!payload.lot_number) return entryError('Le numéro de lot est obligatoire.');
+            if (!payload.lot_number && mode !== 'stock') return entryError('Le numéro de lot est obligatoire.');
             if (!/^\d{1,2}[\/.-]\d{2,4}$/.test(payload.expiry) && !/^\d{1,2}[\/.-]\d{1,2}[\/.-]\d{2,4}$/.test(payload.expiry)) return entryError('Péremption au format MM/AAAA.');
             if (!(payload.quantity_packs >= 1)) return entryError('Nombre de boîtes invalide.');
         }

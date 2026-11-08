@@ -28,12 +28,10 @@ class StockEntryService
             throw new InventoryException('forbidden', "Vous n'êtes pas autorisé à ajouter du stock.");
         }
         $presentation = Presentation::where('pharmacy_id', $user->pharmacy_id)->findOrFail($presentationId);
-        $lot = strtoupper(trim($lot));
-        if ($lot === '') {
-            throw new InventoryException('lot_required', 'Le numéro de lot est obligatoire.');
-        }
         $expiry = ExpiryDate::parse(trim($expiryRaw), $user->pharmacy_id)
             ?? throw new InventoryException('invalid_expiry', 'Péremption illisible : saisissez MM/AAAA.');
+        // Lot facultatif : sans numéro, un lot par produit et par mois de péremption (ex. SANS-LOT-2029-01)
+        $lot = strtoupper(trim($lot)) ?: 'SANS-LOT-'.$expiry->format('Y-m');
         if ($units <= 0) {
             throw new InventoryException('invalid_quantity', 'Indiquez une quantité.');
         }

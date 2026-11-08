@@ -179,7 +179,7 @@ class StockEntry extends Component
             return;
         }
         $this->message = 'Inséré : '.$qty.' '.($this->unit === 'pack' ? 'boîte(s)' : 'unité(s)').' de '
-            .trim($p->medicine->brand_name.' '.$p->medicine->strength).', lot '.strtoupper(trim($this->lot)).'. Scannez le produit suivant.';
+            .trim($p->medicine->brand_name.' '.$p->medicine->strength).(trim($this->lot) !== '' ? ', lot '.strtoupper(trim($this->lot)) : ', sans n° de lot').'. Scannez le produit suivant.';
         $this->reset('presentationId', 'lot', 'expiry');
         $this->quantity = '1';
         unset($this->recent);

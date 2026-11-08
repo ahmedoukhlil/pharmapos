@@ -410,7 +410,7 @@ class ScannerService
             throw new ScannerException($e->reason, $e->getMessage());
         }
 
-        return ['lot_number' => strtoupper(trim((string) $payload['lot_number'])), 'expiry' => (string) $payload['expiry'], 'quantity_packs' => $packs];
+        return ['lot_number' => strtoupper(trim((string) ($payload['lot_number'] ?? ''))) ?: 'sans n°', 'expiry' => (string) $payload['expiry'], 'quantity_packs' => $packs];
     }
 
     /** Comptage d'un lot en unités de base : ligne existante ou lot trouvé hors théorique. */

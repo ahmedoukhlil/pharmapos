@@ -70,7 +70,7 @@
                 <form wire:submit="insert" class="space-y-4 p-4">
                     <div class="grid gap-3 sm:grid-cols-2">
                         <label class="block">
-                            <span class="text-sm font-medium">N° de lot *</span>
+                            <span class="text-sm font-medium">N° de lot <span class="font-normal text-slate-500">(facultatif)</span></span>
                             <input wire:model="lot" autofocus autocomplete="off" class="{{ $input }} mt-1 w-full font-mono uppercase">
                         </label>
                         <label class="block">

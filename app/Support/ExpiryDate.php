@@ -11,11 +11,15 @@ use Illuminate\Support\Carbon;
 class ExpiryDate
 {
     /**
-     * Accepte MM/AAAA, MM/AA, AAAA-MM, JJ/MM/AAAA et AAAA-MM-JJ. Retourne null si illisible.
+     * Accepte MM/AAAA, MM/AA, AAAA-MM, JJ/MM/AAAA, AAAA-MM-JJ, et sans séparateur MMAAAA ou MMAA
+     * (clavier numérique du téléphone, sans « / »). Retourne null si illisible.
      */
     public static function parse(string $raw, string $pharmacyId): ?Carbon
     {
         $raw = trim(str_replace(['.', '-', ' '], ['/', '/', ''], $raw));
+        if (preg_match('#^(\d{2})(20\d{2})$#', $raw, $m) || preg_match('#^(\d{2})(\d{2})$#', $raw, $m)) {
+            $raw = $m[1].'/'.$m[2];
+        }
 
         if (preg_match('#^(\d{1,2})/(\d{2}|\d{4})$#', $raw, $m)) {
             [$month, $year] = [(int) $m[1], (int) $m[2]];
