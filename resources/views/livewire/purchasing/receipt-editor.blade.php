@@ -72,6 +72,10 @@
                         <option value="{{ $s->id }}">{{ $s->name }}</option>
                     @endforeach
                 </select>
+                @if ($this->suppliers->isEmpty())
+                    <span class="mt-1 block text-xs text-red-700">Aucun fournisseur : <a href="{{ route('suppliers.index') }}" class="underline">créez-le d'abord</a> (ex. G. Pharma).</span>
+                @endif
+                @error('supplierId') <span class="mt-1 block text-xs text-red-700">{{ $message }}</span> @enderror
             </label>
             <label class="block">
                 <span class="text-sm font-medium">Ranger dans</span>
@@ -80,6 +84,10 @@
                         <option value="{{ $l->id }}">{{ $l->name }}</option>
                     @endforeach
                 </select>
+                @if ($this->suppliers->isEmpty())
+                    <span class="mt-1 block text-xs text-red-700">Aucun fournisseur : <a href="{{ route('suppliers.index') }}" class="underline">créez-le d'abord</a> (ex. G. Pharma).</span>
+                @endif
+                @error('supplierId') <span class="mt-1 block text-xs text-red-700">{{ $message }}</span> @enderror
             </label>
             <label class="block">
                 <span class="text-sm font-medium">N° bon de livraison</span>

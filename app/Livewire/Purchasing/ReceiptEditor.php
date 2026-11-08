@@ -216,9 +216,20 @@ class ReceiptEditor extends Component
             'noteFiles.*' => ['file', 'mimes:jpg,jpeg,png,webp,heic,pdf', 'max:10240'],
         ], [], ['noteFiles' => 'bordereau', 'noteFiles.*' => 'page']);
 
+        // Sans fournisseur choisi, findOrFail renvoyait une page 404
+        $supplier = Supplier::where('pharmacy_id', auth()->user()->pharmacy_id)->find($this->supplierId ?: null);
+        if (! $supplier) {
+            $this->error = $this->suppliers->isEmpty()
+                ? 'Aucun fournisseur enregistré : créez d\'abord le fournisseur (Achats → Fournisseurs), puis relancez la lecture.'
+                : 'Choisissez d\'abord le fournisseur, puis relancez la lecture du bordereau.';
+            $this->addError('supplierId', 'Choisissez le fournisseur.');
+
+            return;
+        }
+
         $files = array_map(fn ($f) => ['path' => $f->getRealPath(), 'mime' => $f->getMimeType()], $this->noteFiles);
         try {
-            $this->note = $reader->read(auth()->user(), Supplier::findOrFail($this->supplierId), $files);
+            $this->note = $reader->read(auth()->user(), $supplier, $files);
         } catch (DeliveryNoteException $e) {
             $this->error = $e->getMessage();
 

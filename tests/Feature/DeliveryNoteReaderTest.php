@@ -114,4 +114,12 @@ class DeliveryNoteReaderTest extends TestCase
         $this->expectException(\Symfony\Component\HttpKernel\Exception\HttpException::class);
         app(\App\Services\DeliveryNotes\DeliveryNoteReader::class)->read(User::where('username', 'cashier')->firstOrFail(), Supplier::firstOrFail(), []);
     }
+
+    public function test_reading_without_supplier_shows_message_instead_of_404(): void
+    {
+        $this->actingAs(User::where("username", "storekeeper")->firstOrFail());
+        Livewire::test(ReceiptEditor::class)->set("supplierId", "")
+            ->set("noteFiles", [UploadedFile::fake()->image("bl.jpg")])->call("readNote")
+            ->assertStatus(200)->assertHasErrors("supplierId")->assertSee("Choisissez d&#039;abord le fournisseur", false);
+    }
 }
