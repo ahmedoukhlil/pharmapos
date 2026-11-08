@@ -185,4 +185,28 @@ class ScannerModesTest extends TestCase
         $this->expectException(ScannerException::class);
         $this->service->createPairing($this->user('cashier'), 'lookup', $p->medicine_id);
     }
+    public function test_phone_follows_the_account_from_screen_to_screen(): void
+    {
+        $inventory = $this->inventory();
+        $session = $this->pair('inventory', $inventory->id);
+        $p = Presentation::where('sku', 'PARA500-16')->firstOrFail();
+
+        // Le même compte ouvre une fiche produit : pas de nouvel appairage, le scanner la suit
+        $this->actingAs($this->user());
+        Livewire::test(ScannerPanel::class, ['mode' => 'lookup', 'contextId' => $p->medicine_id])->assertSet('attached', false);
+        $this->assertSame('inventory', $session->fresh()->mode);   // gestionnaire de stock : pas le droit catalogue
+
+        $receipt = app(GoodsReceiptService::class)->saveDraft($this->user(), [
+            'supplier_id' => Supplier::where('code', 'GROS01')->value('id'),
+            'location_id' => Location::where('code', 'RES')->value('id'),
+            'lines' => [['presentation_id' => $p->id, 'quantity_packs' => 1, 'unit_price' => '100']],
+        ]);
+        Livewire::test(ScannerPanel::class, ['mode' => 'receipt', 'contextId' => $receipt->id])->assertSet('attached', true);
+        $this->assertSame('receipt:'.$receipt->id, ScannerService::target($session->fresh()));
+
+        // Le téléphone encore sur l'ancien écran est prié de se recharger
+        $this->postJson(route('scanner.scan', $session), ['id' => (string) Str::uuid(), 'sequence' => 9, 'barcode' => '2000000000015',
+            'target' => 'inventory:'.$inventory->id])->assertStatus(409)->assertJson(['error' => 'target_changed']);
+        $this->getJson(route('scanner.status', $session))->assertJson(['target' => 'receipt:'.$receipt->id]);
+    }
 }

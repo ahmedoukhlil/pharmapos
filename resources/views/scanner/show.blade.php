@@ -19,6 +19,7 @@
       data-scan-url="{{ route('scanner.scan', $session) }}"
       data-lookup-url="{{ route('scanner.lookup', $session) }}"
       data-mode="{{ $session->mode }}"
+      data-target="{{ \App\Services\Scanner\ScannerService::target($session) }}"
       data-last-sequence="{{ $session->last_sequence }}">
 
     <header class="flex items-center gap-2">
@@ -129,11 +130,13 @@
             if (r.ok) {
                 const data = await r.json();
                 state = data.state;
+                // Le PC a ouvert un autre écran : la page du téléphone se recharge pour le suivre
+                if (data.target && data.target !== app.dataset.target && state === 'active' && !entry) return location.reload();
                 store.set('seq', Math.max(store.get('seq', 0), data.last_sequence));
                 render();
             }
         } catch {}
-        setTimeout(pollState, state === 'awaiting_confirmation' ? 1500 : 10000);
+        setTimeout(pollState, state === 'awaiting_confirmation' ? 1500 : 3000);
     }
 
     // --- File d'envoi (SCN-05) : identifiant unique, séquence, accusé, renvoi ----
@@ -144,7 +147,7 @@
     function enqueue(barcode, payload = null) {
         const seq = store.get('seq', 0) + 1;
         store.set('seq', seq);
-        queue.push({ id: crypto.randomUUID(), sequence: seq, barcode, payload, scanned_at: new Date().toISOString() });
+        queue.push({ id: crypto.randomUUID(), sequence: seq, barcode, payload, target: app.dataset.target, scanned_at: new Date().toISOString() });
         store.set('queue', queue);
         flush();
     }
@@ -161,6 +164,12 @@
             });
             const data = await r.json().catch(() => ({}));
             if (r.status === 410) { state = 'revoked'; render(); }
+            else if (r.status === 409) {
+                queue = [];
+                store.set('queue', queue);
+                log(scan.barcode, { status: 'error', message: 'écran changé sur le PC, rescannez' });
+                return setTimeout(() => location.reload(), 1200);
+            }
             else if (r.ok || r.status === 422) {
                 queue.shift();
                 store.set('queue', queue);
@@ -231,9 +240,10 @@
     async function openEntry(code) {
         entry = { code, product: null };
         try {
-            const r = await fetch(`${app.dataset.lookupUrl}?code=${encodeURIComponent(code)}`, { headers: { Accept: 'application/json' } });
+            const r = await fetch(`${app.dataset.lookupUrl}?code=${encodeURIComponent(code)}&target=${encodeURIComponent(app.dataset.target)}`, { headers: { Accept: 'application/json' } });
             const data = await r.json();
             if (r.status === 410) { entry = null; state = 'revoked'; return render(); }
+            if (r.status === 409) return location.reload();
             if (!r.ok) { entry = null; return log(code, { status: 'error', message: data.message }); }
             entry.product = data;
         } catch {

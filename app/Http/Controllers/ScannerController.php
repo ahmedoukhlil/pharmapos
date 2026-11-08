@@ -61,12 +61,17 @@ class ScannerController extends Controller
     {
         $this->assertPhoneOwner($request, $session);
 
-        return response()->json(['state' => ScannerService::state($session->fresh()), 'last_sequence' => $session->last_sequence]);
+        $session = $session->fresh();
+
+        return response()->json(['state' => ScannerService::state($session), 'last_sequence' => $session->last_sequence, 'target' => ScannerService::target($session)]);
     }
 
     public function scan(Request $request, ScannerSession $session): JsonResponse
     {
         $this->assertPhoneOwner($request, $session);
+        if ($changed = $this->targetChanged($request, $session)) {
+            return $changed;
+        }
 
         try {
             return response()->json($this->scanner->ingest($request->user(), $session, $request->only('id', 'sequence', 'barcode', 'scanned_at', 'payload')));
@@ -79,12 +84,25 @@ class ScannerController extends Controller
     public function lookup(Request $request, ScannerSession $session): JsonResponse
     {
         $this->assertPhoneOwner($request, $session);
+        if ($changed = $this->targetChanged($request, $session)) {
+            return $changed;
+        }
 
         try {
             return response()->json($this->scanner->lookup($request->user(), $session, (string) $request->query('code')));
         } catch (ScannerException $e) {
             return $this->error($e);
         }
+    }
+
+    /** Le PC a changé d'écran depuis l'ouverture de la page du téléphone : elle doit se recharger. */
+    private function targetChanged(Request $request, ScannerSession $session): ?JsonResponse
+    {
+        $target = (string) $request->input('target', $request->query('target', ''));
+
+        return $target !== '' && $target !== ScannerService::target($session)
+            ? response()->json(['error' => 'target_changed', 'message' => 'Écran changé sur le PC.'], 409)
+            : null;
     }
 
     private function error(ScannerException $e): JsonResponse

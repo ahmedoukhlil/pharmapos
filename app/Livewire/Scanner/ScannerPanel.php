@@ -40,6 +40,10 @@ class ScannerPanel extends Component
 
     public bool $open = false;
 
+    /** Le scanner du compte vise bien cet écran (faux : pas le droit ici, ou document clos). */
+    #[Locked]
+    public bool $attached = false;
+
     /** État et dernière séquence affichés au dernier rendu : l'interrogation ne redessine que s'ils changent. */
     #[Locked]
     public ?string $renderedState = null;
@@ -52,9 +56,14 @@ class ScannerPanel extends Component
         abort_unless(isset(ScannerService::MODE_PERMISSIONS[$mode]), 404);
         $this->mode = $mode;
         $this->contextId = $contextId;
-        $this->sessionId = ScannerSession::where('mode', $mode)->where($mode === 'pos' ? 'register_id' : 'context_id', $contextId)
-            ->whereNull('revoked_at')->whereNotNull('confirmed_by')->where('expires_at', '>', now())->latest()->value('id');
+        // Scanner du compte : le téléphone associé par cet utilisateur suit l'écran ouvert
+        $this->sessionId = ScannerSession::where('confirmed_by', auth()->id())
+            ->whereNull('revoked_at')->where('expires_at', '>', now())->latest('paired_at')->value('id');
         $this->seenSequence = (int) $this->scanner?->last_sequence;
+        if ($this->scanner) {
+            $this->attached = app(ScannerService::class)->attach(auth()->user(), $this->scanner, $mode, $contextId);
+            unset($this->scanner);
+        }
     }
 
     #[Computed]
@@ -88,6 +97,7 @@ class ScannerPanel extends Component
     public function confirm(ScannerService $service): void
     {
         $service->confirm(auth()->user(), $this->scanner);
+        $this->attached = true;
         $this->pairingUrl = null;
         $this->open = false;
         unset($this->scanner, $this->state);
@@ -103,9 +113,19 @@ class ScannerPanel extends Component
     }
 
     /** Interrogée chaque seconde : n'émet un rendu que si quelque chose a changé. */
-    public function poll(ScannerService $service): void
+    public function poll(ScannerService $service, bool $visible = true): void
     {
-        if ($this->state === 'active') {
+        // Onglet affiché : le scanner du compte se rattache à cet écran (cas de plusieurs onglets ouverts)
+        if ($this->state === 'active' && $visible) {
+            $before = $this->attached;
+            $this->attached = $service->attach(auth()->user(), $this->scanner, $this->mode, $this->contextId);
+            unset($this->scanner);
+            if ($before !== $this->attached) {
+                $this->renderedState = null;
+            }
+        }
+
+        if ($this->state === 'active' && $this->attached && ScannerService::target($this->scanner) === $this->targetKey()) {
             if ($this->mode === 'inventory') {
                 // Les comptes sont déjà enregistrés par le téléphone : il suffit de rafraîchir la feuille
                 if ($this->scanner->last_sequence > $this->seenSequence) {
@@ -127,6 +147,11 @@ class ScannerPanel extends Component
         if ($this->renderedState === $this->state) {
             $this->skipRender();
         }
+    }
+
+    private function targetKey(): string
+    {
+        return $this->mode.':'.$this->contextId;
     }
 
     public function render()

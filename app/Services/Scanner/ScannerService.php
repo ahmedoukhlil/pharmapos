@@ -46,9 +46,8 @@ class ScannerService
         $this->authorize($user, self::MODE_PERMISSIONS[$mode] ?? abort(404));
         $this->assertContext($user->pharmacy_id, $mode, $contextId);
 
-        // Un seul scanner actif ou en attente par caisse / document
-        $column = $mode === 'pos' ? 'register_id' : 'context_id';
-        ScannerSession::where('mode', $mode)->where($column, $contextId)->whereNull('revoked_at')->update(['revoked_at' => now()]);
+        // Le téléphone est associé au compte : un seul scanner par utilisateur, qui suit l'écran ouvert sur le PC
+        ScannerSession::where('confirmed_by', $user->id)->whereNull('revoked_at')->update(['revoked_at' => now()]);
 
         $token = Str::random(48);
         $session = ScannerSession::create([
@@ -132,6 +131,47 @@ class ScannerService
 
             return $session;
         });
+    }
+
+    /** Écran visé par le téléphone, ex. « receipt:01J… » : le téléphone le compare pour suivre le PC. */
+    public static function target(ScannerSession $session): string
+    {
+        return $session->mode.':'.($session->mode === 'pos' ? $session->register_id : $session->context_id);
+    }
+
+    /**
+     * Le PC ouvre un autre écran (caisse, réception, inventaire, fiche produit) : le scanner du compte
+     * le suit. Refusé si l'utilisateur du PC ou celui du téléphone n'a pas le droit sur cet écran.
+     * Les scans encore en attente pour l'écran précédent sont écartés.
+     */
+    public function attach(User $user, ScannerSession $session, string $mode, string $contextId): bool
+    {
+        if ($session->confirmed_by !== $user->id || self::state($session) !== 'active' || ! isset(self::MODE_PERMISSIONS[$mode])) {
+            return false;
+        }
+        $permission = self::MODE_PERMISSIONS[$mode];
+        if (! $user->hasPermission($permission) || ! $session->user?->hasPermission($permission)) {
+            return false;
+        }
+        if ($session->mode === $mode && ($mode === 'pos' ? $session->register_id : $session->context_id) === $contextId) {
+            return true;
+        }
+        try {
+            $this->assertContext($user->pharmacy_id, $mode, $contextId);
+        } catch (ScannerException) {
+            return false;
+        }
+
+        DB::transaction(function () use ($session, $mode, $contextId) {
+            ScanEvent::where('scanner_session_id', $session->id)->whereIn('status', ['received', 'unknown_product'])->update(['status' => 'rejected']);
+            $session->update([
+                'mode' => $mode,
+                'register_id' => $mode === 'pos' ? $contextId : null,
+                'context_id' => $mode === 'pos' ? null : $contextId,
+            ]);
+        });
+
+        return true;
     }
 
     public function revoke(User $user, ScannerSession $session): void
