@@ -195,7 +195,7 @@
         const li = document.createElement('li');
         li.className = `rounded px-2 py-1 ${ok ? 'bg-emerald-900/60' : 'bg-red-900/60'}`;
         const detail = ack.payload ? ` - ${ack.payload.lot_number ? `lot ${ack.payload.lot_number}, ${ack.payload.quantity_packs} bte(s)` : `compté ${ack.payload.quantity}`}` : '';
-        li.textContent = ok && mode === 'lookup' ? `✓ ${code} envoyé au PC` : ok ? `✓ ${ack.product ?? code}${detail}` :`✗ ${code} - ${ack.status === 'unknown_product' ? 'produit inconnu' : (ack.message ?? 'refusé')}`;
+        li.textContent = ok && (mode === 'lookup' || mode === 'stock') ? `✓ ${code} envoyé au PC` : ok ? `✓ ${ack.product ?? code}${detail}` :`✗ ${code} - ${ack.status === 'unknown_product' ? 'produit inconnu' : (ack.message ?? 'refusé')}`;
         $('log').prepend(li);
         while ($('log').children.length > 15) $('log').lastChild.remove();
         feedback(ok);
@@ -227,7 +227,7 @@
             $('again').disabled = false;
             return enqueue(code);
         }
-        if (mode === 'lookup') return enqueue(code);   // fiche produit : le code est envoyé au PC
+        if (mode === 'lookup' || mode === 'stock') return enqueue(code);   // fiche produit : le code est envoyé au PC
         if (!entry) openEntry(code);   // lectures ignorées tant qu'une fiche est ouverte
     }
 
