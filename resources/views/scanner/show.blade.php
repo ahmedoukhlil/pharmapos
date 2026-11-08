@@ -105,12 +105,17 @@
 
         @if ($session->mode === 'stock')
             <section id="link" class="hidden flex-col gap-2 rounded-lg bg-amber-900/40 p-3">
-                <p class="text-sm">Code inconnu : <strong id="link-code" class="font-mono"></strong><br>Cherchez le produit par son nom pour lui associer ce code.</p>
+                <p id="link-help" class="text-sm">Code inconnu : <strong id="link-code" class="font-mono"></strong><br>Cherchez le produit par son nom pour lui associer ce code.</p>
+                <p id="nocode-help" class="hidden text-sm">Produit sans code-barres : cherchez-le par son nom.</p>
                 <input id="link-q" autocomplete="off" placeholder="ex. doliprane" class="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-3 text-lg">
                 <ul id="link-results" class="flex flex-col gap-1"></ul>
                 <p id="link-error" class="hidden text-sm text-red-300"></p>
                 <button type="button" id="link-cancel" class="rounded-lg bg-slate-700 px-4 py-3">Annuler</button>
             </section>
+        @endif
+
+        @if ($session->mode === 'stock')
+            <button type="button" id="nocode" class="rounded-lg bg-slate-700 px-4 py-3 text-sm font-semibold">Produit sans code-barres : chercher par nom</button>
         @endif
 
         <form id="manual" class="flex gap-2">
@@ -323,9 +328,12 @@
         $('entry-location').replaceChildren(...p.locations.map((l) => Object.assign(document.createElement('option'), { value: l.id, textContent: l.name })));
         $('entry-cost').value = Number(p.purchase_price) > 0 ? p.purchase_price : '';
     }
+    // code null : produit sans code-barres, choisi par son nom sans association
     function openLink(code) {
-        linking = code;
-        $('link-code').textContent = code;
+        linking = code ?? '';
+        $('link-help').classList.toggle('hidden', !code);
+        $('nocode-help').classList.toggle('hidden', !!code);
+        $('link-code').textContent = code ?? '';
         $('link-q').value = '';
         $('link-results').replaceChildren();
         $('link-error').classList.add('hidden');
@@ -333,6 +341,7 @@
         feedback(false);
         setTimeout(() => $('link-q').focus(), 50);
     }
+    $('nocode')?.addEventListener('click', () => { if (!entry) openLink(null); });
     function closeLink() { linking = null; $('link')?.classList.replace('flex', 'hidden'); }
     $('link-cancel')?.addEventListener('click', closeLink);
     $('link-q')?.addEventListener('input', () => {
@@ -349,7 +358,7 @@
                 b.className = 'w-full rounded-lg bg-slate-800 px-3 py-3 text-start';
                 b.innerHTML = '<span class="font-semibold"></span><span class="block text-xs text-slate-400"></span>';
                 b.children[0].textContent = it.name; b.children[1].textContent = it.label;
-                b.addEventListener('click', () => link(it.id));
+                b.addEventListener('click', () => linking ? link(it.id) : (closeLink(), openEntry(it.sku)));
                 const li = document.createElement('li'); li.append(b); return li;
             }) : [Object.assign(document.createElement('li'), { className: 'text-sm text-slate-400', textContent: 'Aucun produit : créez-le dans le catalogue sur le PC.' })]));
         }, 300);

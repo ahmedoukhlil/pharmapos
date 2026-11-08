@@ -368,7 +368,7 @@ class ScannerService
         $this->assertStockPhone($user, $session);
 
         return mb_strlen(trim($term)) < 2 ? [] : \App\Support\ProductLookup::find($session->pharmacy_id, $term, 12)
-            ->map(fn ($p) => ['id' => $p->id, 'name' => trim($p->medicine->brand_name.' '.$p->medicine->strength), 'label' => $p->label.' · '.$p->sku])->values()->all();
+            ->map(fn ($p) => ['id' => $p->id, 'name' => trim($p->medicine->brand_name.' '.$p->medicine->strength), 'sku' => $p->sku, 'label' => $p->label.' · '.$p->sku])->values()->all();
     }
 
     /** Associe le code inconnu au produit choisi (droit « Gérer le catalogue »), puis renvoie la fiche du produit. */

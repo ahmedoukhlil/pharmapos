@@ -98,7 +98,8 @@ class StockEntryTest extends TestCase
 
         // Code inconnu → recherche par nom → association
         $this->getJson(route('scanner.lookup', $session).'?code=6111111111111')->assertStatus(422)->assertJson(['error' => 'unknown_product']);
-        $this->getJson(route('scanner.search', $session).'?q=parac')->assertOk()->assertJsonFragment(['id' => $p->id]);
+        $this->getJson(route('scanner.search', $session).'?q=parac')->assertOk()->assertJsonFragment(['id' => $p->id, 'sku' => 'PARA500-16']);
+        $this->getJson(route('scanner.lookup', $session).'?code=PARA500-16')->assertOk()->assertJson(['presentation_id' => $p->id]);   // produit sans code-barres : par son SKU
         $this->postJson(route('scanner.link', $session), ['barcode' => '6111111111111', 'presentation_id' => $p->id])
             ->assertOk()->assertJson(['presentation_id' => $p->id])->assertJsonFragment(['id' => $ray]);
 
