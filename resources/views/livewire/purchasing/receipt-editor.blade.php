@@ -270,13 +270,14 @@
                                     $current = (float) $p?->sale_price;
                                     $newSale = (float) ($line['sale_price'] ?? 0);
                                     $buy = (float) $line['unit_price'];
-                                    $margin = $newSale > 0 && $buy > 0 ? round(($newSale - $buy) / $newSale * 100) : null;
+                                    // Même base que les coefficients du catalogue : marge sur le prix d'achat (×1,3 = 30 %)
+                                    $margin = $newSale > 0 && $buy > 0 ? round(($newSale - $buy) / $buy * 100) : null;
                                 @endphp
                                 <input wire:model.blur="lines.{{ $i }}.sale_price" type="number" min="0" step="0.01" @disabled($ro || ! $canPrice) aria-label="Prix de vente par boîte"
                                        title="{{ $canPrice ? 'Proposé selon vos marges, modifiable' : 'Droit « Modifier les prix » nécessaire' }}"
                                        @class(['w-20 rounded border px-1 py-1 text-end tabular-nums', 'border-amber-400 bg-amber-50' => ! $ro && $current > 0 && abs($newSale - $current) >= 0.01, 'border-slate-200' => $ro || $current <= 0 || abs($newSale - $current) < 0.01])>
                                 @if ($margin !== null)
-                                    <span @class(['block text-xs', 'text-red-700' => $margin <= 0, 'text-slate-500' => $margin > 0])>marge {{ $margin }} %</span>
+                                    <span @class(['block text-xs', 'text-red-700' => $margin <= 0, 'text-slate-500' => $margin > 0])>marge {{ $margin }} % (×{{ number_format($newSale / $buy, 2, ',', '') }})</span>
                                 @endif
                                 @if (! $ro && $current > 0 && abs($newSale - $current) >= 0.01)
                                     <span class="block text-xs text-amber-800">actuel {{ number_format($current, 2, ',', ' ') }}</span>
