@@ -32,6 +32,18 @@ class CheckoutScreenTest extends TestCase
         $this->assertAuthenticatedAs($this->cashier());
     }
 
+    public function test_login_from_scanner_qr_resumes_pairing(): void
+    {
+        $this->get('/scanner/appairer/abc')->assertRedirect(route('login'));
+        $this->post('/connexion', ['username' => 'cashier', 'password' => 'password'])
+            ->assertRedirect(url('/scanner/appairer/abc'));
+
+        // Les autres pages demandées avant connexion mènent toujours à la caisse
+        auth()->logout();
+        $this->get('/rapports');
+        $this->post('/connexion', ['username' => 'cashier', 'password' => 'password'])->assertRedirect(route('pos'));
+    }
+
     public function test_cashier_opens_session_scans_and_checks_out(): void
     {
         $this->actingAs($this->cashier());

@@ -63,8 +63,12 @@ class LoginController extends Controller
             Cookie::queue(Cookie::forever(self::COOKIE, $user->pharmacy->code));
         }
 
-        // Toujours la caisse après connexion, jamais la dernière page demandée
-        $request->session()->forget('url.intended');
+        // Toujours la caisse après connexion, sauf le QR du scanner smartphone : on reprend l'appairage
+        $intended = (string) $request->session()->pull('url.intended');
+        if (str_starts_with(parse_url($intended, PHP_URL_PATH) ?? '', '/scanner')) {
+            return redirect()->to($intended);
+        }
+
         return redirect()->to($user->is_super_admin ? route('admin.pharmacies') : route('pos'));
     }
 
