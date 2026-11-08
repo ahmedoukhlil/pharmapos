@@ -47,6 +47,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/admin', PharmacyIndex::class)->name('admin.pharmacies');
     Route::get('/admin/pharmacies/nouvelle', PharmacyCreate::class)->name('admin.pharmacies.create');
     Route::get('/admin/parametres', PlatformSettings::class)->name('admin.settings');
+    Route::get('/admin/e-mails', \App\Livewire\Admin\MailSettings::class)->name('admin.mail');
     Route::get('/caisse', Checkout::class)->name('pos');
     Route::get('/caisse/cloture', CloseSession::class)->name('pos.close');
     Route::get('/retours', Returns::class)->name('returns');

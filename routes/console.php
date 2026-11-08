@@ -71,3 +71,17 @@ Artisan::command('pharmapos:backup {--generate-key : Affiche une nouvelle clé B
 
 Schedule::command('pharmapos:backup')->everyFifteenMinutes()->withoutOverlapping();
 Schedule::command('pharmapos:backup --test-restore')->dailyAt('03:30')->withoutOverlapping();
+
+Artisan::command('pharmapos:notify', function (\App\Services\Notifications\NotificationService $notifications) {
+    if (! \App\Support\PlatformMail::configured()) {
+        $this->warn('Envoi des e-mails non configuré (Admin → E-mails).');
+
+        return 0;
+    }
+    $sent = $notifications->run();
+    $this->info("{$sent['stock']} e-mail(s) d'alertes de stock, {$sent['subscription']} e-mail(s) d'abonnement envoyé(s).");
+
+    return 0;
+})->purpose('E-mails du matin : alertes de stock et échéance des abonnements');
+
+Schedule::command('pharmapos:notify')->dailyAt('07:00')->withoutOverlapping();
