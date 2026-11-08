@@ -57,11 +57,27 @@ class AlertService
     }
 
     /** Présentations actives dont le stock vendable (unités de base) est au plus le seuil. */
-    public function lowStock(string $pharmacyId): Collection
+    public function lowStock(string $pharmacyId, ?int $limit = null): Collection
     {
         if (! $this->rule($pharmacyId, 'low_stock')) {
             return collect();
         }
+
+        return $this->lowStockQuery($pharmacyId)->with('medicine')
+            ->orderByRaw('COALESCE(s.qty, 0) / presentations.reorder_threshold')
+            ->when($limit, fn ($q) => $q->limit($limit))
+            ->select('presentations.*', DB::raw('COALESCE(s.qty, 0) as sellable_quantity'))
+            ->get();
+    }
+
+    /** Nombre de produits sous leur seuil, compté en SQL (le menu l'affiche sur chaque page). */
+    public function lowStockCount(string $pharmacyId): int
+    {
+        return $this->rule($pharmacyId, 'low_stock') ? $this->lowStockQuery($pharmacyId)->count() : 0;
+    }
+
+    private function lowStockQuery(string $pharmacyId)
+    {
         $today = Carbon::today()->toDateString();
 
         // Stock vendable : emplacement vendable, lot disponible et non périmé, moins les réservations
@@ -74,15 +90,12 @@ class AlertService
             ->groupBy('stock_balances.presentation_id')
             ->select('stock_balances.presentation_id', DB::raw('SUM(stock_balances.quantity - stock_balances.reserved_quantity) as qty'));
 
-        return Presentation::with('medicine')
+        return Presentation::query()
             ->leftJoinSub($sellable, 's', 's.presentation_id', '=', 'presentations.id')
             ->where('presentations.pharmacy_id', $pharmacyId)
             ->where('presentations.status', 'active')
             ->where('presentations.reorder_threshold', '>', 0)
-            ->whereRaw('COALESCE(s.qty, 0) <= presentations.reorder_threshold')
-            ->orderByRaw('COALESCE(s.qty, 0) / presentations.reorder_threshold')
-            ->select('presentations.*', DB::raw('COALESCE(s.qty, 0) as sellable_quantity'))
-            ->get();
+            ->whereRaw('COALESCE(s.qty, 0) <= presentations.reorder_threshold');
     }
 
     /** Sessions clôturées avec écart hors tolérance, en attente de validation. */
@@ -107,7 +120,7 @@ class AlertService
         $firstTier = $expiring->pluck('bucket')->filter()->min();
 
         return $expiring->filter(fn ($e) => $e->bucket === 0 || $e->bucket === $firstTier)->count()
-            + $this->lowStock($pharmacyId)->count()
+            + $this->lowStockCount($pharmacyId)
             + $this->cashVariances($pharmacyId)->count()
             + ($this->backupIssue($pharmacyId) ? 1 : 0);
     }

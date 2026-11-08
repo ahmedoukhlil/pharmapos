@@ -55,7 +55,7 @@ class NotificationService
     private function stock(Pharmacy $pharmacy, array $to): bool
     {
         $lines = [];
-        foreach ($this->alerts->lowStock($pharmacy->id) as $p) {
+        foreach ($this->alerts->lowStock($pharmacy->id, 100) as $p) {
             $lines[] = "Stock bas : {$p->medicine->brand_name} {$p->medicine->strength} {$p->label} - reste ".(int) $p->sellable_quantity." (seuil {$p->reorder_threshold})";
         }
         foreach ($this->alerts->expiring($pharmacy->id)->where('days_left', '<=', 30) as $e) {

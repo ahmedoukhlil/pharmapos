@@ -1,6 +1,6 @@
 @php
     $money = fn ($v) => number_format((float) $v, 2, ',', ' ');
-    $tabs = ['expiry' => ['Péremptions', $expiring->flatten(1)->count()], 'low_stock' => ['Stock bas', $lowStock->count()]];
+    $tabs = ['expiry' => ['Péremptions', $expiring->flatten(1)->count()], 'low_stock' => ['Stock bas', $lowStockTotal]];
     if ($canCash) {
         $tabs['cash'] = ['Écarts de caisse', $variances->count()];
     }
@@ -86,6 +86,9 @@
                     </tbody>
                 </table>
             </div>
+            @if ($lowStockTotal > $lowStock->count())
+                <p class="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">Les {{ $lowStock->count() }} produits les plus urgents sont affichés sur {{ $lowStockTotal }}. Pour une liste complète, créez une commande depuis le stock bas.</p>
+            @endif
             <p class="text-xs text-slate-500">Quantités en unités de base ; stock vendable = emplacements vendables, lots disponibles non périmés, hors réservations.</p>
         @else
             <div class="overflow-x-auto rounded-lg bg-white shadow-sm">

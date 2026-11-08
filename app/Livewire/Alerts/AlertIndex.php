@@ -24,7 +24,9 @@ class AlertIndex extends Component
 
         return view('livewire.alerts.alert-index', [
             'expiring' => $alerts->expiring($pharmacyId)->groupBy('bucket'),
-            'lowStock' => $alerts->lowStock($pharmacyId),
+            // Affichage limité : avec un gros catalogue sans stock, des milliers de lignes ralentissaient la page
+            'lowStock' => $alerts->lowStock($pharmacyId, 300),
+            'lowStockTotal' => $alerts->lowStockCount($pharmacyId),
             'variances' => $canCash ? $alerts->cashVariances($pharmacyId) : collect(),
             'canCash' => $canCash,
             'backupIssue' => $alerts->backupIssue($pharmacyId),
