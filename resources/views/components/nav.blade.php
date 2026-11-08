@@ -26,6 +26,7 @@
             ['catalogue.index', [], 'Catalogue', 'catalogue.*', $can('catalogue.view')],
             ['inventories.index', [], 'Inventaires', 'inventories.*', $can('inventory.count')],
             ['transfers', [], 'Transferts Rayon ↔ Réserve', 'transfers', $user->hasPermission('stock.transfer')],
+            ['stock-adjustments', [], 'Correction de stock', 'stock-adjustments', $can('stock.adjust', 'batch.destroy')],
         ],
         'Gestion' => [
             ['reports.index', [], 'Rapports', 'reports.*', $user->hasPermission('report.view')],
@@ -114,13 +115,14 @@
             'catalogue.index' => 'M4 6h16M4 12h16M4 18h10',
             'inventories.index' => 'M9 11l2 2 4-4M5 4h14v16H5z',
             'transfers' => 'M7 4 3 8l4 4M3 8h14M17 20l4-4-4-4M21 16H7',
+            'stock-adjustments' => 'M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z',
             'reports.index' => 'M4 20V10M10 20V4M16 20v-7M22 20H2',
             'users.index' => 'M16 19v-1a4 4 0 0 0-8 0v1M12 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6M20 19v-1a3 3 0 0 0-2-2.8M4 19v-1a3 3 0 0 1 2-2.8',
             'store-layout.index' => 'M3 21h18M5 21V8l7-5 7 5v13M9 21v-6h6v6',
             'payment-methods.index' => 'M2 6h20v12H2zM2 10h20M6 15h4',
             'backups.index' => 'M12 3v12M7 10l5 5 5-5M4 19h16',
         ];
-        $short = ['Transferts Rayon ↔ Réserve' => 'Transferts', 'Caisses et emplacements' => 'Emplacements', 'Modes de paiement' => 'Paiements'];
+        $short = ['Transferts Rayon ↔ Réserve' => 'Transferts', 'Correction de stock' => 'Corrections', 'Caisses et emplacements' => 'Emplacements', 'Modes de paiement' => 'Paiements'];
     @endphp
     <nav x-show="drawer" x-cloak x-transition.opacity.duration.100ms
          class="absolute inset-x-0 top-full z-50 h-[calc(100dvh-7.5rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] overflow-y-auto bg-slate-50 px-3 pb-4 text-slate-800 shadow-lg lg:hidden">

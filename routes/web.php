@@ -87,6 +87,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/factures/{invoice}', InvoiceEditor::class)->name('invoices.show');
     Route::get('/fournisseurs', SupplierIndex::class)->name('suppliers.index');
     Route::get('/fournisseurs/{supplier}/releve', [DocumentController::class, 'supplierStatement'])->name('suppliers.statement');
+    Route::get('/corrections-stock', \App\Livewire\Inventory\StockAdjustment::class)->name('stock-adjustments');
     Route::get('/transferts', \App\Livewire\Inventory\StockTransfer::class)->name('transfers');
     Route::get('/inventaires', InventoryIndex::class)->name('inventories.index');
     Route::get('/inventaires/{session}', InventorySheet::class)->name('inventories.show');
