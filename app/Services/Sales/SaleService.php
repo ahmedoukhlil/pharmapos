@@ -365,6 +365,11 @@ class SaleService
             throw new SaleException('split_not_allowed', "Vente à l'unité non autorisée pour {$presentation->label}.", ['line' => $lineNo]);
         }
 
+        // Produit importé sans prix de vente : on ne le vend pas à 0
+        if ((float) $unitPrice <= 0) {
+            throw new SaleException('missing_price', "Prix de vente non renseigné pour {$presentation->medicine?->brand_name} {$presentation->label} : complétez-le dans le catalogue.", ['line' => $lineNo]);
+        }
+
         $candidates = $balances->get($presentation->id, collect());
         $fefoBatchId = $candidates->first()?->batch_id;
         $overridden = false;

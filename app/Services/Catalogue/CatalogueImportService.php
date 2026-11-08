@@ -53,7 +53,7 @@ class CatalogueImportService
                 $cells = array_map(fn ($v) => is_string($v) ? trim($v) : $v, $row->toArray());
                 if ($headers === null) {
                     $headers = array_map(fn ($h) => Str::of(str_replace("\u{FEFF}", '', (string) $h))->ascii()->lower()->replaceMatches('/[^a-z0-9]+/', '_')->trim('_')->value(), $cells);
-                    $unknown = array_diff(['nom_commercial', 'prix_vente'], $headers);
+                    $unknown = array_diff(['nom_commercial'], $headers);
                     if ($unknown) {
                         throw ValidationException::withMessages(['file' => 'Colonnes obligatoires absentes : '.implode(', ', $unknown).'.']);
                     }
@@ -117,10 +117,10 @@ class CatalogueImportService
 
             DB::beginTransaction();   // point de sauvegarde : une ligne en erreur n'annule pas les autres
             try {
-                $this->importLine($user, $d);
+                $note = $this->importLine($user, $d);
                 DB::commit();
                 $result['created']++;
-                $result['lines'][] = ['line' => $line, 'status' => 'ok', 'message' => null, 'label' => $label];
+                $result['lines'][] = ['line' => $line, 'status' => 'ok', 'message' => $note, 'label' => $label];
             } catch (ValidationException $e) {
                 DB::rollBack();
                 $result['errors']++;
@@ -131,7 +131,8 @@ class CatalogueImportService
         return $result;
     }
 
-    private function importLine(User $user, array $d): void
+    /** @return string|null remarque affichée sur la ligne (prix de vente calculé ou à compléter) */
+    private function importLine(User $user, array $d): ?string
     {
         $type = match (Str::lower(Str::ascii((string) ($d['type'] ?? '')))) {
             'parapharmacie', 'parapharmacy', 'para' => 'parapharmacy',
@@ -155,6 +156,20 @@ class CatalogueImportService
                 'prescription_required' => $this->bool($d['prescription_required'] ?? null),
             ]);
 
+        // Prix de vente facultatif : calculé depuis le prix d'achat et les marges, sinon 0 à compléter
+        $note = null;
+        $sale = $this->number($d['sale_price'] ?? null);
+        $purchase = $this->number($d['purchase_price'] ?? null);
+        if ($sale === null) {
+            if (is_numeric($purchase) && (float) $purchase > 0) {
+                $sale = CatalogueService::suggestedSalePrice($user->pharmacy_id, $type, (float) $purchase);
+                $note = 'Prix de vente calculé depuis le prix d\'achat : '.number_format($sale, 2, ',', ' ').' MRU.';
+            } else {
+                $sale = 0;
+                $note = 'Prix de vente à compléter : le produit ne peut pas être vendu à 0.';
+            }
+        }
+
         $split = $this->bool($d['allow_split_sale'] ?? null);
         $presentation = $this->catalogue->savePresentation($user, $medicine, [
             'sku' => $d['sku'] ?? null,
@@ -164,7 +179,7 @@ class CatalogueImportService
             'allow_split_sale' => $split,
             'unit_sale_price' => $split ? $this->number($d['unit_sale_price'] ?? null) : null,
             'purchase_price' => $this->number($d['purchase_price'] ?? null) ?? 0,
-            'sale_price' => $this->number($d['sale_price'] ?? null),
+            'sale_price' => $sale,
             'reorder_threshold' => $this->nullable($d['reorder_threshold'] ?? null),
         ]);
 
@@ -175,6 +190,8 @@ class CatalogueImportService
         foreach (preg_split('/[\s|]+/', $raw, -1, PREG_SPLIT_NO_EMPTY) as $code) {
             $this->catalogue->addBarcode($user, $presentation, $code);
         }
+
+        return $note;
     }
 
     private function nullable($v)

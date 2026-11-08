@@ -14,7 +14,7 @@
         </div>
 
         <div class="space-y-2 rounded-lg bg-white p-4 text-sm shadow-sm">
-            <p>Fichier Excel (.xlsx) ou CSV, première ligne = en-têtes. Obligatoires : <code>nom_commercial</code>, <code>sku</code>, <code>prix_vente</code> (et <code>dci</code> pour un médicament).</p>
+            <p>Fichier Excel (.xlsx) ou CSV, première ligne = en-têtes. Obligatoires : <code>nom_commercial</code>, <code>sku</code> (et <code>dci</code> pour un médicament). <code>prix_vente</code> est facultatif : sans lui, il est calculé depuis <code>prix_achat</code> avec vos marges, ou reste à compléter.</p>
             <p class="text-xs text-slate-500">Colonnes reconnues : {{ implode(', ', $columns) }}. Plusieurs codes-barres séparés par des espaces ou « ; ». Les SKU déjà présents sont ignorés.</p>
             <input type="file" wire:model="file" accept=".csv,.txt,.xlsx" class="block text-sm">
             <div wire:loading wire:target="file" class="text-slate-500">Analyse du fichier…</div>

@@ -99,4 +99,22 @@ class CatalogueImportTest extends TestCase
         $this->actingAs(User::where('username', 'cashier')->first());
         $this->get(route('catalogue.import'))->assertForbidden();
     }
+
+    public function test_sale_price_is_optional(): void
+    {
+        $this->actingAs(User::where('username', 'owner')->first());
+        $csv = implode("\n", [
+            'type;nom_commercial;dci;sku;unites_par_boite;prix_achat;code_barres',
+            'medicament;Vermox;Mébendazole;VERMOX-6;6;66,40;',
+            'medicament;Sans prix;X;NOPRICE-1;1;;',
+        ]);
+
+        Livewire::test(CatalogueImport::class)
+            ->set('file', UploadedFile::fake()->createWithContent('c.csv', $csv))
+            ->assertHasNoErrors()->assertSet('preview.errors', 0)
+            ->call('import')->assertSee('calculé depuis le prix');
+
+        $this->assertGreaterThan(66.40, (float) \App\Models\Presentation::where('sku', 'VERMOX-6')->value('sale_price'));
+        $this->assertSame(0.0, (float) \App\Models\Presentation::where('sku', 'NOPRICE-1')->value('sale_price'));
+    }
 }
