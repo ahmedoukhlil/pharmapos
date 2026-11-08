@@ -195,4 +195,30 @@ class GoodsReceiptTest extends TestCase
         $this->assertSame(2, Batch::whereIn('lot_number', ['SCR1', 'SCR2'])->count());
         $this->get(route('receipts.index'))->assertOk()->assertSee($receipt->number);
     }
+
+    public function test_sale_price_proposed_and_applied_on_validation(): void
+    {
+        $owner = User::where("username", "owner")->firstOrFail();
+        $this->actingAs($owner);
+        $p = Presentation::where("sku", "PARA500-16")->firstOrFail();
+        $current = (string) $p->sale_price;
+
+        $c = Livewire::test(ReceiptEditor::class)->call("add", $p->id)
+            ->assertSet("lines.0.sale_price", $current)->assertSee("Prix vente")
+            ->set("lines.0.unit_price", "500")                       // prix proposé recalculé selon les marges
+            ->assertNotSet("lines.0.sale_price", $current);
+        $c->set("lines.0.sale_price", "777")->set("lines.0.unit_price", "510")
+            ->assertSet("lines.0.sale_price", "777")                  // saisie manuelle gardée
+            ->set("lines.0.lot_number", "SP1")->set("lines.0.expiry", $this->future(20))
+            ->call("validateReceipt")->assertSee("validée");
+
+        $this->assertSame(777.0, (float) $p->fresh()->sale_price);
+        $this->assertTrue(PriceHistory::where("presentation_id", $p->id)->where("price_type", "sale")->where("reason", "Réception fournisseur")->exists());
+
+        // Sans le droit « Modifier les prix », le prix de vente n est pas changé
+        $this->actingAs($this->storekeeper);
+        Livewire::test(ReceiptEditor::class)->call("add", $p->id)->set("lines.0.sale_price", "999")
+            ->set("lines.0.lot_number", "SP2")->set("lines.0.expiry", $this->future(20))->call("validateReceipt")->assertSee("validée");
+        $this->assertSame(777.0, (float) $p->fresh()->sale_price);
+    }
 }

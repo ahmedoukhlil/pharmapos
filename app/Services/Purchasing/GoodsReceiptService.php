@@ -89,6 +89,10 @@ class GoodsReceiptService
                 if (! is_numeric($line['unit_price'] ?? null) || (float) $line['unit_price'] < 0) {
                     throw new ReceiptException('invalid_price', "Prix d'achat invalide.", $i + 1);
                 }
+                $sale = $line['sale_price'] ?? null;
+                if ($sale !== null && $sale !== '' && (! is_numeric($sale) || (float) $sale < 0)) {
+                    throw new ReceiptException('invalid_price', 'Prix de vente invalide.', $i + 1);
+                }
                 $decision = $line['decision'] ?? 'accepted';
                 if (! in_array($decision, ['accepted', 'quarantine', 'refused'], true)) {
                     throw new ReceiptException('invalid_decision', 'Décision invalide.', $i + 1);
@@ -113,6 +117,7 @@ class GoodsReceiptService
                     'quantity_packs' => $packs,
                     'quantity_units' => $packs * $presentation->units_per_pack,
                     'unit_price' => $line['unit_price'],
+                    'sale_price' => is_numeric($sale ?? null) ? $sale : null,
                     'lot_number' => Str::upper(trim($line['lot_number'] ?? '')) ?: null,
                     'expiry_raw' => $expiryRaw ?: null,
                     'expiry_date' => $expiry,
@@ -164,6 +169,9 @@ class GoodsReceiptService
                 $unitCost = round((float) $line->unit_price / $line->presentation->units_per_pack, 4);
 
                 $this->updatePurchasePrice($user, $line->presentation, (string) $line->unit_price);
+                if ($line->sale_price !== null && $line->decision !== 'refused' && $user->hasPermission('price.update')) {
+                    $this->updateSalePrice($user, $line->presentation, (string) $line->sale_price);
+                }
                 $this->addStock($user, $receipt, $batch, $location, $line->quantity_units, $unitCost);
 
                 $line->update(['batch_id' => $batch->id]);
@@ -287,6 +295,27 @@ class GoodsReceiptService
                 'effective_at' => now(),
             ]);
         }
+    }
+
+    /** Prix de vente décidé à la réception (droit « Modifier les prix »), historisé. */
+    private function updateSalePrice(User $user, Presentation $presentation, string $packPrice): void
+    {
+        $presentation = Presentation::whereKey($presentation->id)->lockForUpdate()->firstOrFail();
+        $previous = (string) $presentation->sale_price;
+        if ((int) round((float) $previous * 100) === (int) round((float) $packPrice * 100)) {
+            return;
+        }
+        $presentation->update(['sale_price' => $packPrice]);
+        PriceHistory::create([
+            'pharmacy_id' => $presentation->pharmacy_id,
+            'presentation_id' => $presentation->id,
+            'price_type' => 'sale',
+            'old_price' => $previous,
+            'new_price' => $packPrice,
+            'changed_by' => $user->id,
+            'reason' => 'Réception fournisseur',
+            'effective_at' => now(),
+        ]);
     }
 
     private function addStock(User $user, GoodsReceipt $receipt, Batch $batch, Location $location, int $units, float $unitCost): void

@@ -6,6 +6,7 @@ use App\Models\GoodsReceipt;
 use App\Models\Location;
 use App\Models\Presentation;
 use App\Models\Supplier;
+use App\Services\Catalogue\CatalogueService;
 use App\Services\DeliveryNotes\DeliveryNoteException;
 use App\Services\DeliveryNotes\DeliveryNoteReader;
 use App\Services\Purchasing\GoodsReceiptService;
@@ -70,6 +71,8 @@ class ReceiptEditor extends Component
                 'purchase_order_line_id' => $l->purchase_order_line_id,
                 'quantity_packs' => (string) $l->quantity_packs,
                 'unit_price' => (string) $l->unit_price,
+                'sale_price' => $l->sale_price !== null ? (string) $l->sale_price : $this->defaultSalePrice($l->presentation_id, (string) $l->unit_price),
+                'sale_auto' => $l->sale_price === null,
                 'lot_number' => (string) $l->lot_number,
                 'expiry' => (string) $l->expiry_raw,
                 'decision' => $l->decision,
@@ -159,6 +162,8 @@ class ReceiptEditor extends Component
             'purchase_order_line_id' => null,
             'quantity_packs' => '1',
             'unit_price' => (string) $presentation->purchase_price,
+            'sale_price' => $this->defaultSalePrice($presentation->id, (string) $presentation->purchase_price),
+            'sale_auto' => true,
             'lot_number' => '',
             'expiry' => '',
             'decision' => 'accepted',
@@ -276,6 +281,8 @@ class ReceiptEditor extends Component
                 'purchase_order_line_id' => null,
                 'quantity_packs' => (string) (int) round((float) $l['quantity']),
                 'unit_price' => (string) $l['unit_price'],
+                'sale_price' => $this->defaultSalePrice($l['presentation_id'], (string) $l['unit_price']),
+                'sale_auto' => true,
                 'lot_number' => (string) $l['lot'],
                 'expiry' => (string) $l['expiry'],
                 'decision' => 'accepted',
@@ -320,6 +327,43 @@ class ReceiptEditor extends Component
     {
         unset($this->lines[$i]);
         $this->lines = array_values($this->lines);
+    }
+
+    /**
+     * Prix de vente proposé par boîte : le prix actuel du produit, ou à défaut le prix calculé
+     * depuis le prix d'achat avec les marges de l'officine.
+     */
+    public function defaultSalePrice(string $presentationId, string $purchasePrice): string
+    {
+        $p = Presentation::with('medicine')->where('pharmacy_id', auth()->user()->pharmacy_id)->find($presentationId);
+        if (! $p) {
+            return '';
+        }
+        if ((float) $p->sale_price > 0) {
+            return (string) $p->sale_price;
+        }
+
+        return (float) $purchasePrice > 0
+            ? (string) CatalogueService::suggestedSalePrice($p->pharmacy_id, $p->medicine->type, (float) $purchasePrice)
+            : '';
+    }
+
+    /** Prix d'achat modifié : le prix de vente encore « proposé » suit les marges ; une saisie manuelle est gardée. */
+    public function updatedLines($value, string $key): void
+    {
+        [$i, $field] = array_pad(explode('.', $key, 2), 2, null);
+        if (! isset($this->lines[$i])) {
+            return;
+        }
+        if ($field === 'sale_price') {
+            $this->lines[$i]['sale_auto'] = false;
+        }
+        if ($field === 'unit_price' && ($this->lines[$i]['sale_auto'] ?? true) && (float) $value > 0) {
+            $p = Presentation::with('medicine')->find($this->lines[$i]['presentation_id']);
+            if ($p) {
+                $this->lines[$i]['sale_price'] = (string) CatalogueService::suggestedSalePrice($p->pharmacy_id, $p->medicine->type, (float) $value);
+            }
+        }
     }
 
     /** Péremption interprétée, affichée à côté de la saisie pour contrôle visuel. */
@@ -395,6 +439,7 @@ class ReceiptEditor extends Component
 
         return view('livewire.purchasing.receipt-editor', [
             'canCreateProduct' => auth()->user()->hasPermission('catalogue.manage'),
+            'canPrice' => auth()->user()->hasPermission('price.update'),
             'canInvoice' => $canInvoice,
             'invoice' => $canInvoice && $this->receipt?->status === 'validated'
                 ? app(PurchaseInvoiceService::class)->invoiceFor($this->receipt) : null,
