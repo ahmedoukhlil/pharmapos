@@ -101,6 +101,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/scanner/{session}', [ScannerController::class, 'show'])->name('scanner.show');
     Route::get('/scanner/{session}/etat', [ScannerController::class, 'status'])->name('scanner.status');
     Route::get('/scanner/{session}/produit', [ScannerController::class, 'lookup'])->middleware('throttle:120,1')->name('scanner.lookup');
+    Route::get('/scanner/{session}/recherche', [ScannerController::class, 'search'])->middleware('throttle:120,1')->name('scanner.search');
+    Route::post('/scanner/{session}/associer', [ScannerController::class, 'link'])->middleware('throttle:60,1')->name('scanner.link');
     Route::post('/scanner/{session}/scans',[ScannerController::class, 'scan'])->middleware('throttle:120,1')->name('scanner.scan');
     Route::post('/deconnexion', [LoginController::class, 'destroy'])->name('logout');
 });

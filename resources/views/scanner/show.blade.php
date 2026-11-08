@@ -18,6 +18,8 @@
       data-status-url="{{ route('scanner.status', $session) }}"
       data-scan-url="{{ route('scanner.scan', $session) }}"
       data-lookup-url="{{ route('scanner.lookup', $session) }}"
+      data-search-url="{{ route('scanner.search', $session) }}"
+      data-link-url="{{ route('scanner.link', $session) }}"
       data-mode="{{ $session->mode }}"
       data-target="{{ \App\Services\Scanner\ScannerService::target($session) }}"
       data-last-sequence="{{ $session->last_sequence }}">
@@ -78,10 +80,20 @@
                     <label class="text-sm">Péremption (MM/AAAA)
                         <input id="entry-expiry" inputmode="numeric" placeholder="06/2028" class="mt-1 w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-3 text-lg">
                     </label>
-                    <label class="text-sm">Boîtes reçues
+                    <label class="text-sm">{{ $session->mode === 'stock' ? 'Boîtes' : 'Boîtes reçues' }}
                         <input id="entry-qty" type="number" min="1" inputmode="numeric" value="1" class="mt-1 w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-3 text-lg">
                     </label>
                 </div>
+                @if ($session->mode === 'stock')
+                    <div class="grid grid-cols-2 gap-2">
+                        <label class="text-sm">Emplacement
+                            <select id="entry-location" class="mt-1 w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-3 text-base"></select>
+                        </label>
+                        <label class="text-sm">Prix d'achat / boîte
+                            <input id="entry-cost" type="number" min="0" step="0.01" inputmode="decimal" class="mt-1 w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-3 text-lg">
+                        </label>
+                    </div>
+                @endif
             @endif
 
             <p id="entry-error" class="hidden text-sm text-red-300"></p>
@@ -90,6 +102,16 @@
                 <button class="flex-1 rounded-lg bg-emerald-700 px-4 py-3 font-semibold">Enregistrer</button>
             </div>
         </form>
+
+        @if ($session->mode === 'stock')
+            <section id="link" class="hidden flex-col gap-2 rounded-lg bg-amber-900/40 p-3">
+                <p class="text-sm">Code inconnu : <strong id="link-code" class="font-mono"></strong><br>Cherchez le produit par son nom pour lui associer ce code.</p>
+                <input id="link-q" autocomplete="off" placeholder="ex. doliprane" class="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-3 text-lg">
+                <ul id="link-results" class="flex flex-col gap-1"></ul>
+                <p id="link-error" class="hidden text-sm text-red-300"></p>
+                <button type="button" id="link-cancel" class="rounded-lg bg-slate-700 px-4 py-3">Annuler</button>
+            </section>
+        @endif
 
         <form id="manual" class="flex gap-2">
             <input id="manual-code" inputmode="numeric" autocomplete="off" placeholder="Saisie manuelle du code"
@@ -195,7 +217,7 @@
         const li = document.createElement('li');
         li.className = `rounded px-2 py-1 ${ok ? 'bg-emerald-900/60' : 'bg-red-900/60'}`;
         const detail = ack.payload ? ` - ${ack.payload.lot_number ? `lot ${ack.payload.lot_number}, ${ack.payload.quantity_packs} bte(s)` : `compté ${ack.payload.quantity}`}` : '';
-        li.textContent = ok && (mode === 'lookup' || mode === 'stock') ? `✓ ${code} envoyé au PC` : ok ? `✓ ${ack.product ?? code}${detail}` :`✗ ${code} - ${ack.status === 'unknown_product' ? 'produit inconnu' : (ack.message ?? 'refusé')}`;
+        li.textContent = ok && mode === 'lookup' ? `✓ ${code} envoyé au PC` : ok ? `✓ ${ack.product ?? code}${detail}` :`✗ ${code} - ${ack.status === 'unknown_product' ? 'produit inconnu' : (ack.message ?? 'refusé')}`;
         $('log').prepend(li);
         while ($('log').children.length > 15) $('log').lastChild.remove();
         feedback(ok);
@@ -227,7 +249,8 @@
             $('again').disabled = false;
             return enqueue(code);
         }
-        if (mode === 'lookup' || mode === 'stock') return enqueue(code);   // fiche produit : le code est envoyé au PC
+        if (mode === 'lookup') return enqueue(code);
+        if (linking) return;   // recherche par nom en cours   // fiche produit : le code est envoyé au PC
         if (!entry) openEntry(code);   // lectures ignorées tant qu'une fiche est ouverte
     }
 
@@ -244,6 +267,7 @@
             const data = await r.json();
             if (r.status === 410) { entry = null; state = 'revoked'; return render(); }
             if (r.status === 409) return location.reload();
+            if (!r.ok && mode === 'stock' && data.error === 'unknown_product') { entry = null; return openLink(code); }
             if (!r.ok) { entry = null; return log(code, { status: 'error', message: data.message }); }
             entry.product = data;
         } catch {
@@ -252,6 +276,7 @@
         }
 
         const p = entry.product;
+        fillStock(p);
         $('entry-name').textContent = p.name;
         $('entry-sub').textContent = `${p.sku} · ${p.units_per_pack} ${p.base_unit}(s) par boîte`;
         $('entry-error').classList.add('hidden');
@@ -279,16 +304,71 @@
             updateTotal();
             setTimeout(() => $('entry-packs').focus(), 50);
         } else {
-            const todo = p.expected.filter((l) => !l.lot);
-            $('entry-expected').textContent = p.expected.length
+            const todo = (p.expected ?? []).filter((l) => !l.lot);
+            $('entry-expected').textContent = mode === 'stock' ? '' : p.expected.length
                 ? `Attendu : ${p.expected.map((l) => `${l.packs} boîte(s)${l.lot ? ` (lot ${l.lot} déjà saisi)` : ''}`).join(', ')}`
                 : 'Produit absent de cette réception : il sera ajouté.';
             $('entry-lot').value = ''; $('entry-expiry').value = '';
-            $('entry-qty').value = todo[0]?.packs ?? 1;
+            $('entry-qty').value = mode === 'stock' ? 1 : (todo[0]?.packs ?? 1);
             setTimeout(() => $('entry-lot').focus(), 50);
         }
         $('entry').classList.replace('hidden', 'flex');
         feedback(true);
+    }
+
+    // --- Entrée de stock : code inconnu → recherche par nom → association ---------
+    let linking = null, linkTimer;
+    function fillStock(p) {
+        if (mode !== 'stock') return;
+        $('entry-location').replaceChildren(...p.locations.map((l) => Object.assign(document.createElement('option'), { value: l.id, textContent: l.name })));
+        $('entry-cost').value = Number(p.purchase_price) > 0 ? p.purchase_price : '';
+    }
+    function openLink(code) {
+        linking = code;
+        $('link-code').textContent = code;
+        $('link-q').value = '';
+        $('link-results').replaceChildren();
+        $('link-error').classList.add('hidden');
+        $('link').classList.replace('hidden', 'flex');
+        feedback(false);
+        setTimeout(() => $('link-q').focus(), 50);
+    }
+    function closeLink() { linking = null; $('link')?.classList.replace('flex', 'hidden'); }
+    $('link-cancel')?.addEventListener('click', closeLink);
+    $('link-q')?.addEventListener('input', () => {
+        clearTimeout(linkTimer);
+        linkTimer = setTimeout(async () => {
+            const q = $('link-q').value.trim();
+            if (q.length < 2) return $('link-results').replaceChildren();
+            const r = await fetch(`${app.dataset.searchUrl}?q=${encodeURIComponent(q)}`, { headers: { Accept: 'application/json' } }).catch(() => null);
+            if (!r || !r.ok) return;
+            const items = await r.json();
+            $('link-results').replaceChildren(...(items.length ? items.map((it) => {
+                const b = document.createElement('button');
+                b.type = 'button';
+                b.className = 'w-full rounded-lg bg-slate-800 px-3 py-3 text-start';
+                b.innerHTML = '<span class="font-semibold"></span><span class="block text-xs text-slate-400"></span>';
+                b.children[0].textContent = it.name; b.children[1].textContent = it.label;
+                b.addEventListener('click', () => link(it.id));
+                const li = document.createElement('li'); li.append(b); return li;
+            }) : [Object.assign(document.createElement('li'), { className: 'text-sm text-slate-400', textContent: 'Aucun produit : créez-le dans le catalogue sur le PC.' })]));
+        }, 300);
+    });
+    async function link(presentationId) {
+        const code = linking;
+        const r = await fetch(app.dataset.linkUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': csrf },
+            body: JSON.stringify({ barcode: code, presentation_id: presentationId }),
+        }).catch(() => null);
+        const data = r ? await r.json().catch(() => ({})) : { message: 'réseau indisponible' };
+        if (!r || !r.ok) {
+            $('link-error').textContent = data.message ?? 'Association impossible.';
+            return $('link-error').classList.remove('hidden');
+        }
+        closeLink();
+        log(code, { status: 'received', product: `${data.name} : code associé` });
+        openEntry(code);
     }
 
     function units() {
@@ -323,6 +403,7 @@
             payload = { [kind === 'line' ? 'line_id' : 'batch_id']: id, quantity: units() };
         } else {
             payload = { lot_number: $('entry-lot').value.trim(), expiry: $('entry-expiry').value.trim(), quantity_packs: Number($('entry-qty').value) };
+            if (mode === 'stock') Object.assign(payload, { location_id: $('entry-location').value, pack_cost: $('entry-cost').value });
             if (!payload.lot_number) return entryError('Le numéro de lot est obligatoire.');
             if (!/^\d{1,2}[\/.-]\d{2,4}$/.test(payload.expiry) && !/^\d{1,2}[\/.-]\d{1,2}[\/.-]\d{2,4}$/.test(payload.expiry)) return entryError('Péremption au format MM/AAAA.');
             if (!(payload.quantity_packs >= 1)) return entryError('Nombre de boîtes invalide.');

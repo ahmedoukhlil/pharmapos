@@ -246,6 +246,7 @@ class ScannerService
                 $payload = match ($session->mode) {
                     'receipt' => $this->receiptPayload($session, $scan['payload'] ?? []),
                     'inventory' => $this->applyCount($user, $session, $presentation, $scan['payload'] ?? []),
+                    'stock' => empty($scan['payload']) ? null : $this->applyStockEntry($user, $presentation, $scan['payload']),
                     default => null,
                 };
 
@@ -257,6 +258,7 @@ class ScannerService
                     'presentation_id' => $presentation?->id,
                     'payload' => $payload,
                     'status' => match (true) {
+                        $session->mode === 'stock' && ! empty($scan['payload']) => 'applied',
                         in_array($session->mode, ['lookup', 'stock'], true) => 'received',
                         ! $presentation => 'unknown_product',
                         $session->mode === 'inventory' => 'applied',
@@ -306,7 +308,7 @@ class ScannerService
      */
     public function lookup(User $user, ScannerSession $session, string $barcode): array
     {
-        if ($session->user_id !== $user->id || self::state($session) !== 'active' || in_array($session->mode, ['pos', 'lookup', 'stock'], true)) {
+        if ($session->user_id !== $user->id || self::state($session) !== 'active' || in_array($session->mode, ['pos', 'lookup'], true)) {
             throw new ScannerException('session_inactive', 'Scanner déconnecté : réappairez le téléphone.');
         }
 
@@ -323,6 +325,14 @@ class ScannerService
             'base_unit' => $p->base_unit,
             'units_per_pack' => $p->units_per_pack,
         ];
+
+        if ($session->mode === 'stock') {
+            return $product + [
+                'purchase_price' => (string) $p->purchase_price,
+                'locations' => \App\Services\Inventory\StockAdjustmentService::locations($session->pharmacy_id)
+                    ->sortBy(fn ($l) => $l->type === 'shelf' ? 0 : 1)->values()->map(fn ($l) => ['id' => $l->id, 'name' => $l->name])->all(),
+            ];
+        }
 
         if ($session->mode === 'inventory') {
             $inventory = InventorySession::findOrFail($session->context_id);
@@ -350,6 +360,57 @@ class ScannerService
             'expected' => $receipt->lines()->where('presentation_id', $p->id)->orderBy('line_no')->get()
                 ->map(fn ($l) => ['packs' => $l->quantity_packs, 'lot' => $l->lot_number, 'expiry' => $l->expiry_raw])->all(),
         ];
+    }
+
+    /** Entrée de stock depuis le téléphone : recherche d'un produit par son nom pour un code inconnu. */
+    public function search(User $user, ScannerSession $session, string $term): array
+    {
+        $this->assertStockPhone($user, $session);
+
+        return mb_strlen(trim($term)) < 2 ? [] : \App\Support\ProductLookup::find($session->pharmacy_id, $term, 12)
+            ->map(fn ($p) => ['id' => $p->id, 'name' => trim($p->medicine->brand_name.' '.$p->medicine->strength), 'label' => $p->label.' · '.$p->sku])->values()->all();
+    }
+
+    /** Associe le code inconnu au produit choisi (droit « Gérer le catalogue »), puis renvoie la fiche du produit. */
+    public function link(User $user, ScannerSession $session, string $barcode, string $presentationId): array
+    {
+        $this->assertStockPhone($user, $session);
+        $p = Presentation::where('pharmacy_id', $session->pharmacy_id)->findOrFail($presentationId);
+        if (! $user->hasPermission('catalogue.manage')) {
+            throw new ScannerException('forbidden', "Droit « Gérer le catalogue » nécessaire pour associer un code.");
+        }
+        try {
+            app(\App\Services\Catalogue\CatalogueService::class)->addBarcode($user, $p, trim($barcode));
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            throw new ScannerException('invalid_barcode', (string) collect($e->errors())->flatten()->first());
+        }
+
+        return $this->lookup($user, $session, trim($barcode));
+    }
+
+    private function assertStockPhone(User $user, ScannerSession $session): void
+    {
+        if ($session->user_id !== $user->id || self::state($session) !== 'active' || $session->mode !== 'stock') {
+            throw new ScannerException('session_inactive', 'Scanner déconnecté : réappairez le téléphone.');
+        }
+    }
+
+    private function applyStockEntry(User $user, ?Presentation $presentation, array $payload): array
+    {
+        if (! $presentation) {
+            throw new ScannerException('unknown_product', 'Produit inconnu : associez d\'abord le code.');
+        }
+        $packs = (int) ($payload['quantity_packs'] ?? 0);
+        $cost = $payload['pack_cost'] ?? null;
+        try {
+            app(\App\Services\Inventory\StockEntryService::class)->add($user, $presentation->id, (string) ($payload['lot_number'] ?? ''),
+                (string) ($payload['expiry'] ?? ''), $packs * max(1, (int) $presentation->units_per_pack), (string) ($payload['location_id'] ?? ''),
+                is_numeric($cost) ? (float) $cost : null);
+        } catch (InventoryException $e) {
+            throw new ScannerException($e->reason, $e->getMessage());
+        }
+
+        return ['lot_number' => strtoupper(trim((string) $payload['lot_number'])), 'expiry' => (string) $payload['expiry'], 'quantity_packs' => $packs];
     }
 
     /** Comptage d'un lot en unités de base : ligne existante ou lot trouvé hors théorique. */

@@ -85,4 +85,33 @@ class StockEntryTest extends TestCase
         Livewire::test(ScannerPanel::class, ['mode' => 'stock', 'contextId' => $owner->pharmacy_id])
             ->call('poll')->assertDispatched('remote-barcode', barcode: '6111111111111');
     }
+    public function test_whole_entry_done_on_the_phone(): void
+    {
+        $owner = $this->owner();
+        $scanner = app(ScannerService::class);
+        [$session, $token] = $scanner->createPairing($owner, 'stock', $owner->pharmacy_id);
+        $scanner->claim($owner, $token, 'Android');
+        $session = $scanner->confirm($owner, $session->fresh());
+        $p = Presentation::where('sku', 'PARA500-16')->firstOrFail();
+        $ray = Location::where('code', 'RAY')->value('id');
+        $this->actingAs($owner);
+
+        // Code inconnu → recherche par nom → association
+        $this->getJson(route('scanner.lookup', $session).'?code=6111111111111')->assertStatus(422)->assertJson(['error' => 'unknown_product']);
+        $this->getJson(route('scanner.search', $session).'?q=parac')->assertOk()->assertJsonFragment(['id' => $p->id]);
+        $this->postJson(route('scanner.link', $session), ['barcode' => '6111111111111', 'presentation_id' => $p->id])
+            ->assertOk()->assertJson(['presentation_id' => $p->id])->assertJsonFragment(['id' => $ray]);
+
+        // Lot, péremption, quantité : inséré directement
+        $this->postJson(route('scanner.scan', $session), ['id' => (string) Str::uuid(), 'sequence' => 1, 'barcode' => '6111111111111',
+            'payload' => ['lot_number' => 'tel01', 'expiry' => '05/2029', 'quantity_packs' => 2, 'location_id' => $ray, 'pack_cost' => '']])
+            ->assertOk()->assertJson(['status' => 'received']);
+        $batch = Batch::where('lot_number', 'TEL01')->firstOrFail();
+        $this->assertSame(32, (int) StockBalance::where('batch_id', $batch->id)->where('location_id', $ray)->value('quantity'));
+
+        // Saisie refusée : message renvoyé au téléphone
+        $this->postJson(route('scanner.scan', $session), ['id' => (string) Str::uuid(), 'sequence' => 2, 'barcode' => '6111111111111',
+            'payload' => ['lot_number' => 'tel02', 'expiry' => 'xx', 'quantity_packs' => 1, 'location_id' => $ray]])
+            ->assertStatus(422)->assertJson(['error' => 'invalid_expiry']);
+    }
 }

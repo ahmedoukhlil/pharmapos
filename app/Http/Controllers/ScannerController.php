@@ -96,6 +96,28 @@ class ScannerController extends Controller
         }
     }
 
+    /** Entrée de stock : produits trouvés par leur nom (code inconnu). */
+    public function search(Request $request, ScannerSession $session): JsonResponse
+    {
+        $this->assertPhoneOwner($request, $session);
+        try {
+            return response()->json($this->scanner->search($request->user(), $session, (string) $request->query('q')));
+        } catch (ScannerException $e) {
+            return $this->error($e);
+        }
+    }
+
+    /** Entrée de stock : associe le code inconnu au produit choisi. */
+    public function link(Request $request, ScannerSession $session): JsonResponse
+    {
+        $this->assertPhoneOwner($request, $session);
+        try {
+            return response()->json($this->scanner->link($request->user(), $session, (string) $request->input('barcode'), (string) $request->input('presentation_id')));
+        } catch (ScannerException $e) {
+            return $this->error($e);
+        }
+    }
+
     /** Le PC a changé d'écran depuis l'ouverture de la page du téléphone : elle doit se recharger. */
     private function targetChanged(Request $request, ScannerSession $session): ?JsonResponse
     {
